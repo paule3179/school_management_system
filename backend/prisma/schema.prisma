@@ -1,0 +1,291 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model attendance {
+  id            Int       @id @default(autoincrement())
+  student_id    Int?
+  date          DateTime  @db.Date
+  status        String    @db.VarChar(20)
+  check_in      DateTime? @db.Time(6)
+  check_out     DateTime? @db.Time(6)
+  term          Int
+  term_name     String?   @db.VarChar(50)
+  academic_year String?   @db.VarChar(20)
+  remarks       String?
+  students      students? @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model books {
+  id               Int              @id @default(autoincrement())
+  isbn             String?          @unique @db.VarChar(20)
+  title            String           @db.VarChar(255)
+  author           String           @db.VarChar(255)
+  publisher        String?          @db.VarChar(255)
+  publication_year Int?
+  category         String?          @db.VarChar(100)
+  quantity         Int
+  available        Int
+  location         String?          @db.VarChar(100)
+  status           String?          @default("available") @db.VarChar(20)
+  borrow_records   borrow_records[]
+}
+
+model borrow_records {
+  id          Int       @id @default(autoincrement())
+  book_id     Int?
+  student_id  Int?
+  borrow_date DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+  due_date    DateTime  @db.Date
+  return_date DateTime? @db.Date
+  status      String?   @db.VarChar(20)
+  fine        Decimal?  @default(0) @db.Decimal(10, 2)
+  remarks     String?
+  books       books?    @relation(fields: [book_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  students    students? @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model calendar_events {
+  id              Int       @id @default(autoincrement())
+  title           String    @db.VarChar(255)
+  description     String?
+  event_type      String?   @db.VarChar(50)
+  start_date      DateTime  @db.Date
+  end_date        DateTime  @db.Date
+  start_time      DateTime? @db.Time(6)
+  end_time        DateTime? @db.Time(6)
+  venue           String?   @db.VarChar(255)
+  target_audience String[]
+  status          String?   @db.VarChar(50)
+  created_by      Int?
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model classes {
+  id              Int               @id @default(autoincrement())
+  name            String            @unique @db.VarChar(50)
+  level           String            @db.VarChar(20)
+  capacity        Int
+  academic_year   String?           @db.VarChar(20)
+  exam_timetables exam_timetables[]
+  grades          grades[]
+  students        students[]
+  timetables      timetables[]
+}
+
+model documents {
+  id          Int       @id @default(autoincrement())
+  title       String    @db.VarChar(255)
+  type        String?   @db.VarChar(100)
+  category    String?   @db.VarChar(100)
+  student_id  Int?
+  class_id    Int?
+  uploaded_by Int?
+  file_name   String?   @db.VarChar(255)
+  file_size   Int?
+  mime_type   String?   @db.VarChar(100)
+  upload_date DateTime? @default(now()) @db.Timestamp(6)
+  status      String?   @default("pending") @db.VarChar(20)
+}
+
+model exam_timetables {
+  id       Int       @id @default(autoincrement())
+  exam_id  Int?
+  class_id Int?
+  subject  String?   @db.VarChar(100)
+  date     DateTime? @db.Date
+  time     String?   @db.VarChar(50)
+  venue    String?   @db.VarChar(100)
+  classes  classes?  @relation(fields: [class_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  exams    exams?    @relation(fields: [exam_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model exams {
+  id               Int               @id @default(autoincrement())
+  name             String            @db.VarChar(255)
+  term             Int?
+  term_name        String?           @db.VarChar(50)
+  academic_year    String?           @db.VarChar(20)
+  start_date       DateTime?         @db.Date
+  end_date         DateTime?         @db.Date
+  status           String?           @db.VarChar(50)
+  classes_involved String[]
+  exam_timetables  exam_timetables[]
+}
+
+model fees {
+  id             Int       @id @default(autoincrement())
+  student_id     Int?
+  fee_type       String    @db.VarChar(100)
+  term           Int
+  term_name      String?   @db.VarChar(50)
+  academic_year  String?   @db.VarChar(20)
+  amount         Decimal   @db.Decimal(10, 2)
+  paid_amount    Decimal?  @default(0) @db.Decimal(10, 2)
+  balance        Decimal?  @db.Decimal(10, 2)
+  status         String?   @db.VarChar(20)
+  payment_date   DateTime? @db.Date
+  payment_method String?   @db.VarChar(50)
+  transaction_id String?   @db.VarChar(100)
+  receipt_number String?   @db.VarChar(50)
+  recorded_by    Int?
+  students       students? @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model grades {
+  id                    Int       @id @default(autoincrement())
+  student_id            Int?
+  subject               String    @db.VarChar(100)
+  term                  Int
+  term_name             String?   @db.VarChar(50)
+  academic_year         String?   @db.VarChar(20)
+  class_id              Int?
+  continuous_assessment Decimal?  @db.Decimal(5, 2)
+  project_score         Decimal?  @db.Decimal(5, 2)
+  exam_score            Decimal?  @db.Decimal(5, 2)
+  total_score           Decimal?  @db.Decimal(5, 2)
+  grade                 String?   @db.VarChar(5)
+  grade_point           Decimal?  @db.Decimal(3, 2)
+  remarks               String?
+  recorded_by           Int?
+  recorded_at           DateTime? @default(now()) @db.Timestamp(6)
+  classes               classes?  @relation(fields: [class_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  students              students? @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model inventory_items {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(255)
+  category      String    @db.VarChar(100)
+  quantity      Int
+  unit          String?   @db.VarChar(50)
+  unit_price    Decimal?  @db.Decimal(10, 2)
+  total_value   Decimal?  @db.Decimal(10, 2)
+  location      String?   @db.VarChar(255)
+  supplier      String?   @db.VarChar(255)
+  purchase_date DateTime? @db.Date
+  condition     String?   @db.VarChar(50)
+  status        String?   @db.VarChar(50)
+  notes         String?
+}
+
+model messages {
+  id            Int       @id @default(autoincrement())
+  sender_id     Int?
+  sender_type   String?   @db.VarChar(50)
+  receiver_id   String?   @db.VarChar(255)
+  receiver_type String?   @db.VarChar(50)
+  subject       String?   @db.VarChar(255)
+  message       String?
+  status        String?   @default("sent") @db.VarChar(20)
+  priority      String?   @default("normal") @db.VarChar(20)
+  sent_at       DateTime? @default(now()) @db.Timestamp(6)
+  read_at       DateTime? @db.Timestamp(6)
+}
+
+model parents {
+  id           Int     @id @default(autoincrement())
+  user_id      Int?    @unique
+  occupation   String? @db.VarChar(100)
+  address      String?
+  relationship String? @db.VarChar(50)
+  users        users?  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model students {
+  id                    Int                     @id @default(autoincrement())
+  user_id               Int?                    @unique
+  admission_number      String                  @unique @db.VarChar(50)
+  first_name            String                  @db.VarChar(100)
+  last_name             String                  @db.VarChar(100)
+  date_of_birth         DateTime                @db.Date
+  gender                String                  @db.VarChar(10)
+  class_id              Int?
+  level                 String                  @db.VarChar(20)
+  parent_name           String?                 @db.VarChar(200)
+  parent_phone          String?                 @db.VarChar(20)
+  address               String?
+  enrollment_date       DateTime?               @default(dbgenerated("CURRENT_DATE")) @db.Date
+  status                String?                 @default("active") @db.VarChar(20)
+  attendance            attendance[]
+  borrow_records        borrow_records[]
+  fees                  fees[]
+  grades                grades[]
+  classes               classes?                @relation(fields: [class_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                 users?                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  transport_assignments transport_assignments[]
+}
+
+model teachers {
+  id                Int       @id @default(autoincrement())
+  user_id           Int?      @unique
+  teacher_code      String    @unique @db.VarChar(50)
+  first_name        String    @db.VarChar(100)
+  last_name         String    @db.VarChar(100)
+  subject_specialty String?   @db.VarChar(100)
+  phone             String?   @db.VarChar(20)
+  email             String?   @db.VarChar(255)
+  employment_date   DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+  status            String?   @default("active") @db.VarChar(20)
+  users             users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model timetables {
+  id            Int      @id @default(autoincrement())
+  class_id      Int?
+  day           String?  @db.VarChar(20)
+  periods       Json?
+  academic_year String?  @db.VarChar(20)
+  classes       classes? @relation(fields: [class_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model transport_assignments {
+  id            Int       @id @default(autoincrement())
+  student_id    Int?
+  vehicle_id    Int?
+  route_id      Int?
+  pickup_point  String?   @db.VarChar(100)
+  dropoff_point String?   @db.VarChar(100)
+  status        String?   @default("active") @db.VarChar(20)
+  term          Int?
+  academic_year String?   @db.VarChar(20)
+  students      students? @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  vehicles      vehicles? @relation(fields: [vehicle_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model users {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique @db.VarChar(255)
+  password    String    @db.VarChar(255)
+  first_name  String    @db.VarChar(100)
+  last_name   String    @db.VarChar(100)
+  role        String    @db.VarChar(50)
+  phone       String?   @db.VarChar(20)
+  mfa_enabled Boolean?  @default(false)
+  mfa_secret  String?   @db.VarChar(255)
+  status      String?   @default("active") @db.VarChar(50)
+  last_login  DateTime? @db.Timestamp(6)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+  parents     parents?
+  students    students?
+  teachers    teachers?
+}
+
+model vehicles {
+  id                    Int                     @id @default(autoincrement())
+  registration_number   String                  @unique @db.VarChar(20)
+  driver_name           String                  @db.VarChar(100)
+  driver_phone          String?                 @db.VarChar(20)
+  capacity              Int
+  route                 String?                 @db.VarChar(100)
+  type                  String?                 @db.VarChar(50)
+  status                String?                 @db.VarChar(20)
+  maintenance_due       DateTime?               @db.Date
+  insurance_expiry      DateTime?               @db.Date
+  transport_assignments transport_assignments[]
+}
