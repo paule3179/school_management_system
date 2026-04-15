@@ -8,5 +8,6 @@ router.get('/:id/schedule', teacherController.getTeacherSchedule);
 router.post('/', teacherController.createTeacher);
 router.put('/:id', teacherController.updateTeacher);
 router.delete('/:id', teacherController.deleteTeacher);
+router.post('/:id/assign-class', teacherController.assignToClass);
 
 module.exports = router;

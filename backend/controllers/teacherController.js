@@ -4,8 +4,8 @@ const teacherController = {
   // GET /api/teachers - Get all teachers
   async getAllTeachers(req, res) {
     try {
-      const { status, subject } = req.query;
-      const filters = { status, subject };
+      const { subject, status } = req.query;
+      const filters = { subject, status };
       
       const teachers = await teacherModel.getAllTeachers(filters);
       res.json({
@@ -14,6 +14,7 @@ const teacherController = {
         data: teachers
       });
     } catch (error) {
+      console.error('Error:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -36,6 +37,7 @@ const teacherController = {
         data: teacher
       });
     } catch (error) {
+      console.error('Error:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -46,7 +48,9 @@ const teacherController = {
   // POST /api/teachers - Create teacher
   async createTeacher(req, res) {
     try {
-      const required = ['first_name', 'last_name', 'email', 'phone', 'subject_specialty'];
+      console.log('Creating teacher with data:', req.body);
+      
+      const required = ['first_name', 'last_name', 'subject_specialty', 'phone', 'email'];
       const missing = required.filter(field => !req.body[field]);
       
       if (missing.length > 0) {
@@ -59,9 +63,11 @@ const teacherController = {
       const newTeacher = await teacherModel.createTeacher(req.body);
       res.status(201).json({
         success: true,
-        data: newTeacher
+        data: newTeacher,
+        message: 'Teacher created successfully'
       });
     } catch (error) {
+      console.error('Error:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -81,9 +87,11 @@ const teacherController = {
       }
       res.json({
         success: true,
-        data: updatedTeacher
+        data: updatedTeacher,
+        message: 'Teacher updated successfully'
       });
     } catch (error) {
+      console.error('Error:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -106,7 +114,27 @@ const teacherController = {
         message: 'Teacher deleted successfully'
       });
     } catch (error) {
+      console.error('Error:', error.message);
       res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+  },
+  
+  // POST /api/teachers/:id/assign-class - Assign teacher to class
+  async assignToClass(req, res) {
+    try {
+      const { class_id } = req.body;
+      const result = await teacherModel.assignToClass(req.params.id, class_id);
+      res.json({
+        success: true,
+        data: result,
+        message: 'Teacher assigned to class successfully'
+      });
+    } catch (error) {
+      console.error('Error:', error.message);
+      res.status(500).json({
         success: false,
         error: error.message
       });
@@ -117,17 +145,12 @@ const teacherController = {
   async getTeacherSchedule(req, res) {
     try {
       const schedule = await teacherModel.getTeacherSchedule(req.params.id);
-      if (!schedule) {
-        return res.status(404).json({
-          success: false,
-          error: 'Teacher not found'
-        });
-      }
       res.json({
         success: true,
         data: schedule
       });
     } catch (error) {
+      console.error('Error:', error.message);
       res.status(500).json({
         success: false,
         error: error.message

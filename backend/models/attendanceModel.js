@@ -1,192 +1,105 @@
-const mockData = require('../data/mockData');
+const pool = require('../config/database');
 
 class AttendanceModel {
-  // Get all attendance records
-  async getAllAttendance(filters = {}) {
-    let attendance = [...mockData.attendance];
-    
-    if (filters.student_id) {
-      attendance = attendance.filter(a => a.student_id === parseInt(filters.student_id));
-    }
-    if (filters.class_id) {
-      const studentsInClass = mockData.getStudentsByClass(parseInt(filters.class_id));
-      const studentIds = studentsInClass.map(s => s.id);
-      attendance = attendance.filter(a => studentIds.includes(a.student_id));
-    }
-    if (filters.date) {
-      attendance = attendance.filter(a => a.date === filters.date);
-    }
-    if (filters.status) {
-      attendance = attendance.filter(a => a.status === filters.status);
-    }
-    
-    // Add student names
-    const attendanceWithNames = attendance.map(record => {
-      const student = mockData.students.find(s => s.id === record.student_id);
-      return {
-        ...record,
-        student_name: student ? `${student.first_name} ${student.last_name}` : 'Unknown',
-        student_admission: student ? student.admission_number : 'Unknown'
-      };
-    });
-    
-    return attendanceWithNames;
-  }
-  
-  // Get attendance by ID
-  async getAttendanceById(id) {
-    const attendance = mockData.attendance.find(a => a.id === parseInt(id));
-    if (!attendance) return null;
-    
-    const student = mockData.students.find(s => s.id === attendance.student_id);
-    return {
-      ...attendance,
-      student_name: student ? `${student.first_name} ${student.last_name}` : 'Unknown'
-    };
-  }
-  
   // Mark attendance for a class
-  async markClassAttendance(classId, date, attendanceList) {
-    const students = mockData.getStudentsByClass(parseInt(classId));
-    const recordedAttendance = [];
+  async markClassAttendance(classId, date, attendanceList, term, academicYear) {
+    const results = [];
     
-    for (const student of students) {
-      const attendanceData = attendanceList.find(a => a.student_id === student.id);
-      if (attendanceData) {
-        const newAttendance = {
-          id: mockData.getNextId('attendance'),
-          student_id: student.id,
-          date,
-          status: attendanceData.status,
-          check_in: attendanceData.check_in || null,
-          check_out: attendanceData.check_out || null,
-          term: attendanceData.term,
-          term_name: attendanceData.term_name,
-          academic_year: attendanceData.academic_year,
-          remarks: attendanceData.remarks || ''
-        };
-        
-        mockData.attendance.push(newAttendance);
-        recordedAttendance.push(newAttendance);
+    for (const record of attendanceList) {
+      const { student_id, status, remarks } = record;
+      
+      // Check if attendance already exists for this student on this date
+      const existing = await pool.query(`
+        SELECT id FROM attendance 
+        WHERE student_id = $1 AND date = $2
+      `, [student_id, date]);
+      
+      if (existing.rows.length > 0) {
+        // Update existing record
+        const result = await pool.query(`
+          UPDATE attendance 
+          SET status = $1, 
+              remarks = $2,
+              term = $3,
+              term_name = $4,
+              academic_year = $5
+          WHERE student_id = $6 AND date = $7
+          RETURNING *
+        `, [status, remarks, term, `Term ${term}`, academicYear, student_id, date]);
+        results.push(result.rows[0]);
+      } else {
+        // Insert new record
+        const result = await pool.query(`
+          INSERT INTO attendance (student_id, date, status, remarks, term, term_name, academic_year)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          RETURNING *
+        `, [student_id, date, status, remarks, term, `Term ${term}`, academicYear]);
+        results.push(result.rows[0]);
       }
     }
     
-    return recordedAttendance;
+    return results;
   }
-  
-  // Mark single student attendance
-  async markStudentAttendance(attendanceData) {
-    const newAttendance = {
-      id: mockData.getNextId('attendance'),
-      ...attendanceData,
-      recorded_at: new Date().toISOString()
-    };
+
+  // Get attendance for a class on a specific date
+  async getClassAttendance(classId, date, term, academicYear) {
+    const result = await pool.query(`
+      SELECT a.*, s.first_name, s.last_name, s.admission_number
+      FROM attendance a
+      JOIN students s ON a.student_id = s.id
+      WHERE s.class_id = $1 AND a.date = $2 AND a.term = $3 AND a.academic_year = $4
+      ORDER BY s.last_name
+    `, [classId, date, term, academicYear]);
     
-    mockData.attendance.push(newAttendance);
-    return newAttendance;
+    return result.rows;
   }
-  
-  // Update attendance record
-  async updateAttendance(id, updateData) {
-    const index = mockData.attendance.findIndex(a => a.id === parseInt(id));
-    if (index === -1) return null;
-    
-    mockData.attendance[index] = {
-      ...mockData.attendance[index],
-      ...updateData,
-      updated_at: new Date().toISOString()
-    };
-    
-    return mockData.attendance[index];
-  }
-  
-  // Get student attendance summary
+
+  // Get attendance summary for a student
   async getStudentAttendanceSummary(studentId, term, academicYear) {
-    const student = mockData.students.find(s => s.id === parseInt(studentId));
-    if (!student) return null;
+    const result = await pool.query(`
+      SELECT 
+        COUNT(*) as total_days,
+        SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as present,
+        SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent,
+        SUM(CASE WHEN status = 'late' THEN 1 ELSE 0 END) as late,
+        SUM(CASE WHEN status = 'excused' THEN 1 ELSE 0 END) as excused
+      FROM attendance
+      WHERE student_id = $1 AND term = $2 AND academic_year = $3
+    `, [studentId, term, academicYear]);
     
-    const attendance = mockData.attendance.filter(a => 
-      a.student_id === parseInt(studentId) &&
-      a.term === term &&
-      a.academic_year === academicYear
-    );
-    
-    const present = attendance.filter(a => a.status === 'present').length;
-    const absent = attendance.filter(a => a.status === 'absent').length;
-    const late = attendance.filter(a => a.status === 'late').length;
-    const excused = attendance.filter(a => a.status === 'excused').length;
-    const total = attendance.length;
-    
-    const attendanceRate = total > 0 ? ((present + excused) / total) * 100 : 0;
-    
-    return {
-      student: {
-        name: `${student.first_name} ${student.last_name}`,
-        admission_number: student.admission_number,
-        class: student.class_id
-      },
-      term_info: {
-        term,
-        term_name: `Term ${term}`,
-        academic_year
-      },
-      summary: {
-        total_days: total,
-        present,
-        absent,
-        late,
-        excused,
-        attendance_rate: attendanceRate.toFixed(2)
-      },
-      detailed_records: attendance
-    };
-  }
-  
-  // Get class attendance summary for a date range
-  async getClassAttendanceSummary(classId, startDate, endDate, term, academicYear) {
-    const students = mockData.getStudentsByClass(parseInt(classId));
-    const classData = mockData.classes.find(c => c.id === parseInt(classId));
-    
-    const studentSummaries = students.map(student => {
-      const attendance = mockData.attendance.filter(a => 
-        a.student_id === student.id &&
-        a.term === term &&
-        a.academic_year === academicYear &&
-        (!startDate || a.date >= startDate) &&
-        (!endDate || a.date <= endDate)
-      );
-      
-      const present = attendance.filter(a => a.status === 'present').length;
-      const absent = attendance.filter(a => a.status === 'absent').length;
-      const late = attendance.filter(a => a.status === 'late').length;
-      const total = attendance.length;
-      const rate = total > 0 ? (present / total) * 100 : 0;
-      
-      return {
-        student_name: `${student.first_name} ${student.last_name}`,
-        admission_number: student.admission_number,
-        present,
-        absent,
-        late,
-        total_days: total,
-        attendance_rate: rate.toFixed(2)
-      };
-    });
-    
-    const classAverage = studentSummaries.length > 0
-      ? studentSummaries.reduce((sum, s) => sum + parseFloat(s.attendance_rate), 0) / studentSummaries.length
+    const stats = result.rows[0];
+    const attendanceRate = stats.total_days > 0 
+      ? ((stats.present / stats.total_days) * 100).toFixed(2)
       : 0;
     
     return {
-      class: classData.name,
-      level: classData.level,
-      period: { startDate, endDate },
-      term,
-      academic_year: academicYear,
-      total_students: students.length,
-      class_average_attendance: classAverage.toFixed(2),
-      students: studentSummaries
+      ...stats,
+      attendance_rate: attendanceRate
     };
+  }
+
+  // Get monthly attendance report for a class
+  async getMonthlyAttendance(classId, month, year, term, academicYear) {
+    const result = await pool.query(`
+      SELECT 
+        s.id as student_id,
+        s.first_name,
+        s.last_name,
+        s.admission_number,
+        COUNT(a.id) as days_present
+      FROM students s
+      LEFT JOIN attendance a ON s.id = a.student_id 
+        AND EXTRACT(MONTH FROM a.date) = $2 
+        AND EXTRACT(YEAR FROM a.date) = $3
+        AND a.status = 'present'
+        AND a.term = $4
+        AND a.academic_year = $5
+      WHERE s.class_id = $1 AND s.status = 'active'
+      GROUP BY s.id, s.first_name, s.last_name, s.admission_number
+      ORDER BY s.last_name
+    `, [classId, month, year, term, academicYear]);
+    
+    return result.rows;
   }
 }
 

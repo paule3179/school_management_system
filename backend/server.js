@@ -22,6 +22,9 @@ const libraryRoutes = require('./routes/libraryRoutes');
 const transportRoutes = require('./routes/transportRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const authRoutes = require('./routes/authRoutes');
+const subjectRoutes = require('./routes/subjectRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
+
 
 // Initialize app
 const app = express();
@@ -80,6 +83,9 @@ app.use('/api/library', libraryRoutes);
 app.use('/api/transport', transportRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/subjects', subjectRoutes);
+app.use('/api/settings', settingsRoutes);
+
 
 // 404 handler
 app.use((req, res) => {
@@ -100,10 +106,10 @@ app.use((err, req, res, next) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📍 API URL: http://localhost:${PORT}`);
-  console.log('\n✅ Available Modules (15 Total):');
+  console.log(` Server running on port ${PORT}`);
+  console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(` API URL: http://localhost:${PORT}`);
+  console.log('\nAvailable Modules (15 Total):');
   console.log('   1. Students     - /api/students');
   console.log('   2. Classes      - /api/classes');
   console.log('   3. Teachers     - /api/teachers');

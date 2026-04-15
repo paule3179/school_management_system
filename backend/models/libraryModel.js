@@ -1,4 +1,5 @@
 const mockData = require('../data/mockData');
+const settingsModel = require('./settingsModel');
 
 class LibraryModel {
   // Get all books
@@ -107,7 +108,8 @@ class LibraryModel {
     let fine = 0;
     if (returnDate > dueDate) {
       const daysLate = Math.ceil((returnDate - dueDate) / (1000 * 60 * 60 * 24));
-      fine = daysLate * 1.00; // GHS 1 per day late
+      const dailyFineRate = await settingsModel.getDailyFineRate();
+      fine = daysLate * dailyFineRate;
     }
     
     borrow.return_date = returnData.return_date || new Date().toISOString().split('T')[0];

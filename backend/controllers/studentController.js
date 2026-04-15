@@ -4,37 +4,20 @@ const studentController = {
   // GET /api/students - Get all students
   async getAllStudents(req, res) {
     try {
-      const students = await studentModel.getAllStudents();
+      const { class_id, level, status } = req.query;
+      const filters = { class_id, level, status };
+      
+      const students = await studentModel.getAllStudents(filters);
+      
+      console.log(`Returning ${students.length} students with parent data`);
+      
       res.json({
         success: true,
         count: students.length,
         data: students
       });
     } catch (error) {
-      console.error('Error in getAllStudents:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  },
-  
-  // POST /api/students - Create student
-  async createStudent(req, res) {
-    try {
-      console.log('📝 Creating student with data:', req.body);
-      
-      const newStudent = await studentModel.createStudent(req.body);
-      
-      console.log('✅ Student created:', newStudent);
-      
-      res.status(201).json({
-        success: true,
-        data: newStudent,
-        message: 'Student created successfully'
-      });
-    } catch (error) {
-      console.error('❌ Error in createStudent:', error.message);
+      console.error('Error in getAllStudents:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -57,6 +40,44 @@ const studentController = {
         data: student
       });
     } catch (error) {
+      console.error('Error in getStudentById:', error.message);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  },
+  
+  // POST /api/students - Create student
+  async createStudent(req, res) {
+    try {
+      console.log('Creating student with data:', req.body);
+      
+      // Validate required fields
+      const required = ['first_name', 'last_name', 'date_of_birth', 'gender', 'class_id', 'level'];
+      const missing = required.filter(field => !req.body[field]);
+      
+      if (missing.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: `Missing required fields: ${missing.join(', ')}`
+        });
+      }
+      
+      const newStudent = await studentModel.createStudent(req.body);
+      
+      // Fetch the complete student with parent info
+      const completeStudent = await studentModel.getStudentById(newStudent.id);
+      
+      console.log('Student created successfully:', completeStudent);
+      
+      res.status(201).json({
+        success: true,
+        data: completeStudent,
+        message: 'Student created successfully'
+      });
+    } catch (error) {
+      console.error('Error in createStudent:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -74,11 +95,17 @@ const studentController = {
           error: 'Student not found'
         });
       }
+      
+      // Fetch the complete student with parent info
+      const completeStudent = await studentModel.getStudentById(updatedStudent.id);
+      
       res.json({
         success: true,
-        data: updatedStudent
+        data: completeStudent,
+        message: 'Student updated successfully'
       });
     } catch (error) {
+      console.error('Error in updateStudent:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -101,6 +128,7 @@ const studentController = {
         message: 'Student deleted successfully'
       });
     } catch (error) {
+      console.error('Error in deleteStudent:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -118,6 +146,7 @@ const studentController = {
         data: students
       });
     } catch (error) {
+      console.error('Error in searchStudents:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -135,6 +164,7 @@ const studentController = {
         data: students
       });
     } catch (error) {
+      console.error('Error in getStudentsByClass:', error.message);
       res.status(500).json({
         success: false,
         error: error.message

@@ -14,6 +14,7 @@ const gradeController = {
         data: grades
       });
     } catch (error) {
+      console.error('Error in getAllGrades:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -36,6 +37,7 @@ const gradeController = {
         data: grade
       });
     } catch (error) {
+      console.error('Error in getGradeById:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -43,7 +45,7 @@ const gradeController = {
     }
   },
   
-  // POST /api/grades - Create grade
+  // POST /api/grades - Create grade (Upsert - create or update)
   async createGrade(req, res) {
     try {
       const required = ['student_id', 'subject', 'term', 'academic_year', 'continuous_assessment', 'exam_score'];
@@ -56,20 +58,41 @@ const gradeController = {
         });
       }
       
+      // Validate score ranges
+      const ca = parseFloat(req.body.continuous_assessment);
+      const exam = parseFloat(req.body.exam_score);
+      
+      if (ca < 0 || ca > 40) {
+        return res.status(400).json({
+          success: false,
+          error: 'Continuous assessment must be between 0 and 40'
+        });
+      }
+      
+      if (exam < 0 || exam > 60) {
+        return res.status(400).json({
+          success: false,
+          error: 'Exam score must be between 0 and 60'
+        });
+      }
+      
       // Calculate total score
-      const total_score = (req.body.continuous_assessment + req.body.exam_score) / 2;
+      const total_score = ca + exam;
       
       const gradeData = {
         ...req.body,
         total_score
       };
       
-      const newGrade = await gradeModel.createGrade(gradeData);
+      // Use upsert to create or update
+      const newGrade = await gradeModel.upsertGrade(gradeData);
       res.status(201).json({
         success: true,
-        data: newGrade
+        data: newGrade,
+        message: 'Grade saved successfully'
       });
     } catch (error) {
+      console.error('Error in createGrade:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -89,9 +112,11 @@ const gradeController = {
       }
       res.json({
         success: true,
-        data: updatedGrade
+        data: updatedGrade,
+        message: 'Grade updated successfully'
       });
     } catch (error) {
+      console.error('Error in updateGrade:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -114,6 +139,34 @@ const gradeController = {
         message: 'Grade record deleted successfully'
       });
     } catch (error) {
+      console.error('Error in deleteGrade:', error.message);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  },
+  
+  // GET /api/grades/student/:studentId - Get student grades (alternative endpoint)
+  async getStudentGrades(req, res) {
+    try {
+      const { studentId } = req.params;
+      const { term, academic_year } = req.query;
+      
+      if (!term || !academic_year) {
+        return res.status(400).json({
+          success: false,
+          error: 'Term and academic year are required'
+        });
+      }
+      
+      const grades = await gradeModel.getStudentGrades(studentId, parseInt(term), academic_year);
+      res.json({
+        success: true,
+        data: grades
+      });
+    } catch (error) {
+      console.error('Error in getStudentGrades:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -127,6 +180,8 @@ const gradeController = {
       const { studentId } = req.params;
       const { term, academic_year } = req.query;
       
+      console.log(`Generating report card for student ${studentId}, term ${term}, year ${academic_year}`);
+      
       if (!term || !academic_year) {
         return res.status(400).json({
           success: false,
@@ -134,11 +189,11 @@ const gradeController = {
         });
       }
       
-      const reportCard = await gradeModel.getStudentReportCard(studentId, parseInt(term), academic_year);
+      const reportCard = await gradeModel.generateReportCard(studentId, parseInt(term), academic_year);
       if (!reportCard) {
         return res.status(404).json({
           success: false,
-          error: 'Student not found'
+          error: 'Student not found or no grades available'
         });
       }
       
@@ -147,6 +202,7 @@ const gradeController = {
         data: reportCard
       });
     } catch (error) {
+      console.error('Error in getStudentReportCard:', error.message);
       res.status(500).json({
         success: false,
         error: error.message
@@ -173,6 +229,7 @@ const gradeController = {
         data: performance
       });
     } catch (error) {
+      console.error('Error in getClassPerformance:', error.message);
       res.status(500).json({
         success: false,
         error: error.message

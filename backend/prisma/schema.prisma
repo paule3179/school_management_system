@@ -289,3 +289,14 @@ model vehicles {
   insurance_expiry      DateTime?               @db.Date
   transport_assignments transport_assignments[]
 }
+
+model settings {
+  id              Int       @id @default(autoincrement())
+  currency_symbol String    @default("₵") @db.VarChar(10)
+  currency_name   String    @default("Ghana Cedis") @db.VarChar(50)
+  currency_code   String    @default("GHS") @db.VarChar(10)
+  daily_fine_rate Decimal   @default(1.00) @db.Decimal(10, 2)
+  updated_at      DateTime? @default(now()) @updatedAt @db.Timestamp(6)
+  
+  @@unique([id])
+}
