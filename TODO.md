@@ -1,42 +1,30 @@
-# Currency Configuration Implementation Plan
-✅ **Plan Approved**: Frontend-driven updates, dropdown (GHS/USD/EUR/GBP/NGN), admin-only access
+# Fix Plan: "Failed to load children" on Parent Performance Page
 
-## Progress: 4/14 Complete ✅
+## Root Cause
+The `getParentId()` helper in `dashboardController.js` and queries in `parentController.js` try to select `email` from the `parents` table, but the `parents` table doesn't have an `email` column (email is stored in the `users` table, linked via `parents.user_id = users.id`).
 
-## Remaining Steps (10/14)
+## Steps
 
-### Phase 1: Backend Foundation ✓ (4/4)
-- ✅ **1.1** Update `backend/prisma/schema.prisma` 
-- ✅ **1.2** Create `backend/models/settingsModel.js`
-- ✅ **1.3** Create `backend/controllers/settingsController.js`
-- ✅ **1.4** Update `backend/routes/settingsRoutes.js`
+### ✅ Step 1: Fix `getParentId()` in `backend/controllers/dashboardController.js`
+- Changed from: `SELECT id, email FROM parents WHERE id = $1 OR user_id = $1`
+- Changed to: `SELECT p.id, u.email FROM parents p JOIN users u ON p.user_id = u.id WHERE p.id = $1 OR p.user_id = $1`
+- Also fixed the email fallback query within `getParentId()` to join with `users` table
 
-### Phase 2: Integration Updates ✓ (2/2)
-- ✅ **2.1** Update `backend/models/libraryModel.js`
-- ✅ **2.2** Manual migration needed (run: cd backend && npx prisma migrate dev --name add_currency_settings)
+### ✅ Step 2: Fix `verifyChildOwnership()` in `backend/controllers/dashboardController.js`
+- Changed from: `SELECT email FROM parents WHERE id = $1`
+- Changed to: `SELECT u.email FROM parents p JOIN users u ON p.user_id = u.id WHERE p.id = $1`
 
-### Phase 1: Backend Foundation (4 steps)
-- [ ] **1.1** Update `backend/prisma/schema.prisma` - Add `settings` model (currency_symbol, currency_name, currency_code)
-- [ ] **1.2** Create `backend/models/settingsModel.js` - CRUD operations for settings
-- [ ] **1.3** Create `backend/controllers/settingsController.js` - GET/POST /api/settings
-- [ ] **1.4** Update `backend/routes/settingsRoutes.js` - Add `/settings` endpoints
+### ✅ Step 3: Fix email fallback in `getParentChildren()` in `dashboardController.js`
+- Changed from: `SELECT id, email FROM parents WHERE email = $1 OR email = $2`
+- Changed to: `SELECT p.id, u.email FROM parents p JOIN users u ON p.user_id = u.id WHERE u.email = $1 OR LOWER(u.email) = LOWER($2)`
 
-### Phase 2: Integration Updates (2 steps)
-- [ ] **2.1** Update `backend/models/libraryModel.js` - Use dynamic currency for fines
-- [ ] **2.2** Seed default GHS settings in `backend/data/mockData.js` or migration
+### ✅ Step 4: Fix `getMyChildren()` in `backend/controllers/parentController.js`
+- Fixed email link subquery from `(SELECT email FROM parents WHERE id = $1)` to `(SELECT u.email FROM parents p JOIN users u ON p.user_id = u.id WHERE p.id = $1)`
+- Fixed fallback query from `SELECT email FROM parents WHERE id = $1` to `SELECT u.email FROM parents p JOIN users u ON p.user_id = u.id WHERE p.id = $1`
 
-### Phase 3: Frontend Implementation (5 steps)
-- [ ] **3.1** Update `frontend/src/App.jsx` - Fetch dynamic currency, replace hardcoded "₵"
-- [ ] **3.2** Add Settings nav tab + admin-only currency form
-- [ ] **3.3** Currency dropdown (GHS/USD/EUR/GBP/NGN)
-- [ ] **3.4** Real-time preview in Fees table
-- [ ] **3.5** Update receipt/payment displays
+### ✅ Step 5: Fix `enrichUserContext()` in `backend/middleware/auth.js`
+- Changed from: `SELECT * FROM parents WHERE email = $1 OR email = $2`
+- Changed to: `SELECT p.*, u.email FROM parents p JOIN users u ON p.user_id = u.id WHERE u.email = $1 OR u.email = $2`
 
-### Phase 4: Security & Migration (2 steps)
-- [ ] **4.1** Add admin auth middleware to settings endpoints
-- [ ] **4.2** Run `npx prisma migrate dev --name add_currency_settings`
+### ✅ Done: Fixed `ParentFees.jsx` parse error (line 186)
 
-### Phase 5: Testing (1 step)
-- [ ] **5.1** Test: Change to USD, verify all displays/receipts update
-
-**Current Progress: Starting Phase 1.1 (Schema update)**

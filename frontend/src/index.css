@@ -64,7 +64,16 @@ body {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
+
+/* Mobile viewport safety */
+@supports (height: 100svh) {
+  body {
+    min-height: 100svh;
+  }
+}
+
 
 h1,
 h2 {

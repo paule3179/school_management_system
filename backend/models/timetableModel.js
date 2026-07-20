@@ -1,113 +1,174 @@
-const mockData = require('../data/mockData');
+
+const pool = require('../config/database');
 
 class TimetableModel {
   // Get all timetables
   async getAllTimetables(filters = {}) {
-    let timetables = [...mockData.timetables];
-    
-    if (filters.class_id) {
-      timetables = timetables.filter(t => t.class_id === parseInt(filters.class_id));
+    try {
+      let query = `
+        SELECT t.*, 
+c.class_name as class_name,
+               c.level as class_level
+        FROM timetables t
+        LEFT JOIN classes c ON t.class_id = c.id
+      `;
+      let params = [];
+      let paramIndex = 1;
+
+      if (filters.class_id) {
+        query += ` WHERE t.class_id = $${paramIndex}`;
+        params.push(filters.class_id);
+        paramIndex++;
+      }
+      if (filters.day) {
+        query += (filters.class_id ? ' AND' : ' WHERE') + ` t.day_of_week = $${paramIndex}`;
+        params.push(filters.day);
+        paramIndex++;
+      }
+
+      query += ` ORDER BY t.day_of_week, t.start_time`;
+
+      const result = await pool.query(query, params);
+      return result.rows;
+    } catch (error) {
+      console.error('getAllTimetables error:', error);
+      return [];
     }
-    if (filters.day) {
-      timetables = timetables.filter(t => t.day === filters.day);
-    }
-    
-    const timetablesWithDetails = timetables.map(timetable => {
-      const classData = mockData.classes.find(c => c.id === timetable.class_id);
-      return {
-        ...timetable,
-        class_name: classData ? classData.name : 'Unknown'
-      };
-    });
-    
-    return timetablesWithDetails;
   }
   
   // Get timetable by ID
   async getTimetableById(id) {
-    const timetable = mockData.timetables.find(t => t.id === parseInt(id));
-    if (!timetable) return null;
-    
-    const classData = mockData.classes.find(c => c.id === timetable.class_id);
-    return {
-      ...timetable,
-      class_name: classData ? classData.name : 'Unknown'
-    };
+    try {
+      const result = await pool.query(`
+c.class_name as class_name, c.level as class_level
+        FROM timetables t
+        LEFT JOIN classes c ON t.class_id = c.id
+        WHERE t.id = $1
+      `, [id]);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('getTimetableById error:', error);
+      return null;
+    }
   }
   
-  // Get timetable for a class
+  // Get timetable for a class - FLAT ARRAY for frontend
   async getClassTimetable(classId) {
-    const timetables = mockData.timetables.filter(t => t.class_id === parseInt(classId));
-    if (!timetables.length) return null;
-    
-    const classData = mockData.classes.find(c => c.id === parseInt(classId));
-    const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-    
-    const weeklyTimetable = weekDays.map(day => {
-      const daySchedule = timetables.find(t => t.day === day);
-      return {
-        day,
-        periods: daySchedule ? daySchedule.periods : []
-      };
-    });
-    
-    return {
-      class_id: parseInt(classId),
-      class_name: classData ? classData.name : 'Unknown',
-      level: classData ? classData.level : 'Unknown',
-      weekly_schedule: weeklyTimetable
-    };
+    try {
+      const result = await pool.query(`
+        SELECT t.*, 
+c.class_name as class_name,
+               c.level as class_level,
+               CONCAT(tt.first_name, ' ', tt.last_name) as teacher_name
+        FROM timetables t
+        LEFT JOIN classes c ON t.class_id = c.id
+        LEFT JOIN teachers tt ON t.teacher_id = tt.id
+        WHERE t.class_id = $1
+        ORDER BY 
+          CASE t.day_of_week
+            WHEN 'Monday' THEN 1
+            WHEN 'Tuesday' THEN 2
+            WHEN 'Wednesday' THEN 3
+            WHEN 'Thursday' THEN 4
+            WHEN 'Friday' THEN 5
+          END,
+          t.start_time
+      `, [classId]);
+      
+      if (result.rows.length === 0) return null;
+      return result.rows;
+    } catch (error) {
+      console.error('Timetable query error:', error);
+      return null;
+    }
   }
   
-  // Create new timetable
+  // Create new timetable entry
   async createTimetable(timetableData) {
-    const newTimetable = {
-      id: mockData.getNextId('timetables'),
-      ...timetableData,
-      created_at: new Date().toISOString()
-    };
-    mockData.timetables.push(newTimetable);
-    return newTimetable;
+    try {
+      const result = await pool.query(`
+        INSERT INTO timetables (
+          class_id, teacher_id, subject, day_of_week, 
+          start_time, end_time, room, term, academic_year
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING *
+      `, [
+        timetableData.class_id,
+        timetableData.teacher_id || null,
+        timetableData.subject,
+        timetableData.day_of_week,
+        timetableData.start_time,
+        timetableData.end_time,
+        timetableData.room || null,
+        timetableData.term || 1,
+        timetableData.academic_year || '2024-2025'
+      ]);
+      return result.rows[0];
+    } catch (error) {
+      console.error('createTimetable error:', error);
+      throw error;
+    }
   }
   
-  // Update timetable
+  // Update timetable entry
   async updateTimetable(id, updateData) {
-    const index = mockData.timetables.findIndex(t => t.id === parseInt(id));
-    if (index === -1) return null;
-    
-    mockData.timetables[index] = {
-      ...mockData.timetables[index],
-      ...updateData,
-      updated_at: new Date().toISOString()
-    };
-    return mockData.timetables[index];
+    try {
+      const setClause = Object.keys(updateData).map((key, index) => 
+        `${key} = $${index + 1}`
+      ).join(', ');
+      const values = Object.values(updateData);
+      values.push(id);
+      
+      const result = await pool.query(`
+        UPDATE timetables 
+        SET ${setClause}, updated_at = NOW()
+        WHERE id = $${values.length}
+        RETURNING *
+      `, values);
+      
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('updateTimetable error:', error);
+      return null;
+    }
   }
   
-  // Delete timetable
+  // Delete timetable entry
   async deleteTimetable(id) {
-    const index = mockData.timetables.findIndex(t => t.id === parseInt(id));
-    if (index === -1) return false;
-    
-    mockData.timetables.splice(index, 1);
-    return true;
+    try {
+      const result = await pool.query(
+        'DELETE FROM timetables WHERE id = $1 RETURNING *', 
+        [id]
+      );
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('deleteTimetable error:', error);
+      return false;
+    }
   }
   
   // Get teacher's timetable
   async getTeacherTimetable(teacherId) {
-    const timetables = mockData.timetables.filter(t => 
-      t.periods.some(p => p.teacher_id === parseInt(teacherId))
-    );
-    
-    return timetables.map(timetable => {
-      const classData = mockData.classes.find(c => c.id === timetable.class_id);
-      const teacherPeriods = timetable.periods.filter(p => p.teacher_id === parseInt(teacherId));
-      
-      return {
-        day: timetable.day,
-        class_name: classData ? classData.name : 'Unknown',
-        periods: teacherPeriods
-      };
-    });
+    try {
+      const result = await pool.query(`
+SELECT t.*, c.class_name as class_name
+        FROM timetables t
+        LEFT JOIN classes c ON t.class_id = c.id
+        WHERE t.teacher_id = $1
+        ORDER BY 
+          CASE t.day_of_week
+            WHEN 'Monday' THEN 1
+            WHEN 'Tuesday' THEN 2
+            WHEN 'Wednesday' THEN 3
+            WHEN 'Thursday' THEN 4
+            WHEN 'Friday' THEN 5
+          END, t.start_time
+      `, [teacherId]);
+      return result.rows;
+    } catch (error) {
+      console.error('getTeacherTimetable error:', error);
+      return [];
+    }
   }
 }
 

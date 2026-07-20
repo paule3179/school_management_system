@@ -1,0 +1,148 @@
+/* Students/Users shared modal + table styles */
+
+/* Base */
+.students-page {
+  padding: 16px 20px;
+  background: #f5f7fa;
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Professional Table */
+.professional-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: white;
+  min-width: 700px;
+}
+
+.professional-table thead tr {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.professional-table th {
+  text-align: left;
+  padding: 12px;
+  font-weight: 600;
+  font-size: 11px;
+  color: #334155;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.professional-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+/* Buttons in table */
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.btn-view, .btn-edit, .btn-delete {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  background: transparent;
+  color: #64748b;
+}
+
+/* Modal base */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #e9edf2;
+  background: #fafcff;
+  border-radius: 0 0 16px 16px;
+  flex-shrink: 0;
+}
+
+.btn-cancel-modal {
+  padding: 8px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: white;
+  color: #64748b;
+}
+
+.btn-save-modal {
+  padding: 8px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #3b82f6;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* IMPORTANT: Mobile modal footer buttons stay in a single row */
+@media (max-width: 480px) {
+  .modal-footer {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .btn-cancel-modal,
+  .btn-save-modal {
+    padding: 6px 14px;
+    font-size: 12px;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  .btn-save-modal {
+    justify-content: center;
+  }
+}
+
+

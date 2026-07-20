@@ -1,0 +1,35 @@
+/* Force the bars icon to be visible */
+.mobile-menu-toggle i,
+.mobile-menu-toggle .fas,
+.mobile-menu-toggle .fa-bars {
+  color: white !important;
+  font-size: 22px !important;
+  display: inline-block !important;
+  font-family: "Font Awesome 5 Free" !important;
+  font-weight: 900 !important;
+}
+
+/* Make sure the button itself is styled properly */
+.mobile-menu-toggle {
+  display: none;
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  width: 45px;
+  height: 45px;
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Show on mobile */
+@media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: flex !important;
+  }
+}

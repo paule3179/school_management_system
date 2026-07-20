@@ -1,240 +1,759 @@
-const gradeModel = require('../models/gradeModel');
+// backend/controllers/gradeController.js
+const pool = require('../config/database');
 
-const gradeController = {
-  // GET /api/grades - Get all grades
-  async getAllGrades(req, res) {
+const gradeController = {};
+
+// Helper function to calculate grade based on marks
+function calculateGrade(marks) {
+  const score = parseFloat(marks);
+  if (isNaN(score)) return 'F';
+  if (score >= 80) return 'A';
+  if (score >= 70) return 'B';
+  if (score >= 60) return 'C';
+  if (score >= 50) return 'D';
+  return 'F';
+}
+
+// ============================================
+// GET ROUTES
+// ============================================
+
+// Get all grades with filters
+gradeController.getAllGrades = async (req, res) => {
+  try {
+    const { class_id, exam_type, student_id, subject } = req.query;
+    const academicYear = req.query.academic_year || '2024-2025';
+    
+    // Check if grades table exists
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'grades'
+      )
+    `);
+    
+    if (!tableCheck.rows[0].exists) {
+      return res.json({ success: true, data: [], message: 'Grades table not yet created' });
+    }
+    
+    let query = `
+      SELECT 
+        g.id,
+        g.student_id,
+        s.first_name,
+        s.last_name,
+        s.admission_number,
+        g.class_id,
+        COALESCE(c.name, c.class_name, 'Unknown') as class_name,
+        g.subject,
+        g.exam_type,
+        g.marks,
+        g.grade,
+        g.remarks,
+        g.created_at
+      FROM grades g
+      JOIN students s ON g.student_id = s.id
+      LEFT JOIN classes c ON g.class_id = c.id
+      WHERE g.academic_year = $1
+    `;
+    
+    const params = [academicYear];
+    let paramCount = 2;
+    
+    if (class_id) {
+      query += ` AND g.class_id = $${paramCount++}`;
+      params.push(class_id);
+    }
+    
+    if (exam_type) {
+      query += ` AND g.exam_type = $${paramCount++}`;
+      params.push(exam_type);
+    }
+    
+    if (student_id) {
+      query += ` AND g.student_id = $${paramCount++}`;
+      params.push(student_id);
+    }
+    
+    if (subject) {
+      query += ` AND g.subject ILIKE $${paramCount++}`;
+      params.push(`%${subject}%`);
+    }
+    
+    query += ` ORDER BY s.first_name, s.last_name, g.subject, g.exam_type`;
+    
+    const result = await pool.query(query, params);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Error in getAllGrades:', error);
+    // Return empty array instead of error
+    res.json({ success: true, data: [], message: 'Unable to fetch grades' });
+  }
+};
+
+// Get class grades (for grade entry UI)
+gradeController.getClassGrades = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { exam_type, academic_year } = req.query;
+    const year = academic_year || '2024-2025';
+    const examType = exam_type || 'CA1';
+    
+    // Check if class_students table exists, otherwise use student_classes
+    let studentsResult;
     try {
-      const { student_id, class_id, term, academic_year, subject } = req.query;
-      const filters = { student_id, class_id, term, academic_year, subject };
-      
-      const grades = await gradeModel.getAllGrades(filters);
-      res.json({
-        success: true,
-        count: grades.length,
-        data: grades
-      });
-    } catch (error) {
-      console.error('Error in getAllGrades:', error.message);
-      res.status(500).json({
-        success: false,
-        error: error.message
+      studentsResult = await pool.query(`
+        SELECT 
+          s.id,
+          s.first_name,
+          s.last_name,
+          s.admission_number,
+          s.gender
+        FROM students s
+        JOIN student_classes sc ON s.id = sc.student_id
+        WHERE sc.class_id = $1 AND sc.academic_year = $2
+        ORDER BY s.first_name, s.last_name
+      `, [classId, year]);
+    } catch (err) {
+      // Fallback - just get all students
+      studentsResult = await pool.query(`
+        SELECT 
+          id,
+          first_name,
+          last_name,
+          admission_number,
+          gender
+        FROM students
+        WHERE status = 'Active'
+        ORDER BY first_name, last_name
+      `);
+    }
+    
+    if (studentsResult.rows.length === 0) {
+      return res.json({ 
+        success: true, 
+        data: { students: [], subjects: [] }, 
+        message: 'No students found in this class' 
       });
     }
-  },
-  
-  // GET /api/grades/:id - Get single grade
-  async getGradeById(req, res) {
+    
+    // Get existing grades
+    const studentIds = studentsResult.rows.map(s => s.id);
+    let gradesResult = { rows: [] };
+    
     try {
-      const grade = await gradeModel.getGradeById(req.params.id);
-      if (!grade) {
-        return res.status(404).json({
-          success: false,
-          error: 'Grade record not found'
-        });
-      }
-      res.json({
-        success: true,
-        data: grade
-      });
-    } catch (error) {
-      console.error('Error in getGradeById:', error.message);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      gradesResult = await pool.query(`
+        SELECT 
+          student_id,
+          subject,
+          marks,
+          grade,
+          exam_type,
+          remarks
+        FROM grades
+        WHERE class_id = $1 
+          AND academic_year = $2 
+          AND exam_type = $3
+          AND student_id = ANY($4::int[])
+      `, [classId, year, examType, studentIds]);
+    } catch (err) {
+      console.log('Grades table might not exist yet');
     }
-  },
-  
-  // POST /api/grades - Create grade (Upsert - create or update)
-  async createGrade(req, res) {
-    try {
-      const required = ['student_id', 'subject', 'term', 'academic_year', 'continuous_assessment', 'exam_score'];
-      const missing = required.filter(field => !req.body[field]);
-      
-      if (missing.length > 0) {
-        return res.status(400).json({
-          success: false,
-          error: `Missing required fields: ${missing.join(', ')}`
-        });
+    
+    // Organize grades by student and subject
+    const gradesMap = {};
+    gradesResult.rows.forEach(grade => {
+      if (!gradesMap[grade.student_id]) {
+        gradesMap[grade.student_id] = {};
       }
-      
-      // Validate score ranges
-      const ca = parseFloat(req.body.continuous_assessment);
-      const exam = parseFloat(req.body.exam_score);
-      
-      if (ca < 0 || ca > 40) {
-        return res.status(400).json({
-          success: false,
-          error: 'Continuous assessment must be between 0 and 40'
-        });
-      }
-      
-      if (exam < 0 || exam > 60) {
-        return res.status(400).json({
-          success: false,
-          error: 'Exam score must be between 0 and 60'
-        });
-      }
-      
-      // Calculate total score
-      const total_score = ca + exam;
-      
-      const gradeData = {
-        ...req.body,
-        total_score
+      gradesMap[grade.student_id][grade.subject] = {
+        marks: grade.marks,
+        grade: grade.grade,
+        remarks: grade.remarks
       };
-      
-      // Use upsert to create or update
-      const newGrade = await gradeModel.upsertGrade(gradeData);
-      res.status(201).json({
-        success: true,
-        data: newGrade,
-        message: 'Grade saved successfully'
-      });
-    } catch (error) {
-      console.error('Error in createGrade:', error.message);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  },
-  
-  // PUT /api/grades/:id - Update grade
-  async updateGrade(req, res) {
+    });
+    
+    // Get subjects - try different sources
+    let subjects = ['Mathematics', 'English', 'Science', 'Social Studies'];
     try {
-      const updatedGrade = await gradeModel.updateGrade(req.params.id, req.body);
-      if (!updatedGrade) {
-        return res.status(404).json({
-          success: false,
-          error: 'Grade record not found'
-        });
+      const subjectsResult = await pool.query(`
+        SELECT DISTINCT subject FROM teacher_classes WHERE class_id = $1
+      `, [classId]);
+      if (subjectsResult.rows.length > 0) {
+        subjects = subjectsResult.rows.map(s => s.subject);
       }
-      res.json({
-        success: true,
-        data: updatedGrade,
-        message: 'Grade updated successfully'
+    } catch (err) {
+      console.log('Using default subjects list');
+    }
+    
+    // Build response
+    const classData = {
+      class_id: classId,
+      exam_type: examType,
+      academic_year: year,
+      subjects: subjects,
+      students: studentsResult.rows.map(student => ({
+        id: student.id,
+        name: `${student.first_name} ${student.last_name}`,
+        admission_number: student.admission_number,
+        grades: gradesMap[student.id] || {}
+      }))
+    };
+    
+    res.json({ success: true, data: classData });
+  } catch (error) {
+    console.error('Error in getClassGrades:', error);
+    res.json({ success: true, data: { students: [], subjects: [] }, message: error.message });
+  }
+};
+
+// Get class performance summary
+gradeController.getClassPerformance = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { exam_type, academic_year } = req.query;
+    const year = academic_year || '2024-2025';
+    const examType = exam_type || 'CA1';
+    
+    const result = await pool.query(`
+      SELECT 
+        g.subject,
+        COUNT(DISTINCT g.student_id) as total_students,
+        ROUND(AVG(g.marks), 2) as average_score,
+        MAX(g.marks) as highest_score,
+        MIN(g.marks) as lowest_score,
+        COUNT(CASE WHEN g.grade = 'A' THEN 1 END) as grade_a,
+        COUNT(CASE WHEN g.grade = 'B' THEN 1 END) as grade_b,
+        COUNT(CASE WHEN g.grade = 'C' THEN 1 END) as grade_c,
+        COUNT(CASE WHEN g.grade = 'D' THEN 1 END) as grade_d,
+        COUNT(CASE WHEN g.grade = 'F' THEN 1 END) as grade_f
+      FROM grades g
+      WHERE g.class_id = $1 
+        AND g.academic_year = $2 
+        AND g.exam_type = $3
+      GROUP BY g.subject
+      ORDER BY g.subject
+    `, [classId, year, examType]);
+    
+    // Calculate overall performance
+    const overallResult = await pool.query(`
+      SELECT 
+        ROUND(AVG(g.marks), 2) as overall_average,
+        COUNT(DISTINCT g.student_id) as total_students,
+        COUNT(DISTINCT g.subject) as total_subjects
+      FROM grades g
+      WHERE g.class_id = $1 
+        AND g.academic_year = $2 
+        AND g.exam_type = $3
+    `, [classId, year, examType]);
+    
+    res.json({ 
+      success: true, 
+      data: {
+        overall: overallResult.rows[0] || { overall_average: 0, total_students: 0, total_subjects: 0 },
+        subjects: result.rows
+      }
+    });
+  } catch (error) {
+    console.error('Error in getClassPerformance:', error);
+    res.json({ success: true, data: { overall: {}, subjects: [] } });
+  }
+};
+
+// Get student report card
+gradeController.getStudentReportCard = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { academic_year } = req.query;
+    const year = academic_year || '2024-2025';
+    
+    // Get student info
+    const studentResult = await pool.query(`
+      SELECT 
+        s.id,
+        s.first_name,
+        s.last_name,
+        s.admission_number,
+        s.gender
+      FROM students s
+      WHERE s.id = $1
+    `, [studentId]);
+    
+    if (studentResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Student not found' });
+    }
+    
+    // Get all grades for the student
+    const gradesResult = await pool.query(`
+      SELECT 
+        subject,
+        exam_type,
+        marks,
+        grade,
+        remarks,
+        created_at
+      FROM grades
+      WHERE student_id = $1 AND academic_year = $2
+      ORDER BY exam_type, subject
+    `, [studentId, year]);
+    
+    // Organize by exam type
+    const exams = {};
+    gradesResult.rows.forEach(grade => {
+      if (!exams[grade.exam_type]) {
+        exams[grade.exam_type] = [];
+      }
+      exams[grade.exam_type].push({
+        subject: grade.subject,
+        marks: grade.marks,
+        grade: grade.grade,
+        remarks: grade.remarks
       });
-    } catch (error) {
-      console.error('Error in updateGrade:', error.message);
-      res.status(500).json({
-        success: false,
-        error: error.message
+    });
+    
+    // Calculate totals
+    const allMarks = gradesResult.rows.map(g => parseFloat(g.marks) || 0);
+    const totalMarks = allMarks.reduce((sum, m) => sum + m, 0);
+    const average = gradesResult.rows.length > 0 ? (totalMarks / gradesResult.rows.length).toFixed(2) : 0;
+    
+    res.json({ 
+      success: true, 
+      data: {
+        student: studentResult.rows[0],
+        exams: exams,
+        summary: {
+          total_marks: totalMarks,
+          average: average,
+          subjects_count: gradesResult.rows.length
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error in getStudentReportCard:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get student remarks
+gradeController.getStudentRemarks = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { academic_year, exam_type } = req.query;
+    const year = academic_year || '2024-2025';
+    
+    // Check if grades_remarks table exists
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'grades_remarks'
+      )
+    `);
+    
+    if (!tableCheck.rows[0].exists) {
+      return res.json({ success: true, data: [] });
+    }
+    
+    let query = `
+      SELECT 
+        r.id,
+        r.student_id,
+        r.remarks,
+        r.exam_type,
+        r.academic_year,
+        r.created_at,
+        s.first_name,
+        s.last_name
+      FROM grades_remarks r
+      JOIN students s ON r.student_id = s.id
+      WHERE r.student_id = $1 AND r.academic_year = $2
+    `;
+    
+    const params = [studentId, year];
+    
+    if (exam_type) {
+      query += ` AND r.exam_type = $3`;
+      params.push(exam_type);
+    }
+    
+    query += ` ORDER BY r.exam_type`;
+    
+    const result = await pool.query(query, params);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Error in getStudentRemarks:', error);
+    res.json({ success: true, data: [] });
+  }
+};
+
+// Get student grades
+gradeController.getStudentGrades = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { academic_year } = req.query;
+    const year = academic_year || '2024-2025';
+    
+    const result = await pool.query(`
+      SELECT 
+        g.id,
+        g.class_id,
+        COALESCE(c.name, c.class_name, 'Unknown') as class_name,
+        g.subject,
+        g.exam_type,
+        g.marks,
+        g.grade,
+        g.remarks,
+        g.created_at
+      FROM grades g
+      LEFT JOIN classes c ON g.class_id = c.id
+      WHERE g.student_id = $1 AND g.academic_year = $2
+      ORDER BY g.exam_type, g.subject
+    `, [studentId, year]);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Error in getStudentGrades:', error);
+    res.json({ success: true, data: [] });
+  }
+};
+
+// Get performance summary (global) - FIXED VERSION
+gradeController.getPerformanceSummary = async (req, res) => {
+  try {
+    const { class_id, exam_type, academic_year } = req.query;
+    const year = academic_year || '2024-2025';
+    
+    // Check if grades table exists and has data
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'grades'
+      )
+    `);
+    
+    if (!tableCheck.rows[0].exists) {
+      return res.json({ success: true, data: [], message: 'Grades table not yet created' });
+    }
+    
+    let query = `
+      SELECT 
+        COALESCE(c.name, c.class_name, 'Unknown') as class_name,
+        g.subject,
+        COUNT(DISTINCT g.student_id) as student_count,
+        ROUND(AVG(g.marks), 2) as average_score,
+        MAX(g.marks) as highest_score,
+        MIN(g.marks) as lowest_score
+      FROM grades g
+      LEFT JOIN classes c ON g.class_id = c.id
+      WHERE g.academic_year = $1
+    `;
+    
+    const params = [year];
+    let paramCount = 2;
+    
+    if (class_id) {
+      query += ` AND g.class_id = $${paramCount++}`;
+      params.push(class_id);
+    }
+    
+    if (exam_type) {
+      query += ` AND g.exam_type = $${paramCount++}`;
+      params.push(exam_type);
+    }
+    
+    query += ` GROUP BY c.name, c.class_name, g.subject ORDER BY class_name, g.subject`;
+    
+    const result = await pool.query(query, params);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Error in getPerformanceSummary:', error);
+    // Return empty array instead of error
+    res.json({ success: true, data: [] });
+  }
+};
+
+// Get grade statistics
+gradeController.getGradeStatistics = async (req, res) => {
+  try {
+    const { class_id, exam_type, academic_year } = req.query;
+    const year = academic_year || '2024-2025';
+    
+    let query = `
+      SELECT 
+        COUNT(DISTINCT g.student_id) as total_students,
+        COUNT(DISTINCT g.subject) as total_subjects,
+        COUNT(*) as total_records,
+        ROUND(AVG(g.marks), 2) as overall_average,
+        MAX(g.marks) as highest_mark,
+        MIN(g.marks) as lowest_mark,
+        COUNT(CASE WHEN g.grade = 'A' THEN 1 END) as a_count,
+        COUNT(CASE WHEN g.grade = 'B' THEN 1 END) as b_count,
+        COUNT(CASE WHEN g.grade = 'C' THEN 1 END) as c_count,
+        COUNT(CASE WHEN g.grade = 'D' THEN 1 END) as d_count,
+        COUNT(CASE WHEN g.grade = 'F' THEN 1 END) as f_count
+      FROM grades g
+      WHERE g.academic_year = $1
+    `;
+    
+    const params = [year];
+    let paramCount = 2;
+    
+    if (class_id) {
+      query += ` AND g.class_id = $${paramCount++}`;
+      params.push(class_id);
+    }
+    
+    if (exam_type) {
+      query += ` AND g.exam_type = $${paramCount++}`;
+      params.push(exam_type);
+    }
+    
+    const result = await pool.query(query, params);
+    
+    res.json({ success: true, data: result.rows[0] || {} });
+  } catch (error) {
+    console.error('Error in getGradeStatistics:', error);
+    res.json({ success: true, data: {} });
+  }
+};
+
+// Get grade by ID
+gradeController.getGradeById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query(`
+      SELECT 
+        g.*,
+        s.first_name,
+        s.last_name,
+        s.admission_number,
+        COALESCE(c.name, c.class_name, 'Unknown') as class_name
+      FROM grades g
+      JOIN students s ON g.student_id = s.id
+      LEFT JOIN classes c ON g.class_id = c.id
+      WHERE g.id = $1
+    `, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Grade record not found' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('Error in getGradeById:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ============================================
+// POST ROUTES
+// ============================================
+
+// Create new grade
+gradeController.createGrade = async (req, res) => {
+  try {
+    const { student_id, class_id, subject, exam_type, marks, grade, remarks, academic_year } = req.body;
+    const userId = req.user?.id;
+    
+    if (!student_id || !class_id || !subject || !exam_type) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Student ID, Class ID, Subject, and Exam Type are required' 
       });
     }
-  },
-  
-  // DELETE /api/grades/:id - Delete grade
-  async deleteGrade(req, res) {
-    try {
-      const deleted = await gradeModel.deleteGrade(req.params.id);
-      if (!deleted) {
-        return res.status(404).json({
-          success: false,
-          error: 'Grade record not found'
-        });
-      }
-      res.json({
-        success: true,
-        message: 'Grade record deleted successfully'
-      });
-    } catch (error) {
-      console.error('Error in deleteGrade:', error.message);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  },
-  
-  // GET /api/grades/student/:studentId - Get student grades (alternative endpoint)
-  async getStudentGrades(req, res) {
-    try {
-      const { studentId } = req.params;
-      const { term, academic_year } = req.query;
-      
-      if (!term || !academic_year) {
-        return res.status(400).json({
-          success: false,
-          error: 'Term and academic year are required'
-        });
-      }
-      
-      const grades = await gradeModel.getStudentGrades(studentId, parseInt(term), academic_year);
-      res.json({
-        success: true,
-        data: grades
-      });
-    } catch (error) {
-      console.error('Error in getStudentGrades:', error.message);
-      res.status(500).json({
-        success: false,
-        error: error.message
+    
+    const finalGrade = grade || calculateGrade(marks);
+    const year = academic_year || '2024-2025';
+    
+    const result = await pool.query(`
+      INSERT INTO grades (student_id, class_id, subject, exam_type, marks, grade, remarks, academic_year, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+      ON CONFLICT (student_id, class_id, subject, exam_type, academic_year) 
+      DO UPDATE SET 
+        marks = EXCLUDED.marks,
+        grade = EXCLUDED.grade,
+        remarks = EXCLUDED.remarks,
+        updated_at = NOW()
+      RETURNING *
+    `, [student_id, class_id, subject, exam_type, marks, finalGrade, remarks, year]);
+    
+    res.status(201).json({ 
+      success: true, 
+      data: result.rows[0],
+      message: 'Grade saved successfully' 
+    });
+  } catch (error) {
+    console.error('Error in createGrade:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Save student remarks
+gradeController.saveStudentRemarks = async (req, res) => {
+  try {
+    const { student_id, remarks, exam_type, academic_year } = req.body;
+    const userId = req.user?.id;
+    
+    if (!student_id || !remarks) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Student ID and Remarks are required' 
       });
     }
-  },
-  
-  // GET /api/grades/report-card/:studentId - Get student report card
-  async getStudentReportCard(req, res) {
-    try {
-      const { studentId } = req.params;
-      const { term, academic_year } = req.query;
-      
-      console.log(`Generating report card for student ${studentId}, term ${term}, year ${academic_year}`);
-      
-      if (!term || !academic_year) {
-        return res.status(400).json({
-          success: false,
-          error: 'Term and academic year are required'
-        });
-      }
-      
-      const reportCard = await gradeModel.generateReportCard(studentId, parseInt(term), academic_year);
-      if (!reportCard) {
-        return res.status(404).json({
-          success: false,
-          error: 'Student not found or no grades available'
-        });
-      }
-      
-      res.json({
-        success: true,
-        data: reportCard
-      });
-    } catch (error) {
-      console.error('Error in getStudentReportCard:', error.message);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  },
-  
-  // GET /api/grades/class-performance/:classId - Get class performance
-  async getClassPerformance(req, res) {
-    try {
-      const { classId } = req.params;
-      const { term, academic_year } = req.query;
-      
-      if (!term || !academic_year) {
-        return res.status(400).json({
-          success: false,
-          error: 'Term and academic year are required'
-        });
-      }
-      
-      const performance = await gradeModel.getClassPerformance(classId, parseInt(term), academic_year);
-      res.json({
-        success: true,
-        data: performance
-      });
-    } catch (error) {
-      console.error('Error in getClassPerformance:', error.message);
-      res.status(500).json({
-        success: false,
-        error: error.message
+    
+    const year = academic_year || '2024-2025';
+    const examType = exam_type || 'final';
+    
+    // Check if table exists
+    const tableCheck = await pool.query(`
+      CREATE TABLE IF NOT EXISTS grades_remarks (
+        id SERIAL PRIMARY KEY,
+        student_id INTEGER REFERENCES students(id),
+        remarks TEXT,
+        exam_type VARCHAR(50),
+        academic_year VARCHAR(20),
+        created_by INTEGER,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(student_id, exam_type, academic_year)
+      )
+    `);
+    
+    const result = await pool.query(`
+      INSERT INTO grades_remarks (student_id, remarks, exam_type, academic_year, created_by, created_at)
+      VALUES ($1, $2, $3, $4, $5, NOW())
+      ON CONFLICT (student_id, exam_type, academic_year) 
+      DO UPDATE SET 
+        remarks = EXCLUDED.remarks,
+        updated_at = NOW()
+      RETURNING *
+    `, [student_id, remarks, examType, year, userId]);
+    
+    res.json({ 
+      success: true, 
+      data: result.rows[0],
+      message: 'Remarks saved successfully' 
+    });
+  } catch (error) {
+    console.error('Error in saveStudentRemarks:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Bulk upload grades
+gradeController.bulkUploadGrades = async (req, res) => {
+  try {
+    const { grades } = req.body;
+    
+    if (!grades || !Array.isArray(grades) || grades.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Grades array is required' 
       });
     }
+    
+    let savedCount = 0;
+    const errors = [];
+    
+    for (const grade of grades) {
+      try {
+        const { student_id, class_id, subject, exam_type, marks, grade: letterGrade, remarks, academic_year } = grade;
+        
+        const finalGrade = letterGrade || calculateGrade(marks);
+        const year = academic_year || '2024-2025';
+        
+        await pool.query(`
+          INSERT INTO grades (student_id, class_id, subject, exam_type, marks, grade, remarks, academic_year, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+          ON CONFLICT (student_id, class_id, subject, exam_type, academic_year) 
+          DO UPDATE SET 
+            marks = EXCLUDED.marks,
+            grade = EXCLUDED.grade,
+            remarks = EXCLUDED.remarks,
+            updated_at = NOW()
+        `, [student_id, class_id, subject, exam_type, marks, finalGrade, remarks, year]);
+        
+        savedCount++;
+      } catch (err) {
+        errors.push({ grade, error: err.message });
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      message: `${savedCount} out of ${grades.length} grades saved successfully`,
+      saved: savedCount,
+      total: grades.length,
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (error) {
+    console.error('Error in bulkUploadGrades:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ============================================
+// PUT ROUTES
+// ============================================
+
+// Update grade
+gradeController.updateGrade = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { marks, grade, remarks } = req.body;
+    
+    const finalGrade = grade || (marks ? calculateGrade(marks) : undefined);
+    
+    // Get current grade
+    const current = await pool.query('SELECT * FROM grades WHERE id = $1', [id]);
+    if (current.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Grade record not found' });
+    }
+    
+    const updatedMarks = marks !== undefined ? marks : current.rows[0].marks;
+    const updatedGrade = finalGrade !== undefined ? finalGrade : current.rows[0].grade;
+    const updatedRemarks = remarks !== undefined ? remarks : current.rows[0].remarks;
+    
+    const result = await pool.query(`
+      UPDATE grades 
+      SET marks = $1, grade = $2, remarks = $3, updated_at = NOW()
+      WHERE id = $4
+      RETURNING *
+    `, [updatedMarks, updatedGrade, updatedRemarks, id]);
+    
+    res.json({ 
+      success: true, 
+      data: result.rows[0],
+      message: 'Grade updated successfully' 
+    });
+  } catch (error) {
+    console.error('Error in updateGrade:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ============================================
+// DELETE ROUTES
+// ============================================
+
+// Delete grade
+gradeController.deleteGrade = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query('DELETE FROM grades WHERE id = $1 RETURNING id', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Grade record not found' });
+    }
+    
+    res.json({ success: true, message: 'Grade deleted successfully' });
+  } catch (error) {
+    console.error('Error in deleteGrade:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 

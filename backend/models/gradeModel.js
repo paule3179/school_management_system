@@ -20,7 +20,7 @@ class GradeModel {
         s.first_name as student_first_name,
         s.last_name as student_last_name,
         s.admission_number,
-        c.name as class_name
+        c.class_name as class_name
       FROM grades g
       JOIN students s ON g.student_id = s.id
       JOIN classes c ON g.class_id = c.id
@@ -31,8 +31,13 @@ class GradeModel {
     let paramCount = 1;
     
     if (filters.student_id) {
-      query += ` AND g.student_id = $${paramCount}`;
-      values.push(filters.student_id);
+      if (Array.isArray(filters.student_id)) {
+        query += ` AND g.student_id = ANY($${paramCount}::int[])`;
+        values.push(filters.student_id);
+      } else {
+        query += ` AND g.student_id = $${paramCount}`;
+        values.push(filters.student_id);
+      }
       paramCount++;
     }
     if (filters.class_id) {
@@ -78,6 +83,45 @@ class GradeModel {
     `, [studentId, term, academicYear]);
     
     return result.rows;
+  }
+
+  // Get student class rank
+  async getStudentClassRank(studentId, classId, term, academicYear) {
+    try {
+      // Get all students in the class with their average scores
+      const result = await pool.query(`
+        SELECT 
+          s.id,
+          s.first_name,
+          s.last_name,
+          COALESCE(AVG(g.total_score), 0) as average_score
+        FROM students s
+        LEFT JOIN grades g ON s.id = g.student_id 
+          AND g.term = $2 
+          AND g.academic_year = $3
+        WHERE s.class_id = $1 AND s.status = 'active'
+        GROUP BY s.id, s.first_name, s.last_name
+        ORDER BY average_score DESC
+      `, [classId, term, academicYear]);
+      
+      if (result.rows.length === 0) {
+        return { position: 0, total_students: 0, top_performer: 'N/A' };
+      }
+      
+      // Find the position of the specific student
+      const position = result.rows.findIndex(row => row.id === parseInt(studentId)) + 1;
+      const totalStudents = result.rows.length;
+      const topPerformer = result.rows[0]?.first_name + ' ' + result.rows[0]?.last_name;
+      
+      return {
+        position: position,
+        total_students: totalStudents,
+        top_performer: topPerformer
+      };
+    } catch (error) {
+      console.error('Error getting class rank:', error);
+      return { position: 0, total_students: 0, top_performer: 'N/A' };
+    }
   }
 
   // Upsert grade (create or update)
@@ -153,6 +197,32 @@ class GradeModel {
     return result.rows.length > 0;
   }
 
+  // Get per-student/per-subject grade rows for the class grade entry UI
+  async getClassGrades(classId, term, academicYear) {
+    // Note: grade entry UI needs subject+CA+Exam for each existing grade row.
+    // Subject master comes from /class-subjects in the frontend.
+    const result = await pool.query(`
+      SELECT
+        g.student_id,
+        g.class_id,
+        g.subject,
+        g.term,
+        g.academic_year,
+        g.continuous_assessment,
+        g.exam_score,
+        g.total_score,
+        g.grade
+      FROM grades g
+      JOIN students s ON g.student_id = s.id
+      WHERE s.class_id = $1
+        AND g.term = $2
+        AND g.academic_year = $3
+      ORDER BY g.student_id, g.subject
+    `, [classId, term, academicYear]);
+
+    return result.rows;
+  }
+
   // Get class performance
   async getClassPerformance(classId, term, academicYear) {
     const result = await pool.query(`
@@ -161,7 +231,7 @@ class GradeModel {
         s.first_name,
         s.last_name,
         s.admission_number,
-        AVG(g.total_score) as average_score,
+        COALESCE(AVG(g.total_score), 0) as average_score,
         COUNT(g.id) as subjects_count
       FROM students s
       LEFT JOIN grades g ON s.id = g.student_id 
@@ -171,16 +241,17 @@ class GradeModel {
       GROUP BY s.id, s.first_name, s.last_name, s.admission_number
       ORDER BY average_score DESC
     `, [classId, term, academicYear]);
-    
+
     return result.rows;
   }
 
   // Generate report card
   async generateReportCard(studentId, term, academicYear) {
+
     try {
       // Get student info
       const studentInfo = await pool.query(`
-        SELECT s.*, c.name as class_name, c.level
+        SELECT s.*, c.class_name as class_name, c.level, c.id as class_id
         FROM students s
         JOIN classes c ON s.class_id = c.id
         WHERE s.id = $1
@@ -217,9 +288,11 @@ class GradeModel {
           ? (attendance.rows[0].present_days / attendance.rows[0].total_days) * 100 
           : 0;
       } catch (err) {
-        // Attendance table might not exist yet
         console.log('Attendance table not found');
       }
+      
+      // Get class rank
+      const classRank = await this.getStudentClassRank(studentId, studentInfo.rows[0].class_id, term, academicYear);
       
       return {
         student: {
@@ -248,6 +321,9 @@ class GradeModel {
           overall_grade: grade,
           grade_point: grade_point,
           attendance_rate: attendanceRate.toFixed(2),
+          class_rank: classRank.position,
+          total_students_in_class: classRank.total_students,
+          top_performer: classRank.top_performer,
           remarks: description
         }
       };

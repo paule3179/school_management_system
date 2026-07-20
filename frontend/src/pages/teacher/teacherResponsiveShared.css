@@ -1,0 +1,41 @@
+/* Shared responsive helpers for teacher pages */
+
+/* Make embedded layouts respect the teacher dashboard spacing */
+.page-container,
+.grades-page,
+.attendance-page,
+.students-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Ensure tables can scroll on small screens */
+.table-container,
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Responsive table base */
+.professional-table,
+.grades-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Generic “filters row” responsiveness */
+.filters-row {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .page-container,
+  .grades-page,
+  .attendance-page,
+  .students-page {
+    padding: 12px !important;
+  }
+}
+

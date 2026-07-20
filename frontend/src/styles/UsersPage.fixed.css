@@ -1,0 +1,5 @@
+/* NOTE: This file is a minimal replacement to fix a CSS syntax issue that breaks lightningcss minify. */
+.users-page {
+  width: 100%;
+}
+

@@ -1,0 +1,561 @@
+/* Login.css - Professional Login with Carousel - FULLY RESPONSIVE */
+
+.login-wrapper {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.login-container {
+  display: flex;
+  width: 100%;
+  max-width: 1100px;
+  background: white;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Login Form Section - Left Side */
+.login-section {
+  flex: 0.8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  background: white;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 280px;
+  animation: fadeInUp 0.5s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/* CIRCLE LOGO - RESPONSIVE */
+.login-logo {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  font-size: 28px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.login-logo:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.login-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.login-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: #1e293b;
+  letter-spacing: -0.5px;
+}
+
+.login-header p {
+  font-size: 13px;
+  margin: 0;
+  color: #64748b;
+}
+
+.login-error {
+  background: #fee2e2;
+  border-left: 3px solid #dc2626;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  color: #991b1b;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 4px;
+}
+
+.form-group label i {
+  margin-right: 4px;
+  color: #667eea;
+  font-size: 10px;
+}
+
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-icon i {
+  position: absolute;
+  left: 10px;
+  color: #94a3b8;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.input-with-icon input {
+  width: 100%;
+  padding: 8px 10px 8px 34px;
+  border: 1px solid #e2e8f0;
+  font-size: 12px;
+  transition: all 0.2s;
+  background: white;
+  color: #1e293b;
+  font-family: inherit;
+}
+
+.input-with-icon input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.input-with-icon input::placeholder {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Password toggle button (matches table icon buttons style) */
+.password-toggle-btn {
+  margin-left: 8px;
+  width: 34px;
+  height: 30px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.input-with-icon .password-toggle-btn {
+  flex-shrink: 0;
+}
+
+/* Keep it crisp + non-overlapping on focus */
+.input-with-icon input:focus + .password-toggle-btn {
+  border-color: rgba(102, 126, 234, 0.8);
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.12);
+}
+
+.password-toggle-btn:hover {
+  background: rgba(102, 126, 234, 0.08);
+  color: #3b82f6;
+  transform: translateY(-1px);
+}
+
+.password-toggle-btn:active {
+  transform: translateY(0px);
+}
+
+.password-toggle-btn i {
+  font-size: 14px;
+  line-height: 1;
+}
+
+
+
+/* Ensure input doesn't overlap the toggle */
+.input-with-icon {
+  gap: 0;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 9px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.login-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Carousel Section - Right Side */
+.carousel-section {
+  flex: 1.2;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+}
+
+.carousel-container {
+  width: 100%;
+  max-width: 480px;
+  position: relative;
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.carousel-slide {
+  position: relative;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.carousel-image {
+  position: relative;
+  height: 260px;
+  overflow: hidden;
+}
+
+.carousel-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carousel-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(30, 58, 95, 0.3), rgba(44, 82, 130, 0.4));
+}
+
+.carousel-slide:hover .carousel-overlay {
+  background: linear-gradient(135deg, rgba(30, 58, 95, 0.15), rgba(44, 82, 130, 0.2));
+}
+
+.carousel-content {
+  padding: 24px;
+  text-align: center;
+  color: white;
+}
+
+.quote-icon {
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.3);
+  margin-bottom: 12px;
+}
+
+.carousel-message {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.carousel-author {
+  font-size: 11px;
+  color: white !important;
+  opacity: 0.8;
+  margin-bottom: 16px;
+}
+
+.student-info {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.student-details {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.student-details i {
+  color: #f59e0b;
+  font-size: 12px;
+}
+
+.student-name {
+  font-weight: 600;
+  color: white !important;
+}
+
+.student-achievement {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 6px 14px;
+  width: fit-content;
+  margin: 10px auto 0;
+}
+
+.student-achievement i {
+  color: #fbbf24;
+  font-size: 10px;
+}
+
+/* Carousel Navigation - INVISIBLE BUTTONS */
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent !important;
+  border: none;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 10;
+  padding: 0;
+  opacity: 0;
+}
+
+.carousel-nav:hover {
+  opacity: 0.3;
+}
+
+.carousel-nav i {
+  font-size: 20px;
+  color: white;
+  text-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+
+.carousel-nav.prev {
+  left: 10px;
+}
+
+.carousel-nav.next {
+  right: 10px;
+}
+
+/* Carousel Dots - SMALLER INDICATORS */
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.4);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.dot.active {
+  width: 16px;
+  background: #f59e0b;
+}
+
+.dot:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .login-container {
+    max-width: 95%;
+  }
+
+  .login-section {
+    flex: 0.9;
+    padding: 28px 20px;
+  }
+
+  .login-card {
+    max-width: 260px;
+  }
+
+  .login-logo {
+    width: 52px;
+    height: 52px;
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+
+  .carousel-section {
+    flex: 1.1;
+    padding: 28px 20px;
+  }
+
+  .carousel-container {
+    max-width: 420px;
+  }
+
+  .carousel-image {
+    height: 220px;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-wrapper {
+    padding: 12px;
+  }
+
+  .login-container {
+    flex-direction: column;
+    max-width: 450px;
+  }
+
+  .login-section {
+    flex: auto;
+    padding: 24px 20px;
+  }
+
+  .login-card {
+    max-width: 100%;
+  }
+
+  .login-logo {
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+
+  .login-header h1 {
+    font-size: 18px;
+  }
+
+  .login-header p {
+    font-size: 12px;
+  }
+
+  .carousel-section {
+    flex: auto;
+    padding: 20px;
+  }
+
+  .carousel-container {
+    max-width: 100%;
+  }
+
+  .carousel-image {
+    height: 200px;
+  }
+
+  .carousel-content {
+    padding: 20px;
+  }
+
+  .password-toggle-btn {
+    width: 34px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 767px) {
+  .login-section {
+    padding: 20px 16px;
+  }
+
+  .login-logo {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+
+  .login-btn {
+    padding: 7px;
+    font-size: 12px;
+  }
+
+  .password-toggle-btn {
+    width: 34px;
+    height: 26px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-section {
+    padding: 16px 14px;
+  }
+
+  .password-toggle-btn {
+    width: 32px;
+    height: 26px;
+    border-radius: 8px;
+  }
+}
+

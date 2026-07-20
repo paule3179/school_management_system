@@ -9,7 +9,7 @@ class FeeModel {
         s.first_name,
         s.last_name,
         s.admission_number,
-        c.name as class_name
+        c.class_name as class_name
       FROM fees f
       JOIN students s ON f.student_id = s.id
       JOIN classes c ON s.class_id = c.id
@@ -20,8 +20,13 @@ class FeeModel {
     let paramCount = 1;
     
     if (filters.student_id) {
-      query += ` AND f.student_id = $${paramCount}`;
-      values.push(filters.student_id);
+      if (Array.isArray(filters.student_id)) {
+        query += ` AND f.student_id = ANY($${paramCount}::int[])`;
+        values.push(filters.student_id);
+      } else {
+        query += ` AND f.student_id = $${paramCount}`;
+        values.push(filters.student_id);
+      }
       paramCount++;
     }
     if (filters.class_id) {
@@ -51,6 +56,46 @@ class FeeModel {
     return result.rows;
   }
 
+  // Get class fee summary
+  async getClassFeeSummary(classId, term, academicYear, userContext = null) {
+    // If parent: restrict to allowed students only
+    const isParent = userContext?.role === 'parent';
+    const allowedStudentIds = Array.isArray(userContext?.allowedStudentIds)
+      ? userContext.allowedStudentIds.map(id => parseInt(id)).filter(Number.isFinite)
+      : [];
+
+    const params = [classId, term, academicYear];
+    let studentFilterSQL = '';
+
+    if (isParent) {
+      // If no allowed students, return empty list quickly.
+      if (allowedStudentIds.length === 0) return [];
+      params.push(allowedStudentIds);
+      studentFilterSQL = ` AND s.id = ANY($${params.length}::int[]) `;
+    }
+
+    const result = await pool.query(`
+      SELECT 
+        s.id as student_id,
+        s.first_name,
+        s.last_name,
+        s.admission_number,
+        COALESCE(SUM(f.amount), 0) as total_fees,
+        COALESCE(SUM(f.paid_amount), 0) as total_paid,
+        COALESCE(SUM(f.balance), 0) as balance
+      FROM students s
+      LEFT JOIN fees f ON s.id = f.student_id 
+        AND f.term = $2 
+        AND f.academic_year = $3
+      WHERE s.class_id = $1 AND s.status = 'active' ${studentFilterSQL}
+      GROUP BY s.id, s.first_name, s.last_name, s.admission_number
+      ORDER BY s.last_name
+    `, params);
+
+    return result.rows;
+  }
+
+
   // Get student fee summary
   async getStudentFeeSummary(studentId, academicYear) {
     const result = await pool.query(`
@@ -70,7 +115,7 @@ class FeeModel {
     `, [studentId, academicYear]);
     
     const studentInfo = await pool.query(`
-      SELECT s.first_name, s.last_name, s.admission_number, c.name as class_name
+      SELECT s.first_name, s.last_name, s.admission_number, c.class_name as class_name
       FROM students s
       JOIN classes c ON s.class_id = c.id
       WHERE s.id = $1
@@ -81,29 +126,6 @@ class FeeModel {
       summary: result.rows[0],
       details: details.rows
     };
-  }
-
-  // Get class fee summary
-  async getClassFeeSummary(classId, term, academicYear) {
-    const result = await pool.query(`
-      SELECT 
-        s.id as student_id,
-        s.first_name,
-        s.last_name,
-        s.admission_number,
-        COALESCE(SUM(f.amount), 0) as total_fees,
-        COALESCE(SUM(f.paid_amount), 0) as total_paid,
-        COALESCE(SUM(f.balance), 0) as balance
-      FROM students s
-      LEFT JOIN fees f ON s.id = f.student_id 
-        AND f.term = $2 
-        AND f.academic_year = $3
-      WHERE s.class_id = $1 AND s.status = 'active'
-      GROUP BY s.id, s.first_name, s.last_name, s.admission_number
-      ORDER BY s.last_name
-    `, [classId, term, academicYear]);
-    
-    return result.rows;
   }
 
   // Record fee payment
@@ -123,6 +145,8 @@ class FeeModel {
       const newBalance = parseFloat(existing.rows[0].total_amount) - newPaidAmount;
       const status = newBalance <= 0 ? 'paid' : 'partial';
       
+      const receiptNumber = `RCP${Date.now()}${Math.floor(Math.random() * 1000)}`;
+      
       result = await pool.query(`
         UPDATE fees 
         SET paid_amount = $1,
@@ -131,22 +155,18 @@ class FeeModel {
             payment_date = CURRENT_DATE,
             payment_method = $4,
             transaction_id = $5,
+            receipt_number = $6,
             updated_at = CURRENT_TIMESTAMP
-        WHERE id = $6
+        WHERE id = $7
         RETURNING *
-      `, [newPaidAmount, newBalance, status, payment_method, transaction_id, existing.rows[0].id]);
+      `, [newPaidAmount, newBalance, status, payment_method, transaction_id, receiptNumber, existing.rows[0].id]);
     } else {
-      // Get fee amount from fee_types
-      const feeTypeResult = await pool.query(`
-        SELECT amount FROM fee_types WHERE name = $1
-      `, [fee_type]);
-      
-      const totalAmount = feeTypeResult.rows.length > 0 ? parseFloat(feeTypeResult.rows[0].amount) : parseFloat(amount);
+      // Create new fee record
+      const totalAmount = parseFloat(amount);
       const paidAmt = parseFloat(amount);
-      const balance = totalAmount - paidAmt;
-      const status = balance <= 0 ? 'paid' : 'partial';
+      const balance = 0;
+      const status = 'paid';
       
-      // Generate receipt number
       const receiptNumber = `RCP${Date.now()}${Math.floor(Math.random() * 1000)}`;
       
       result = await pool.query(`
@@ -166,13 +186,48 @@ class FeeModel {
 
   // Get fee types
   async getFeeTypes() {
-    const result = await pool.query(`
-      SELECT * FROM fee_types WHERE is_active = true ORDER BY name
-    `);
-    return result.rows;
+    try {
+      // First try to get from fee_settings table
+      const settingsResult = await pool.query(`
+        SELECT id, name, amount FROM fee_settings 
+        WHERE is_active = true 
+        ORDER BY id
+      `);
+      
+      if (settingsResult.rows.length > 0) {
+        return settingsResult.rows;
+      }
+      
+      // Fallback: get distinct fee types from fees table
+      const distinctResult = await pool.query(`
+        SELECT DISTINCT fee_type as name, AVG(amount) as amount
+        FROM fees
+        GROUP BY fee_type
+      `);
+      
+      if (distinctResult.rows.length > 0) {
+        return distinctResult.rows;
+      }
+      
+      // Default fee types
+      return [
+        { id: 1, name: 'School Fees', amount: 350 },
+        { id: 2, name: 'PTA Levy', amount: 50 },
+        { id: 3, name: 'Development Levy', amount: 100 },
+        { id: 4, name: 'Examination Fees', amount: 75 }
+      ];
+    } catch (error) {
+      console.error('Error in getFeeTypes:', error.message);
+      return [
+        { id: 1, name: 'School Fees', amount: 350 },
+        { id: 2, name: 'PTA Levy', amount: 50 },
+        { id: 3, name: 'Development Levy', amount: 100 },
+        { id: 4, name: 'Examination Fees', amount: 75 }
+      ];
+    }
   }
 
-  // Get school fee collection summary
+  // Get school fee summary
   async getSchoolFeeSummary(academicYear) {
     const result = await pool.query(`
       SELECT 
@@ -214,7 +269,7 @@ class FeeModel {
         s.first_name,
         s.last_name,
         s.admission_number,
-        c.name as class_name
+        c.class_name as class_name
       FROM fees f
       JOIN students s ON f.student_id = s.id
       JOIN classes c ON s.class_id = c.id
@@ -222,6 +277,115 @@ class FeeModel {
     `, [feeId]);
     
     return result.rows[0];
+  }
+
+  // ============================================
+  // FEE SETTINGS METHODS
+  // ============================================
+
+  // Get fee settings
+  async getFeeSettings() {
+    try {
+      // Check if fee_settings table exists
+      const tableCheck = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_name = 'fee_settings'
+        )
+      `);
+      
+      if (!tableCheck.rows[0].exists) {
+        // Create fee_settings table
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS fee_settings (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL UNIQUE,
+            amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        
+        // Insert default fee types
+        const defaultFees = [
+          { name: 'School Fees', amount: 350 },
+          { name: 'PTA Levy', amount: 50 },
+          { name: 'Development Levy', amount: 100 },
+          { name: 'Examination Fees', amount: 75 }
+        ];
+        
+        for (const fee of defaultFees) {
+          await pool.query(`
+            INSERT INTO fee_settings (name, amount) VALUES ($1, $2) 
+            ON CONFLICT (name) DO NOTHING
+          `, [fee.name, fee.amount]);
+        }
+      }
+      
+      const result = await pool.query(`
+        SELECT * FROM fee_settings 
+        WHERE is_active = true 
+        ORDER BY id
+      `);
+      
+      return result.rows;
+    } catch (error) {
+      console.error('Error in getFeeSettings:', error);
+      throw error;
+    }
+  }
+
+  // Create new fee type
+  async createFeeType(name, amount) {
+    try {
+      const result = await pool.query(`
+        INSERT INTO fee_settings (name, amount, is_active, created_at, updated_at)
+        VALUES ($1, $2, true, NOW(), NOW())
+        ON CONFLICT (name) DO UPDATE SET 
+          amount = EXCLUDED.amount,
+          is_active = true,
+          updated_at = NOW()
+        RETURNING *
+      `, [name, amount]);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error in createFeeType:', error);
+      throw error;
+    }
+  }
+  // Update fee setting
+  async updateFeeSetting(id, { amount, name }) {
+    try {
+      const result = await pool.query(`
+        UPDATE fee_settings 
+        SET amount = $1, name = $2, updated_at = NOW()
+        WHERE id = $3 AND is_active = true
+        RETURNING *
+      `, [amount, name, id]);
+      
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Error in updateFeeSetting:', error);
+      throw error;
+    }
+  }
+  // Delete fee type (soft delete)
+  async deleteFeeType(id) {
+    try {
+      const result = await pool.query(`
+        UPDATE fee_settings 
+        SET is_active = false, updated_at = NOW()
+        WHERE id = $1
+        RETURNING id
+      `, [id]);
+      
+      return result.rows.length > 0;
+    } catch (error) {
+      console.error('Error in deleteFeeType:', error);
+      throw error;
+    }
   }
 }
 

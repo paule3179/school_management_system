@@ -1,402 +1,435 @@
-/* Global Reset & Base Styles */
+
+
+   /* ============================================
+   MOBILE MENU BUTTON - FORCE VISIBLE
+   ============================================ */
+.mobile-menu-toggle {
+  display: none;
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  width: 45px;
+  height: 45px;
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+
+/* ============================================
+   PROFESSIONAL FONT STYLES
+   ============================================ */
+
+:root {
+  /* Primary Font - Clean & Professional */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  
+  /* Secondary Font - For Headings */
+  --font-heading: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  /* Monospace - For Codes/IDs */
+  --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* Apply to body */
+body, 
+.app, 
+.main-content,
+.dashboard-container,
+.students-page,
+.fees-page,
+.promotion-management-page,
+.classes-page,
+.teachers-page,
+.users-page {
+  font-family: var(--font-primary) !important;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6,
+.page-header h1,
+.section-header h2,
+.dashboard-header h1,
+.modal-header h2 {
+  font-family: var(--font-heading) !important;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Small text, badges, labels */
+small, 
+.label, 
+.badge,
+.stat-info p,
+.activity-badge,
+.status-badge,
+.filter-chip,
+.tab-btn {
+  font-family: var(--font-primary) !important;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+/* Table headers */
+.data-table th,
+.professional-table th,
+.promotion-tabs .tab-btn {
+  font-family: var(--font-primary) !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 11px;
+}
+
+/* Numbers and amounts */
+.stat-info h3,
+.receipt-amount,
+.amount {
+  font-family: var(--font-heading) !important;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Admission numbers, transaction IDs */
+.admission-number,
+.transaction-id,
+.receipt-number {
+  font-family: var(--font-mono) !important;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+/* Make sure the icon shows */
+ 
+
+/* Show on mobile */
+@media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: flex !important;
+  }
+}
+
+:root {
+  /* Primary Colors - Modern Purple/Teal Gradient */
+  --primary: #4361ee;
+  --primary-dark: #3a0ca3;
+  --primary-light: #7209b7;
+  --primary-gradient: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
+  --primary-gradient-hover: linear-gradient(135deg, #3a0ca3 0%, #5a189a 100%);
+  
+  /* Secondary Colors */
+  --secondary: #f72585;
+  --success: #06d6a0;
+  --warning: #ffd166;
+  --danger: #ef476f;
+  --info: #4cc9f0;
+  
+  /* Neutral Colors */
+  --white: #ffffff;
+  --gray-50: #f8f9fa;
+  --gray-100: #f1f3f5;
+  --gray-200: #e9ecef;
+  --gray-300: #dee2e6;
+  --gray-400: #ced4da;
+  --gray-500: #adb5bd;
+  --gray-600: #6c757d;
+  --gray-700: #495057;
+  --gray-800: #343a40;
+  --gray-900: #212529;
+  --dark: #0f172a;
+  
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  
+  /* Border Radius - ALL SET TO 0 */
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-full: 0;
+  
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 20px 30px -12px rgba(0, 0, 0, 0.08);
+  --shadow-hover: 0 30px 40px -15px rgba(0, 0, 0, 0.12);
+  
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Typography */
+  --font-primary: 'Inter', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'SF Mono', Monaco, monospace;
+}
+
+/* Reset & Base */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-:root {
-  --primary-color: #76B900;
-  --primary-dark: #5a8f00;
-  --primary-light: #A5D6A5;
-  --secondary-color: #2196F3;
-  --success-color: #28a745;
-  --warning-color: #ffc107;
-  --danger-color: #dc3545;
-  --info-color: #17a2b8;
-  --dark: #1a1a2e;
-  --gray: #6c757d;
-  --light-gray: #f8f9fa;
-  --border-color: #e0e0e0;
-  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 body {
-  font-family: 'Inter', 'Segoe UI', 'Poppins', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--font-primary);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--gray-700);
   background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
-  color: #2c3e50;
-  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
-/* Main Layout */
-.app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Modern Header */
-.header {
-  background: linear-gradient(135deg, var(--dark) 0%, #16213e 100%);
-  color: white;
-  padding: 20px 30px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-}
-
-.header::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  right: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(118, 185, 0, 0.1) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-.header h1 {
-  font-size: 28px;
-  margin-bottom: 8px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-}
-
-.header p {
-  font-size: 14px;
-  opacity: 0.8;
-  letter-spacing: 1px;
-}
-
-/* Dashboard Container */
-.dashboard {
-  padding: 24px 32px;
-  max-width: 1600px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-/* Modern Stats Cards */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 24px;
-  margin-bottom: 32px;
-}
-
-.stat-card {
-  background: white;
-  padding: 24px;
-  border-radius: var(--radius-lg);
-  text-align: center;
-  box-shadow: var(--shadow-md);
-  transition: var(--transition);
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(0,0,0,0.05);
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-}
-
-.stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-xl);
-}
-
-.stat-card h3 {
-  color: #333;
-  font-size: 14px;
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 12px;
+  line-height: 1.25;
+  color: var(--gray-900);
+  letter-spacing: -0.02em;
 }
 
-.stat-number {
-  font-size: 42px;
-  font-weight: 800;
-  color: var(--primary-color);
-  line-height: 1.2;
-}
+h1 { font-size: 2rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
 
-/* Section Containers */
-.students-section,
-.classes-page {
-  background: rgb(238, 234, 234);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  box-shadow: var(--shadow-md);
-  margin-bottom: 24px;
-  border: 1px solid var(--border-color);
-}
-
-/* Section Headers - No Text Colors */
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid var(--border-color);
-}
-
-.section-header h2 {
-  color: #333;
-  font-size: 22px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.section-header h2::before {
-  content: '';
-  width: 4px;
-  height: 24px;
-  background: var(--primary-color);
-  border-radius: 2px;
-}
-
-/* Modern Buttons */
-.btn-add, .btn-primary, .btn-secondary {
-  padding: 10px 24px;
+/* ============================================
+   BUTTONS 
+   ============================================ */
+.btn-add, .btn-primary, .btn-save, .btn-export, 
+.btn-refresh, .btn-search, .btn-pay, .btn-generate, 
+.btn-import, .btn-submit {
+  padding: 0.625rem 1.25rem;
   border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 14px;
+  border-radius: 0;
+  font-size: 0.8125rem;
   font-weight: 600;
-  transition: var(--transition);
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--transition-base);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  letter-spacing: 0.3px;
+  justify-content: center;
+  gap: var(--space-sm);
 }
 
-.btn-add, .btn-primary {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+.btn-add, .btn-primary, .btn-save, .btn-submit {
+  background: var(--primary-gradient);
   color: white;
   box-shadow: var(--shadow-sm);
 }
 
-.btn-add:hover, .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  filter: brightness(1.05);
-}
-
-.btn-secondary {
-  background: linear-gradient(135deg, var(--gray), #5a6268);
-  color: white;
-}
-
-.btn-secondary:hover {
+.btn-add:hover, .btn-primary:hover, .btn-save:hover, .btn-submit:hover {
+  background: var(--primary-gradient-hover);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
-.btn-edit {
-  background: var(--secondary-color);
+.btn-export {
+  background: linear-gradient(135deg, var(--success), #0d9488);
   color: white;
-  padding: 6px 14px;
   border: none;
-  border-radius: var(--radius-sm);
+}
+
+.btn-refresh {
+  background: linear-gradient(135deg, var(--info), #2563eb);
+  color: white;
+  border: none;
+}
+
+/* Icon-only buttons */
+.btn-edit, .btn-delete, .btn-view, .btn-info {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--gray-200);
+  color: var(--gray-600);
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  transition: var(--transition);
-  margin-right: 6px;
+  transition: var(--transition-base);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-edit:hover {
-  background: #0b7dda;
-  transform: scale(1.02);
-}
-
-.btn-delete {
-  background: var(--danger-color);
+  background: var(--warning);
+  border-color: var(--warning);
   color: white;
-  padding: 6px 14px;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  transition: var(--transition);
 }
 
 .btn-delete:hover {
-  background: #c82333;
-  transform: scale(1.02);
-}
-
-.btn-info {
-  background: var(--info-color);
+  background: var(--danger);
+  border-color: var(--danger);
   color: white;
-  padding: 6px 14px;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  transition: var(--transition);
-  margin-left: 6px;
 }
 
-.btn-info:hover {
-  background: #138496;
+.btn-view:hover {
+  background: var(--info);
+  border-color: var(--info);
+  color: white;
+}
+ 
+/* ============================================
+   MAIN CONTENT
+   ============================================ */
+/* Increase main content width by reducing sidebar margin effect */
+/* Update the main layout to be wider */
+.main-content {
+  margin-left: 240px; /* Change from 260px to 240px */
+  min-height: 100vh;
+  background: #f5f7fb;
+  transition: margin-left 0.3s ease;
+  overflow-x: hidden;
 }
 
-/* Modern Tables - Clean Headers No Colors */
+/* When sidebar is collapsed */
+.sidebar.collapsed ~ .main-content {
+  margin-left: 70px; /* Change from 80px to 70px */
+}
+
+/* Content wrapper - use less padding */
+.content-wrapper {
+  padding: 20px 24px 20px 16px; /* Change right padding only */
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+/* ============================================
+   CARDS & CONTAINERS - NO BORDER RADIUS
+   ============================================ */
+.card, .dashboard-card {
+  background: var(--white);
+  border-radius: 0;
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-card);
+  transition: var(--transition-base);
+  border: 1px solid var(--gray-200);
+}
+
+.card:hover, .dashboard-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* ============================================
+   TABLES - NO BORDER RADIUS
+   ============================================ */
 .table-container {
-  background: white;
-  border-radius: var(--radius-md);
+  background: var(--white);
+  border-radius: 0;
   overflow-x: auto;
+  border: 1px solid var(--gray-200);
   box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-color);
 }
 
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 600px;
 }
 
-.data-table th,
-.data-table td {
-  padding: 16px;
-  text-align: left;
-  border-bottom: 1px solid var(--border-color);
+@media (max-width: 768px) {
+  .data-table {
+    min-width: 600px;
+  }
 }
 
 .data-table th {
-  background: white;
-  font-weight: 700;
-  color: #333;
-  font-size: 14px;
-  letter-spacing: 0.3px;
-  border-bottom: 2px solid var(--border-color);
+  padding: var(--space-md) var(--space-lg);
+  text-align: left;
+  background: var(--gray-50);
+  font-weight: 600;
+  color: var(--gray-600);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--gray-200);
 }
 
-.data-table tr:hover {
-  background: #f8f9fa;
-  transition: var(--transition);
+.data-table td {
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--gray-100);
+  color: var(--gray-700);
+  font-size: 0.875rem;
 }
 
-.data-table tbody tr:last-child td {
-  border-bottom: none;
+.data-table tr:hover td {
+  background: var(--gray-50);
 }
 
-/* Grade Table Specific */
-.grade-table input {
-  width: 70px;
-  padding: 6px;
-  text-align: center;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  transition: var(--transition);
-}
-
-.grade-table input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(118, 185, 0, 0.1);
-}
-
-/* Subjects Info Bar */
-.subjects-info {
-  background: linear-gradient(135deg, #171817, #c8e6c9);
-  padding: 12px 16px;
-  border-radius: var(--radius-md);
-  margin-bottom: 20px;
-  font-size: 13px;
-  color: #2e7d32;
-  font-weight: 500;
-  border-left: 4px solid var(--primary-color);
-}
-
-/* Filters Section */
-.filters {
+/* ============================================
+   FILTERS & SEARCH - NO BORDER RADIUS
+   ============================================ */
+.filters-row, .filters {
   display: flex;
-  gap: 16px;
-  margin-bottom: 28px;
+  gap: var(--space-md);
   flex-wrap: wrap;
+  margin-bottom: var(--space-xl);
   align-items: flex-end;
 }
 
-.filters select,
-.filters input {
-  padding: 10px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  background: white;
-  transition: var(--transition);
+.filter-select, .filter-input {
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 0;
+  font-size: 0.875rem;
+  background: var(--white);
   min-width: 160px;
-  color: #333;
+  transition: var(--transition-fast);
 }
 
-.filters select:focus,
-.filters input:focus {
+.filter-select:focus, .filter-input:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(118, 185, 0, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
 }
 
-/* Save Button Container */
-.save-button-container {
-  text-align: center;
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border-color);
-}
-
-/* Modern Modal */
-.modal {
+/* ============================================
+   MODALS - NO BORDER RADIUS
+   ============================================ */
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   z-index: 1000;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 .modal-content {
-  background: white;
-  padding: 32px;
-  border-radius: var(--radius-lg);
+  background: var(--white);
+  border-radius: 0;
   width: 90%;
-  max-width: 550px;
+  max-width: 560px;
   max-height: 85vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease;
@@ -414,361 +447,5056 @@ body {
   }
 }
 
-.modal-content h2 {
-  margin-bottom: 24px;
-  color: #333;
-  font-size: 24px;
-  font-weight: 700;
+.modal-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  padding: var(--space-xl);
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--primary-gradient);
+  color: white;
+  border-radius: 0;
 }
 
-/* Form Styles */
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
+.modal-header h2, .modal-header h3 {
+  margin: 0;
+  color: white;
 }
 
-.form-group {
-  margin-bottom: 16px;
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: white;
+  transition: var(--transition-fast);
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #333;
-  font-weight: 600;
-  font-size: 13px;
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  transition: var(--transition);
-  font-family: inherit;
-  color: #333;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(118, 185, 0, 0.1);
-}
-
-.form-group textarea {
-  resize: vertical;
-  min-height: 80px;
+.modal-body {
+  padding: var(--space-xl);
 }
 
 .modal-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 24px;
+  gap: var(--space-md);
   justify-content: flex-end;
-  flex-wrap: wrap;
+  padding: var(--space-xl);
+  border-top: 1px solid var(--gray-200);
 }
 
-.btn-save {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-  color: white;
-  padding: 10px 28px;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-weight: 600;
-  transition: var(--transition);
-}
-
-.btn-save:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.btn-cancel {
-  background: var(--gray);
-  color: white;
-  padding: 10px 28px;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-weight: 600;
-  transition: var(--transition);
-}
-
-.btn-cancel:hover {
-  background: #5a6268;
-}
-
-/* Responsive Close Buttons */
-@media (max-width: 480px) {
-  .modal-actions {
-    flex-direction: column;
-  }
-  
-  .modal-actions button {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-/* Close button for any container */
-.close-btn {
-  background: var(--gray);
-  color: white;
-  padding: 8px 20px;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-weight: 600;
-  transition: var(--transition);
+/* ============================================
+   STATUS BADGES - NO BORDER RADIUS
+   ============================================ */
+.status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-}
-
-.close-btn:hover {
-  background: #5a6268;
-  transform: translateY(-2px);
-}
-
-/* Status Badges */
-.status-paid,
-.status-partial,
-.status-unpaid {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0;
+  font-size: 0.75rem;
   font-weight: 600;
-  text-align: center;
-  min-width: 70px;
+  gap: var(--space-xs);
 }
 
-.status-paid {
-  background: #d4edda;
-  color: #155724;
+.status-paid, .status-active {
+  background: #d1fae5;
+  color: #065f46;
 }
 
 .status-partial {
-  background: #fff3cd;
-  color: #856404;
+  background: #fed7aa;
+  color: #92400e;
 }
 
-.status-unpaid {
-  background: #f8d7da;
-  color: #721c24;
+.status-unpaid, .status-inactive {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
-/* Loading State */
-.loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 400px;
-  font-size: 18px;
-  color: var(--gray);
-  gap: 12px;
+/* ============================================
+   DASHBOARD PAGE - NO BORDER RADIUS
+   ============================================ */
+.dashboard-container {
+  padding: 0;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.loading::after {
-  content: '';
-  width: 24px;
-  height: 24px;
-  border: 3px solid var(--border-color);
-  border-top-color: var(--primary-color);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+.dashboard-header {
+  margin-bottom: 24px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.dashboard-header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 4px;
 }
 
-/* Navigation Tabs - No Text Colors */
-.nav-tabs {
-  display: flex;
-  gap: 4px;
-  padding: 0 24px;
+.dashboard-header p {
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
   background: white;
-  border-bottom: 1px solid var(--border-color);
+  border-radius: 0;
+  padding: 14px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  border: 1px solid #e9edf2;
+  cursor: pointer;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.stat-icon {
+  width: 42px;
+  height: 42px;
+  background: #f0f2f8;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #1e293b;
+}
+
+.stat-info h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: #1e293b;
+}
+
+.stat-info p {
+  margin: 0;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Quick Actions */
+.quick-actions-section {
+  background: white;
+  border-radius: 0;
+  padding: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e9ecef;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.section-title h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.quick-action-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #f8f9fa;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.quick-action-card:hover {
+  background: white;
+  border-color: #e0e0e0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.quick-action-icon {
+  width: 36px;
+  height: 36px;
+  background: white;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #1a1a2e;
+}
+
+.quick-action-info {
+  flex: 1;
+}
+
+.quick-action-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #1a1a2e;
+  margin-bottom: 2px;
+}
+
+.quick-action-desc {
+  font-size: 11px;
+  color: #6c757d;
+}
+
+/* Activity Feed */
+.activity-feed {
+  background: white;
+  border-radius: 0;
+  padding: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e9ecef;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 0;
+  transition: all 0.2s ease;
+  background: #f8f9fa;
+}
+
+.activity-item:hover {
+  background: #f0f2f5;
+}
+
+.activity-avatar {
+  width: 32px;
+  height: 32px;
+  background: white;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #1a1a2e;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-title {
+  font-weight: 500;
+  font-size: 12px;
+  color: #1a1a2e;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
-.nav-tab {
-  padding: 14px 24px;
-  background: none;
-  border: none;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  color: #666;
-  transition: var(--transition);
-  position: relative;
+.activity-time {
+  font-size: 10px;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.nav-tab:hover {
-  color: var(--primary-color);
-  background: rgba(118, 185, 0, 0.05);
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.nav-tab.active {
-  color: var(--primary-color);
+::-webkit-scrollbar-track {
+  background: var(--gray-100);
 }
 
-.nav-tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: var(--primary-color);
-  border-radius: 3px 3px 0 0;
+::-webkit-scrollbar-thumb {
+  background: var(--gray-400);
 }
 
-/* Attendance Status Colors - Keep these for status indicators */
-.status-present {
-  color: var(--success-color);
-  font-weight: 600;
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
 }
 
-.status-absent {
-  color: var(--danger-color);
-  font-weight: 600;
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
 }
 
-.status-late {
-  color: var(--warning-color);
-  font-weight: 600;
+.sidebar-nav::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.status-excused {
-  color: var(--info-color);
-  font-weight: 600;
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .dashboard {
-    padding: 16px;
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
   
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-  
-  .data-table th,
-  .data-table td {
-    padding: 10px 12px;
-    font-size: 12px;
-  }
-  
-  .stats {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .modal-content {
-    padding: 20px;
-    width: 95%;
-  }
-  
-  .filters {
-    flex-direction: column;
-  }
-  
-  .filters select,
-  .filters input,
-  .filters button {
-    width: 100%;
-  }
-  
-  .nav-tabs {
-    padding: 0 12px;
-  }
-  
-  .nav-tab {
-    padding: 10px 16px;
-    font-size: 13px;
+  .quick-actions-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Main Content Area */
-.main-content {
-  margin-left: 280px;
-  min-height: 100vh;
-  background: #f5f7fa;
-  transition: margin-left 0.3s ease;
-}
-
-.content-wrapper {
-  padding: 20px 30px;
-}
-
-@media (max-width: 768px) {
+@media (max-width: 992px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
   .main-content {
     margin-left: 0;
   }
   
   .content-wrapper {
     padding: 16px;
+    min-width: auto;
   }
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+@media (max-width: 768px) {
+  /* Ensure hamburger appears on all pages consistently */
+  .mobile-menu-toggle {
+    display: flex;
+    background: #3b82f6;
+    color: #ffffff;
+    z-index: 1002;
+  }
+
+  /* On mobile, hide any second sidebar “view” toggle (duplicate on some layouts) */
+  .sidebar-toggle-right,
+  .sidebar-toggle-secondary,
+  .mobile-sidebar-toggle-right,
+  .mobile-sidebar-toggle-secondary {
+    display: none !important;
+  }
+
+
+  /* Tighter cards on mobile */
+  .card,
+  .dashboard-card {
+    padding: 12px 14px;
+  }
+
+  /* Reduce spacing between cards/sections */
+  .stats-grid {
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .content-wrapper {
+    padding: 12px 12px;
+  }
+
+  /* Tighter icon buttons */
+  .btn-view,
+  .btn-edit,
+  .btn-delete,
+  .btn-info,
+  .btn-status {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* Reduce button padding */
+  .btn-add,
+  .btn-primary,
+  .btn-save,
+  .btn-export,
+  .btn-refresh,
+  .btn-search,
+  .btn-submit,
+  .btn-generate,
+  .btn-reset {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  /* Search field + search button inline */
+  .filters-row,
+  .filters {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .filter-select,
+  .filter-input {
+    min-width: 0;
+    flex: 1;
+  }
+
+  /* If wrapped by smaller screens, keep it readable */
+  @media (max-width: 480px) {
+    .filters-row,
+    .filters {
+      flex-wrap: wrap;
+    }
+  }
+
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+
+  .quick-actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-header h1 {
+    font-size: 20px;
+  }
+
+  .stat-info h3 {
+    font-size: 20px;
+  }
+
+  .stat-icon {
+    width: 38px;
+    height: 38px;
+    font-size: 18px;
+  }
+
+  .quick-action-card {
+    padding: 8px 12px;
+  }
+
+  .quick-action-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  .modal-content {
+    width: 95%;
+    max-height: 88vh;
+  }
+
+  /* Prevent horizontal overflow on small screens */
+  .content-wrapper {
+    padding: 14px 12px;
+    overflow-x: hidden;
+  }
+
+  .main-content {
+    overflow-x: hidden;
+  }
+
+  .table-container,
+  .data-table,
+  .professional-table,
+  .history-table {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: var(--space-sm);
+    font-size: 0.85rem;
+  }
+
+  /* Make icon buttons easier to tap */
+  .btn-view,
+  .btn-edit,
+  .btn-delete,
+  .btn-info,
+  .btn-status {
+    width: 34px;
+    height: 34px;
+  }
+
+  /* Keep forms inside viewport */
+  input,
+  select,
+  textarea {
+    max-width: 100%;
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--primary-color);
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-dark);
-}
-
-/* Additional Responsive Fixes for Buttons */
 @media (max-width: 480px) {
-  .btn-add, .btn-primary, .btn-secondary, .btn-save, .btn-cancel {
+  /* Extra small phones (e.g. width ~390px): collapse sidebar width
+     to make room for content without changing desktop layout. */
+  .sidebar {
+    width: 60px;
+
+  }
+
+  /* Even tighter cards on very small phones */
+  .card,
+  .dashboard-card {
+    padding: 10px 12px;
+  }
+
+  .content-wrapper {
+    padding: 10px 10px;
+  }
+
+  .stats-grid {
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .filters-row,
+  .filters {
+    gap: 8px;
+  }
+
+  /* Button padding */
+  .btn-add,
+  .btn-primary,
+  .btn-save,
+  .btn-export,
+  .btn-refresh,
+  .btn-search,
+  .btn-submit,
+  .btn-generate,
+  .btn-reset {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+
+  .sidebar .nav-text,
+  .sidebar .user-details,
+  .sidebar .logo-text {
+    display: none;
+  }
+
+  .sidebar .nav-item {
+    justify-content: center;
+    padding: 10px 8px;
+  }
+
+  /* Ensure main content uses full width */
+  .main-content {
+    margin-left: 60px;
+  }
+
+  .content-wrapper {
+    padding: 12px 10px;
+  }
+
+
+  .modal-content {
+    width: 98%;
+    max-width: 98vw;
+  }
+
+  .filters-row,
+  .filters {
+    gap: 10px;
+  }
+
+  .btn-add,
+  .btn-primary,
+  .btn-save,
+  .btn-export,
+  .btn-refresh,
+  .btn-search,
+  .btn-submit,
+  .btn-filter {
+    width: auto;
+    max-width: 100%;
+  }
+
+  .btn-view,
+  .btn-edit,
+  .btn-delete,
+  .btn-info,
+  .btn-status {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+
+/* Fix for FontAwesome icons - ensure consistent sizing */
+.svg-inline--fa, .fas, .far, .fab {
+  font-size: inherit;
+}
+
+.nav-icon svg,
+.nav-icon i {
+  width: 18px;
+  height: 18px;
+}
+
+.stat-icon svg,
+.stat-icon i {
+  width: 20px;
+  height: 20px;
+}
+
+.activity-icon svg,
+.activity-icon i {
+  width: 16px;
+  height: 16px;
+}
+
+
+
+/* ============================================
+   COMPLETE BUTTON STYLES - School Management System
+   ============================================ */
+
+/* ============================================
+   1. PRIMARY ACTION BUTTONS
+   ============================================ */
+
+/* Add Button - Blue */
+.btn-add,
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-add:hover,
+.btn-primary:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-add:active,
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Save Button - Blue */
+.btn-save,
+.btn-save-modal {
+  background: #3b82f6;
+  color: white;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-save:hover,
+.btn-save-modal:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* ============================================
+   2. SECONDARY ACTION BUTTONS
+   ============================================ */
+
+/* Export Button - Green */
+.btn-export {
+  background: #10b981;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-export:hover {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Refresh Button - Gray/Blue */
+.btn-refresh {
+  background: #64748b;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-refresh:hover {
+  background: #475569;
+  transform: translateY(-2px);
+}
+
+/* Generate Button - Purple */
+.btn-generate {
+  background: #8b5cf6;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-generate:hover {
+  background: #7c3aed;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* Download Button - Orange */
+.btn-download {
+  background: #f59e0b;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-download:hover {
+  background: #d97706;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* Promote Button - Purple */
+.btn-promote {
+  background: #8b5cf6;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-promote:hover {
+  background: #7c3aed;
+  transform: translateY(-1px);
+}
+
+/* Danger Button - Red */
+.btn-danger,
+.btn-delete {
+  background: #ef4444;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover,
+.btn-delete:hover {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Cancel Button - Gray Border */
+.btn-cancel,
+.btn-cancel-modal {
+  background: white;
+  color: #64748b;
+  padding: 10px 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel:hover,
+.btn-cancel-modal:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   3. SEARCH & FILTER BUTTONS
+   ============================================ */
+
+/* Search Button - Blue */
+.btn-search {
+  background: #3b82f6;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-search:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+}
+
+/* Reset Button - White with border */
+.btn-reset {
+  background: white;
+  color: #475569;
+  padding: 10px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-reset:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+}
+
+/* Filter Button */
+.btn-filter {
+  background: white;
+  color: #475569;
+  padding: 10px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-filter:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+}
+
+.btn-filter.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+/* ============================================
+   4. TABLE ACTION BUTTONS (Icon Only)
+   ============================================ */
+
+/* View Button */
+.btn-view {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  background: transparent;
+  color: #64748b;
+}
+
+.btn-view:hover {
+  background: #3b82f6;
+  color: white;
+  transform: scale(1.05);
+}
+
+/* Edit Button */
+.btn-edit {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  background: transparent;
+  color: #64748b;
+}
+
+.btn-edit:hover {
+  background: #f59e0b;
+  color: white;
+  transform: scale(1.05);
+}
+
+/* Delete Button (Table) */
+.btn-delete-table {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  background: transparent;
+  color: #64748b;
+}
+
+.btn-delete-table:hover {
+  background: #ef4444;
+  color: white;
+  transform: scale(1.05);
+}
+
+/* Status Toggle Button */
+.btn-status {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  background: transparent;
+  color: #64748b;
+}
+
+.btn-status.btn-warning {
+  color: #f59e0b;
+}
+
+.btn-status.btn-warning:hover {
+  background: #fef3c7;
+  color: #d97706;
+  transform: scale(1.05);
+}
+
+.btn-status.btn-success {
+  color: #10b981;
+}
+
+.btn-status.btn-success:hover {
+  background: #d1fae5;
+  color: #059669;
+  transform: scale(1.05);
+}
+
+/* ============================================
+   5. NAVIGATION TABS / FILTER PILLS
+   ============================================ */
+
+/* Tabs Container */
+.promotion-tabs,
+.nav-tabs-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* Tab Buttons */
+.tab-btn,
+.nav-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tab-btn:hover,
+.nav-tab-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+  transform: translateY(-2px);
+}
+
+.tab-btn.active,
+.nav-tab-btn.active {
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.tab-btn.active:hover,
+.nav-tab-btn.active:hover {
+  background: #2563eb;
+}
+
+/* Filter Pills */
+.filter-pills {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-pill:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+}
+
+.filter-pill.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+/* ============================================
+   6. SMALL BUTTONS
+   ============================================ */
+
+/* Small Add Button */
+.btn-add-small {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-add-small:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* Small Button */
+.btn-small {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.btn-small-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-small-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-small-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-small-danger:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.btn-small-success {
+  background: #10b981;
+  color: white;
+}
+
+.btn-small-success:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   7. PROMOTION SPECIFIC BUTTONS
+   ============================================ */
+
+/* Promotion Primary Button */
+.promotion-btn-primary {
+  padding: 8px 22px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #3b82f6;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.promotion-btn-primary:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Promotion Secondary Button */
+.promotion-btn-secondary {
+  padding: 8px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.promotion-btn-secondary:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   8. DISABLED & LOADING STATES
+   ============================================ */
+
+button:disabled,
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Loading Spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Button with loading state */
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* ============================================
+   9. RESPONSIVE BUTTON STYLES
+   ============================================ */
+
+@media (max-width: 768px) {
+  .btn-add,
+  .btn-primary,
+  .btn-export,
+  .btn-refresh,
+  .btn-generate,
+  .btn-download,
+  .btn-danger,
+  .btn-search,
+  .btn-reset {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+  
+  .btn-view,
+  .btn-edit,
+  .btn-delete-table,
+  .btn-status {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .tab-btn,
+  .nav-tab-btn {
+    padding: 6px 16px;
+    font-size: 12px;
+  }
+  
+  .filter-pill {
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+  
+  .promotion-tabs,
+  .nav-tabs-container {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .promotion-tabs,
+  .nav-tabs-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Prevent horizontal overflow on narrow screens */
+  .table-container,
+  .data-table,
+  .professional-table {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  /* Increase tap targets a bit */
+  button,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  }
+
+  
+  .tab-btn,
+  .nav-tab-btn {
     width: 100%;
+    max-width: 200px;
+  }
+  
+  .filter-pills {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .filter-pill {
+    width: 100%;
+    max-width: 200px;
     justify-content: center;
   }
-  
-  .btn-edit, .btn-delete, .btn-info {
-    width: auto;
-    padding: 6px 10px;
-    font-size: 11px;
+}
+
+/* ============================================
+   10. BUTTON GROUPS
+   ============================================ */
+
+/* Button Group Container */
+.button-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Header Buttons Group */
+.header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+/* Action Buttons Group (Table) */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+/* Modal Footer Buttons */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #e9edf2;
+  background: #fafcff;
+}
+
+/* Bulk Actions Buttons */
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+/* ============================================
+   PROMOTION PAGE - COMPLETE PROFESSIONAL STYLES
+   ============================================ */
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .promotion-management-page .page-header h1 {
+    font-size: 18px;
   }
   
-  .section-header {
+  .promotion-management-page .page-header p {
+    font-size: 12px;
+  }
+}
+
+/* ============================================
+   PROMOTION TABS - PROFESSIONAL
+   ============================================ */
+
+.promotion-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  background: white;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid #e9edf2;
+}
+
+.promotion-tabs .tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.promotion-tabs .tab-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.promotion-tabs .tab-btn.active {
+  background: #3b82f6;
+  color: white;
+}
+
+/* ============================================
+   ALL STUDENTS TAB - PROFESSIONAL TABLE
+   ============================================ */
+
+.promotion-all-section {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e9edf2;
+}
+
+/* Filters Section */
+.promotion-all-section .filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.promotion-all-section .filters select {
+  padding: 10px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  background: white;
+  color: #1e293b;
+  min-width: 180px;
+  cursor: pointer;
+}
+
+.promotion-all-section .filters select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Bulk Actions */
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: #f0fdf4;
+  border-radius: 10px;
+  border: 1px solid #bbf7d0;
+}
+
+.bulk-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bulk-actions button:first-child {
+  background: #3b82f6;
+  color: white;
+}
+
+.bulk-actions button:first-child:hover {
+  background: #2563eb;
+}
+
+.bulk-actions button:nth-child(2) {
+  background: #ef4444;
+  color: white;
+}
+
+.bulk-actions button:nth-child(2):hover {
+  background: #dc2626;
+}
+
+.bulk-actions button:nth-child(3) {
+  background: #f59e0b;
+  color: white;
+}
+
+.bulk-actions button:nth-child(3):hover {
+  background: #d97706;
+}
+
+.bulk-actions .btn-promote {
+  background: #10b981;
+  color: white;
+  margin-left: auto;
+}
+
+.bulk-actions .btn-promote:hover {
+  background: #059669;
+}
+
+/* Students Table */
+.promotion-all-section .table-container {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.promotion-all-section .data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.promotion-all-section .data-table th {
+  background: #f8fafc;
+  padding: 14px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #334155;
+  text-transform: uppercase;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.promotion-all-section .data-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.promotion-all-section .data-table tbody tr:hover {
+  background: #fafcff;
+}
+
+/* Qualification Status */
+.qualified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.unqualified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.grade-pass {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.grade-fail {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.attendance-good {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.attendance-bad {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.unqualified-row {
+  background: #fef2f2;
+  opacity: 0.9;
+}
+
+/* Checkbox styling */
+.promotion-all-section .data-table input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+/* ============================================
+   HISTORY TAB - PROFESSIONAL
+   ============================================ */
+
+.promotion-history-section {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e9edf2;
+}
+
+.promotion-history-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.promotion-history-section .section-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.promotion-history-section .filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.promotion-history-section .filters select {
+  padding: 10px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  background: white;
+  min-width: 200px;
+}
+
+.promotion-history-section .history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.promotion-history-section .history-table th {
+  background: #f8fafc;
+  padding: 14px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #334155;
+  text-transform: uppercase;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.promotion-history-section .history-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+.promotion-history-section .history-table tbody tr:hover {
+  background: #fafcff;
+}
+
+.promotion-history-section .to-class {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.no-data {
+  text-align: center;
+  padding: 60px 20px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* ============================================
+   SETTINGS TAB - PROFESSIONAL FORM
+   ============================================ */
+
+.promotion-settings-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e9edf2;
+  max-width: 600px;
+}
+
+.promotion-settings-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.settings-form {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e9edf2;
+  max-width: 600px;
+}
+
+.settings-form h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.settings-form .form-group {
+  margin-bottom: 20px;
+}
+
+.settings-form .form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.settings-form .form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.settings-form .form-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.settings-form .form-group small {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 6px;
+}
+
+.settings-form .btn-save {
+  background: #3b82f6;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  margin-top: 10px;
+}
+
+.settings-form .btn-save:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* ============================================
+   STATS CARDS (Common)
+   ============================================ */
+
+.promotion-management-page .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.promotion-management-page .stats-grid .stat-card {
+  background: white;
+  border-radius: 0;
+  padding: 14px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  border: 1px solid #e9edf2;
+  cursor: pointer;
+}
+
+.promotion-management-page .stats-grid .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.promotion-management-page .stats-grid .stat-icon {
+  width: 42px;
+  height: 42px;
+  background: #f0f2f8;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1e293b;
+  font-size: 20px;
+}
+
+.promotion-management-page .stats-grid .stat-info {
+  text-align: left;
+}
+
+.promotion-management-page .stats-grid .stat-info h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: #1e293b;
+}
+
+.promotion-management-page .stats-grid .stat-info p {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================
+   BY CLASS TAB 
+   ============================================ */
+
+.promotion-classes-section {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e9edf2;
+}
+
+.promotion-classes-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.promotion-classes-section .section-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.promotion-classes-section .data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.promotion-classes-section .data-table th {
+  background: #f8fafc;
+  padding: 14px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #334155;
+  text-transform: uppercase;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.promotion-classes-section .data-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-ready {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-graduated {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 1200px) {
+  .promotion-stats-grid {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 992px) {
+  .promotion-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .promotion-tabs .tab-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .promotion-management-page {
+    padding: 16px;
+  }
+  
+  .promotion-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .promotion-tabs {
     flex-direction: column;
     align-items: stretch;
   }
   
-  .section-header button {
+  .promotion-tabs .tab-btn {
+    justify-content: center;
+  }
+  
+  .bulk-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .bulk-actions .btn-promote {
+    margin-left: 0;
+  }
+  
+  .promotion-all-section .data-table,
+  .promotion-history-section .history-table {
+    min-width: 800px;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+  }
+}
+ 
+/* Target all action buttons in any table */
+.table-container .action-buttons .btn-view,
+.table-container .action-buttons .btn-edit,
+.table-container .action-buttons .btn-delete,
+.professional-table .action-buttons .btn-view,
+.professional-table .action-buttons .btn-edit,
+.professional-table .action-buttons .btn-delete,
+.data-table .action-buttons .btn-view,
+.data-table .action-buttons .btn-edit,
+.data-table .action-buttons .btn-delete,
+.teachers-page .action-buttons .btn-view,
+.teachers-page .action-buttons .btn-edit,
+.teachers-page .action-buttons .btn-delete,
+.students-page .action-buttons .btn-view,
+.students-page .action-buttons .btn-edit,
+.students-page .action-buttons .btn-delete,
+.classes-page .action-buttons .btn-view,
+.classes-page .action-buttons .btn-edit,
+.classes-page .action-buttons .btn-delete,
+.users-page .action-buttons .btn-view,
+.users-page .action-buttons .btn-edit,
+.users-page .action-buttons .btn-delete {
+  width: 28px !important;
+  height: 28px !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 6px !important;
+  color: #64748b !important;
+  font-size: 12px !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Hover effect   */
+.table-container .action-buttons .btn-view:hover,
+.table-container .action-buttons .btn-edit:hover,
+.table-container .action-buttons .btn-delete:hover,
+.professional-table .action-buttons .btn-view:hover,
+.professional-table .action-buttons .btn-edit:hover,
+.professional-table .action-buttons .btn-delete:hover,
+.data-table .action-buttons .btn-view:hover,
+.data-table .action-buttons .btn-edit:hover,
+.data-table .action-buttons .btn-delete:hover,
+.teachers-page .action-buttons .btn-view:hover,
+.teachers-page .action-buttons .btn-edit:hover,
+.teachers-page .action-buttons .btn-delete:hover,
+.students-page .action-buttons .btn-view:hover,
+.students-page .action-buttons .btn-edit:hover,
+.students-page .action-buttons .btn-delete:hover,
+.classes-page .action-buttons .btn-view:hover,
+.classes-page .action-buttons .btn-edit:hover,
+.classes-page .action-buttons .btn-delete:hover,
+.users-page .action-buttons .btn-view:hover,
+.users-page .action-buttons .btn-edit:hover,
+.users-page .action-buttons .btn-delete:hover {
+  background: transparent !important;
+  color: #64748b !important;
+  transform: scale(1.08) !important;
+  box-shadow: none !important;
+}
+
+/* Add this to your App.css at the bottom */
+
+/* Make table headers centered */
+.professional-table th,
+.data-table th {
+  text-align: center !important;
+}
+
+/* Make table content (cells) start from left */
+.professional-table td,
+.data-table td {
+  text-align: left !important;
+}
+
+/* Exception: Action buttons column - keep buttons left aligned */
+.professional-table td:last-child,
+.data-table td:last-child {
+  text-align: left !important;
+}
+
+/* For specific columns that need centering (like status badges) */
+.professional-table td:nth-child(5),
+.data-table td:nth-child(5),
+.status-cell {
+  text-align: left !important;
+}
+
+/* Ensure role badges and status badges are left aligned */
+.role-cell,
+.status-cell {
+  text-align: left !important;
+}
+
+/* Action buttons stay left aligned */
+.action-buttons {
+  justify-content: flex-start !important;
+}
+
+/* ============================================
+   PROMOTION HISTORY TAB - CONSISTENT STYLING
+   ============================================ */
+
+/* History Section Container */
+.promotion-history-section {
+  background: white;
+  padding: 20px;
+  border: 1px solid #e9edf2;
+  margin-top: 0;
+  width: 100%;
+}
+
+/* Section Header */
+.promotion-history-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.promotion-history-section .section-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Filters Bar */
+.promotion-history-section .filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e9edf2;
+  align-items: flex-end;
+}
+
+.promotion-history-section .filters select {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  font-size: 13px;
+  background: white;
+  color: #1e293b;
+  min-width: 180px;
+  cursor: pointer;
+}
+
+.promotion-history-section .filters select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Buttons in History Tab */
+.promotion-history-section .btn-export {
+  background: #10b981;
+  color: white;
+  padding: 6px 14px;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.promotion-history-section .btn-export:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.promotion-history-section .btn-refresh {
+  background: #64748b;
+  color: white;
+  padding: 6px 14px;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.promotion-history-section .btn-refresh:hover {
+  background: #475569;
+  transform: translateY(-1px);
+}
+
+/* History Table */
+.promotion-history-section .table-container {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.promotion-history-section .history-table,
+.promotion-history-section .professional-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  background: white;
+  table-layout: fixed;
+}
+
+.promotion-history-section .history-table thead,
+.promotion-history-section .professional-table thead {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.promotion-history-section .history-table th,
+.promotion-history-section .professional-table th {
+  text-align: left;
+  padding: 12px 10px;
+  font-weight: 600;
+  font-size: 0.7rem;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.promotion-history-section .history-table td,
+.promotion-history-section .professional-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+  font-size: 0.75rem;
+}
+
+.promotion-history-section .history-table tbody tr:hover,
+.promotion-history-section .professional-table tbody tr:hover {
+  background: #fafcff;
+}
+
+/* To Class Styling */
+.promotion-history-section .to-class {
+  color: #10b981;
+  font-weight: 600;
+}
+
+/* No Data State */
+.no-data {
+  text-align: center;
+  padding: 60px 20px;
+  color: #94a3b8;
+  font-size: 14px;
+  background: #fafcff;
+  border: 1px solid #e9edf2;
+}
+
+/* ============================================
+   PROMOTION SETTINGS TAB - CONSISTENT STYLING
+   ============================================ */
+
+/* Settings Section Container */
+.promotion-settings-section {
+  background: white;
+  padding: 24px;
+  border: 1px solid #e9edf2;
+  max-width: 100%;
+  margin-top: 0;
+}
+
+.promotion-settings-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Settings Form */
+.settings-form {
+  background: white;
+  padding: 0;
+  max-width: 100%;
+}
+
+.settings-form .form-group {
+  margin-bottom: 24px;
+}
+
+.settings-form .form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.settings-form .form-group input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  font-size: 14px;
+  transition: all 0.2s;
+  background: white;
+  color: #1e293b;
+}
+
+.settings-form .form-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.settings-form .form-group input:hover {
+  border-color: #cbd5e1;
+}
+
+.settings-form .form-group small {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 6px;
+}
+
+/* Save Button */
+.settings-form .btn-save {
+  background: #3b82f6;
+  color: white;
+  padding: 10px 24px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  margin-top: 16px;
+}
+
+.settings-form .btn-save:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .promotion-history-section {
+    padding: 16px;
+  }
+  
+  .promotion-history-section .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .promotion-history-section .filters {
+    flex-direction: column;
+  }
+  
+  .promotion-history-section .filters select {
     width: 100%;
   }
+  
+  .promotion-history-section .history-table,
+  .promotion-history-section .professional-table {
+    min-width: 700px;
+  }
+  
+  .promotion-settings-section {
+    padding: 16px;
+  }
+  
+  .settings-form .btn-save {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+
+/* ============================================ */
+/* APP LAYOUT */
+/* ============================================ */
+.app {
+  display: flex;
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+/* ============================================ */
+/* SIDEBAR - Professional Dark Theme */
+/* ============================================ */
+.sidebar {
+  width: 280px;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  height: 100vh;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+  z-index: 100;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Sidebar Header / Logo */
+.sidebar-header {
+  padding: 24px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 20px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  font-size: 32px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 1px;
+}
+
+/* Sidebar Navigation */
+.sidebar-nav {
+  flex: 1;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 10px;
+  width: 100%;
+  text-align: left;
+}
+
+.nav-icon {
+  width: 22px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-text {
+  flex: 1;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.nav-item.active {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* ============================================ */
+/* SIDEBAR FOOTER - USER PROFILE */
+/* ============================================ */
+.sidebar-footer {
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: auto;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 8px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.user-info:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ============================================
+   CLICKABLE USER AVATAR - REMOVE SMALL CIRCLE
+   ============================================ */
+
+/* Make the entire avatar circle clickable */
+.user-avatar-label {
+  display: block;
+  cursor: pointer;
+  width: 48px;
+  height: 48px;
+  border-radius: 50% !important;
+  overflow: hidden;
+}
+
+/* Remove the small camera icon circle */
+.profile-upload-label {
+  display: none !important;
+}
+
+/* Ensure the avatar remains circular */
+.user-avatar-label .user-avatar,
+.user-avatar-label .user-profile-pic {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50% !important;
+  object-fit: cover;
+}
+
+/* Hover effect to indicate clickability */
+.user-avatar-label:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
+
+/* Add a subtle overlay on hover to indicate clickable */
+.user-avatar-label:hover .user-avatar {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  filter: brightness(1.05);
+}
+
+.user-avatar-label:hover .user-profile-pic {
+  filter: brightness(0.95);
+}
+/* ============================================ */
+/* PROFILE PICTURE - PERFECT CIRCLE */
+/* ============================================ */
+
+/* Avatar Wrapper - Circular container */
+.user-avatar-wrapper {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+/* Default avatar (initials) - Perfect Circle */
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 50% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+/* Uploaded profile picture - Perfect Circle */
+.user-profile-pic {
+  width: 48px;
+  height: 48px;
+  border-radius: 50% !important;
+  object-fit: cover;
+  border: 2px solid #667eea;
+  transition: all 0.2s ease;
+}
+
+.user-profile-pic:hover {
+  transform: scale(1.05);
+  border-color: #764ba2;
+}
+
+/* Hidden file input */
+.profile-upload-input {
+  display: none;
+}
+
+/* Camera icon button */
+.profile-upload-label {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  width: 20px;
+  height: 20px;
+  border-radius: 50% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid #1e293b;
+  color: white;
+  z-index: 10;
+}
+
+.profile-upload-label:hover {
+  transform: scale(1.1);
+  background: linear-gradient(135deg, #764ba2, #667eea);
+}
+
+/* User details - Only show name, NO role here to avoid duplicate */
+.user-details {
+  flex: 1;
+  overflow: hidden;
+}
+
+.user-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Role is shown in a different place or hidden to avoid duplicate */
+.user-role {
+  display: none; /* HIDE ROLE HERE - SHOW ONLY IN HEADER */
+}
+@media (max-width: 768px) {
+  .user-avatar-label {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* ============================================ */
+/* LOGOUT BUTTON */
+/* ============================================ */
+.logout-btn {
+  width: 100%;
+  padding: 10px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  color: #f87171;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  color: #ef4444;
+  transform: translateY(-1px);
+}
+
+/* ============================================ */
+/* REMOVE PROFILE PICTURE BUTTON */
+/* ============================================ */
+.remove-profile-pic-btn {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: #ef4444;
+  width: 20px;
+  height: 20px;
+  border-radius: 50% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  cursor: pointer;
+  border: 2px solid #1e293b;
+  color: white;
+  transition: all 0.2s ease;
+  padding: 0;
+  z-index: 10;
+}
+
+.remove-profile-pic-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+/* ============================================ */
+/* MAIN CONTENT AREA */
+/* ============================================ */
+.main-content {
+  flex: 1;
+  margin-left: 280px;
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.content-wrapper {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ============================================ */
+/* MOBILE MENU TOGGLE */
+/* ============================================ */
+ 
+
+ 
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+  display: none;
+}
+
+/* ============================================ */
+/* RESPONSIVE SIDEBAR */
+/* ============================================ */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 80px;
+    transform: translateX(-100%);
+    position: fixed;
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+    width: 280px;
+  }
+  
+  .mobile-menu-toggle {
+    display: flex;
+  }
+  
+  .sidebar-overlay {
+    display: block;
+  }
+  
+  .main-content {
+    margin-left: 0;
+  }
+  
+  .logo-text,
+  .nav-text {
+    display: none;
+  }
+  
+  .sidebar.open .logo-text,
+  .sidebar.open .nav-text,
+  .sidebar.open .user-details {
+    display: block;
+  }
+  
+  .nav-item {
+    justify-content: center;
+  }
+  
+  .sidebar.open .nav-item {
+    justify-content: flex-start;
+  }
+  
+  .user-info {
+    justify-content: center;
+  }
+  
+  .sidebar.open .user-info {
+    justify-content: flex-start;
+  }
+  
+  /* Smaller profile picture on mobile */
+  .user-avatar-wrapper,
+  .user-avatar,
+  .user-profile-pic {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .profile-upload-label,
+  .remove-profile-pic-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 8px;
+  }
+  
+  .user-name {
+    font-size: 12px;
+  }
+}
+
+/* ============================================ */
+/* SCROLLBAR STYLING */
+/* ============================================ */
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Logo Image Styling */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-image {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.logo-text {
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff, #a5d6a5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 1px;
+}
+
+/* For collapsed sidebar state */
+.sidebar.collapsed .logo-image {
+  width: 32px;
+  height: 32px;
+}
+
+.sidebar.collapsed .logo-text {
+  display: none;
+}
+
+/* Logo Image Styling */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-image {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.logo-text {
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff, #a5d6a5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 1px;
+}
+
+/* For collapsed sidebar state */
+.sidebar.collapsed .logo-image {
+  width: 32px;
+  height: 32px;
+}
+
+.sidebar.collapsed .logo-text {
+  display: none;
+}
+
+/* ============================================
+   DASHBOARD PAGE - RESPONSIVE FIXES
+   ============================================ */
+
+/* Stats Grid - Responsive */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 0;
+  padding: 14px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  border: 1px solid #e9edf2;
+  cursor: pointer;
+}
+
+.stat-icon {
+  width: 42px;
+  height: 42px;
+  background: #f0f2f8;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #1e293b;
+  flex-shrink: 0;
+}
+
+.stat-info h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: #1e293b;
+}
+
+.stat-info p {
+  margin: 0;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Quick Actions Grid */
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.quick-action-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #f8f9fa;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS FOR DASHBOARD
+   ============================================ */
+
+/* Tablets (768px - 991px) */
+@media (max-width: 991px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  
+  .stat-card {
+    padding: 12px;
+  }
+  
+  .stat-icon {
+    width: 38px;
+    height: 38px;
+    font-size: 18px;
+  }
+  
+  .stat-info h3 {
+    font-size: 18px;
+  }
+  
+  .quick-actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .quick-action-card {
+    padding: 8px 12px;
+  }
+}
+
+/* Mobile Phones (575px - 767px) */
+@media (max-width: 767px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .stat-card {
+    padding: 10px;
+  }
+  
+  .stat-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+  }
+  
+  .stat-info h3 {
+    font-size: 16px;
+  }
+  
+  .stat-info p {
+    font-size: 8px;
+  }
+  
+  .quick-actions-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .quick-action-card {
+    padding: 8px;
+  }
+  
+  .quick-action-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .quick-action-title {
+    font-size: 12px;
+  }
+  
+  .quick-action-desc {
+    font-size: 10px;
+  }
+}
+
+/* Extra Small Devices (up to 480px) */
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .stat-card {
+    padding: 8px 10px;
+  }
+  
+  .stat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .stat-info h3 {
+    font-size: 15px;
+  }
+  
+  .stat-info p {
+    font-size: 8px;
+  }
+  
+  .quick-action-card {
+    padding: 6px 10px;
+  }
+  
+  .quick-action-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .quick-action-title {
+    font-size: 11px;
+  }
+  
+  .quick-action-desc {
+    font-size: 9px;
+  }
+}
+
+/* Landscape Mode for Small Devices */
+@media (max-width: 767px) and (orientation: landscape) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  
+  .stat-card {
+    padding: 6px;
+  }
+  
+  .stat-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .stat-info h3 {
+    font-size: 12px;
+  }
+  
+  .quick-actions-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  
+  .quick-action-card {
+    padding: 6px;
+  }
+  
+  .quick-action-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+}
+
+/* Dashboard Container - Responsive */
+.dashboard-container {
+  padding: 0;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.dashboard-header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+
+.dashboard-header p {
+  font-size: 13px;
+  color: #6c757d;
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 18px;
+  }
+  
+  .dashboard-header p {
+    font-size: 11px;
+  }
+}
+ 
+
+/* ============================================
+   MOBILE SIDEBAR FIX - ADD THIS TO YOUR App.css
+   ============================================ */
+
+ 
+
+ 
+/* ============================================
+   MOBILE STYLES (max-width: 768px)
+   ============================================ */
+@media (max-width: 768px) {
+  /* Show ONLY hamburger (3 bars) on mobile */
+  .mobile-menu-toggle {
+    display: flex;
+  }
+
+  /* Close button (X) on the top-left edge of the sidebar when open */
+
+
+  /* Hide sidebar by default on mobile */
+  .sidebar {
+    transform: translateX(-100%);
+
+  }
+  
+  /* Show sidebar when open class is added */
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  /* Show overlay when sidebar is open */
+  .sidebar-overlay {
+    display: block;
+  }
+  
+  /* Main content takes full width */
+  .main-content {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+  
+  /* Add padding to main content so it doesn't hide behind the menu button */
+  .main-content {
+    padding-top: 70px;
+  }
+  
+  /* Better touch targets */
+  .nav-item {
+    padding: 12px 16px;
+    min-height: 48px;
+  }
+  
+  /* Adjust content wrapper padding */
+  .content-wrapper {
+    padding: 15px;
+  }
+  
+  /* Make stats grid single column on mobile */
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  
+  /* Make quick actions single column */
+  .quick-actions-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Make tables scrollable horizontally */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Improve form layouts on mobile */
+  .form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* Full width buttons on mobile */
+  .modal-actions {
+    flex-direction: column;
+  }
+  
+  .modal-actions button {
+    width: 100%;
+  }
+  
+  /* Adjust promotion tabs for mobile */
+  .promotion-tabs {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .promotion-tabs .tab-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  /* Single column promotion stats */
+  .promotion-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Better bulk actions on mobile */
+  .bulk-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .bulk-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ============================================
+   EXTRA SMALL DEVICES (max-width: 480px)
+   ============================================ */
+@media (max-width: 480px) {
+  .mobile-menu-toggle {
+    width: 40px;
+    height: 40px;
+    top: 10px;
+    left: 10px;
+  }
+  
+  .main-content {
+    padding-top: 65px;
+  }
+  
+  .content-wrapper {
+    padding: 10px;
+  }
+  
+  .stat-card {
+    padding: 12px;
+  }
+  
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+  
+  .stat-info h3 {
+    font-size: 20px;
+  }
+  
+  .quick-action-card {
+    padding: 12px;
+  }
+  
+  .modal-content {
+    width: 95%;
+    margin: 10px auto;
+  }
+}
+
+
+/* ============================================
+   PROFESSIONAL MOBILE LAYOUT - ALL PAGES
+   ============================================ */
+
+/* Mobile styles (max-width: 768px) */
+@media (max-width: 768px) {
+  
+  /* ========== DASHBOARD PAGE ========== */
+  /* Stats - 2 cards per row */
+  .stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .stat-card {
+    padding: 10px !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+  }
+  
+  .stat-icon {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 16px !important;
+  }
+  
+  .stat-info h3 {
+    font-size: 16px !important;
+    margin-bottom: 2px !important;
+  }
+  
+  .stat-info p {
+    font-size: 8px !important;
+    margin: 0 !important;
+  }
+  
+  /* Quick Actions - 2 columns */
+  .quick-actions-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  
+  .quick-action-card {
+    padding: 8px !important;
+    gap: 8px !important;
+  }
+  
+  .quick-action-icon {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 14px !important;
+  }
+  
+  .quick-action-title {
+    font-size: 11px !important;
+    margin-bottom: 2px !important;
+  }
+  
+  .quick-action-desc {
+    font-size: 9px !important;
+  }
+  
+  /* Activity Feed */
+  .activity-item {
+    padding: 8px !important;
+    gap: 8px !important;
+  }
+  
+  .activity-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 12px !important;
+  }
+  
+  .activity-title {
+    font-size: 11px !important;
+  }
+  
+  .activity-time {
+    font-size: 9px !important;
+  }
+  
+  /* ========== TABLES (Students, Teachers, Classes, Fees) ========== */
+  .table-container {
+    border-radius: 8px !important;
+  }
+  
+  .data-table th,
+  .data-table td {
+    padding: 8px 6px !important;
+    font-size: 11px !important;
+  }
+  
+  /* Action buttons in tables */
+  .action-buttons {
+    gap: 4px !important;
+  }
+  
+  .btn-view, .btn-edit, .btn-delete, .btn-info, .btn-pay {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 11px !important;
+  }
+  
+  /* ========== FILTERS SECTION ========== */
+  .filters-row, .filters {
+    padding: 10px !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+  
+  .filter-select, .filter-input {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+  
+  .btn-primary, .btn-add, .btn-save, .btn-export, .btn-refresh {
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+  }
+  
+  /* ========== MODALS ========== */
+  .modal-content {
+    width: 95% !important;
+    max-width: 95% !important;
+  }
+  
+  .modal-header {
+    padding: 12px 16px !important;
+  }
+  
+  .modal-header h2 {
+    font-size: 16px !important;
+  }
+  
+  .modal-body {
+    padding: 16px !important;
+  }
+  
+  .modal-actions {
+    padding: 12px 16px !important;
+    gap: 8px !important;
+  }
+  
+  /* Form groups */
+  .form-group {
+    margin-bottom: 12px !important;
+  }
+  
+  .form-group label {
+    font-size: 11px !important;
+    margin-bottom: 4px !important;
+  }
+  
+  .form-group input, 
+  .form-group select, 
+  .form-group textarea {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+  
+  /* ========== PAGE HEADERS ========== */
+  .page-header {
+    margin-bottom: 16px !important;
+  }
+  
+  .page-header h1 {
+    font-size: 18px !important;
+  }
+  
+  .page-header p {
+    font-size: 11px !important;
+  }
+  
+  .section-header h2 {
+    font-size: 14px !important;
+  }
+  
+  /* ========== TABS ========== */
+  .promotion-tabs, .fees-tabs {
+    padding: 6px 12px !important;
+    gap: 6px !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .tab-btn {
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+  }
+  
+  /* ========== CARDS & CONTAINERS ========== */
+  .card, .dashboard-card, .fee-settings-container {
+    padding: 12px !important;
+  }
+  
+  /* ========== STATUS BADGES ========== */
+  .status-badge {
+    padding: 2px 6px !important;
+    font-size: 9px !important;
+  }
+}
+
+/* ============================================
+   PROFESSIONAL MOBILE LAYOUT - COMPLETE
+   ============================================ */
+
+@media (max-width: 768px) {
+  
+  /* ========== PROMOTION PAGE ========== */
+  /* Promotion stats - 2 per row */
+  .promotion-stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .promotion-stats-grid .stat-card {
+    padding: 10px !important;
+  }
+  
+  .promotion-stats-grid .stat-icon {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 18px !important;
+  }
+  
+  .promotion-stats-grid .stat-info h3 {
+    font-size: 18px !important;
+  }
+  
+  .promotion-stats-grid .stat-info p {
+    font-size: 9px !important;
+  }
+  
+  /* Promotion tabs */
+  .promotion-tabs {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding: 8px !important;
+  }
+  
+  .promotion-tabs .tab-btn {
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+  }
+  
+  /* Promotion tables */
+  .promotion-classes-section .data-table th,
+  .promotion-classes-section .data-table td {
+    padding: 6px 4px !important;
+    font-size: 10px !important;
+  }
+  
+  /* Bulk actions */
+  .bulk-actions {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding: 8px !important;
+  }
+  
+  .bulk-actions button {
+    padding: 5px 10px !important;
+    font-size: 10px !important;
+    flex: 1 !important;
+    min-width: auto !important;
+  }
+  
+  /* Filter section on promotion */
+  .promotion-all-section .filters {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+  
+  .promotion-all-section .filters select {
+    flex: 1 !important;
+    min-width: 100px !important;
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+  }
+  
+  .promotion-all-section .filters .btn-primary {
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+  }
+  
+  /* Status badges */
+  .qualified-badge, .unqualified-badge {
+    padding: 2px 6px !important;
+    font-size: 9px !important;
+  }
+  
+  /* ========== FEES PAGE ========== */
+  /* Stats grid - 2 per row */
+  .fees-page .stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .fees-page .stat-card {
+    padding: 10px !important;
+  }
+  
+  .fees-page .stat-card h3 {
+    font-size: 14px !important;
+    margin: 0 !important;
+  }
+  
+  .fees-page .stat-number {
+    font-size: 16px !important;
+  }
+  
+  /* Fees tabs */
+  .fees-tabs {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    margin-bottom: 12px !important;
+  }
+  
+  .fees-tabs .tab-btn {
+    padding: 5px 12px !important;
+    font-size: 11px !important;
+  }
+  
+  /* Fees filters row - keep inline */
+  .fees-page .filters-row {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+  
+  .fees-page .filter-select,
+  .fees-page .filter-input {
+    flex: 1 !important;
+    min-width: 100px !important;
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+  }
+  
+  .fees-page .btn-primary {
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+  }
+  
+  /* Fees table */
+  .fees-page .data-table th,
+  .fees-page .data-table td {
+    padding: 6px 4px !important;
+    font-size: 10px !important;
+  }
+  
+  /* Fee settings */
+  .fee-settings-container {
+    padding: 12px !important;
+  }
+  
+  .settings-header {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 12px !important;
+  }
+  
+  .settings-header h2 {
+    font-size: 14px !important;
+  }
+  
+  .btn-add {
+    padding: 4px 10px !important;
+    font-size: 11px !important;
+  }
+  
+  /* Category filter */
+  .category-filter {
+    gap: 6px !important;
+    margin-bottom: 12px !important;
+  }
+  
+  .filter-chip {
+    padding: 4px 10px !important;
+    font-size: 10px !important;
+  }
+  
+  /* Add fee form */
+  .add-fee-form {
+    padding: 12px !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .add-fee-form h3 {
+    font-size: 13px !important;
+    margin-bottom: 10px !important;
+  }
+  
+  .form-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  
+  /* Payment modal */
+  .payment-card {
+    width: 95% !important;
+  }
+  
+  .payment-header h3 {
+    font-size: 14px !important;
+  }
+  
+  .payment-student {
+    padding: 10px 12px !important;
+    font-size: 11px !important;
+  }
+  
+  .payment-form {
+    padding: 12px !important;
+  }
+  
+  /* ========== COMMON TABLE STYLES ========== */
+  .table-container {
+    overflow-x: auto !important;
+  }
+  
+  .data-table {
+    min-width: 500px !important;
+  }
+  
+  /* Action buttons */
+  .btn-pay, .btn-info, .btn-edit-small, .btn-delete-small {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 10px !important;
+  }
+}
+
+/* ============================================
+   SIDEBAR VISIBILITY & SPACING FIX
+   ============================================ */
+
+/* ============================================
+   SIDEBAR VISIBILITY & SPACING FIX - REDUCED GAP
+   ============================================ */
+
+/* Desktop - Sidebar visible by default */
+@media (min-width: 769px) {
+  .sidebar {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 260px !important;  /* Reduced from 270px */
+    height: 100vh !important;
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+    transform: translateX(0) !important;
+    z-index: 100 !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Main content with reduced margin */
+  .main-content {
+    margin-left: 260px !important;  /* Match sidebar width */
+    padding: 16px 20px !important;  /* Reduced padding */
+    min-height: 100vh !important;
+    width: calc(100% - 260px) !important;
+  }
+  
+  .content-wrapper {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+  
+  /* Hide mobile menu button on desktop */
+  .mobile-menu-toggle {
+    display: none !important;
+  }
+}
+
+/* Tablet landscape - even smaller gap */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar {
+    width: 240px !important;
+  }
+  
+  .main-content {
+    margin-left: 240px !important;
+    padding: 12px 16px !important;
+    width: calc(100% - 240px) !important;
+  }
+}
+  /* Main content with margin to accommodate sidebar */
+  .main-content {
+    margin-left: 270px !important;
+    padding: 20px 24px !important;
+    min-height: 100vh !important;
+    width: calc(100% - 270px) !important;
+  }
+  
+  .content-wrapper {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+  
+  /* Hide mobile menu button on desktop */
+  .mobile-menu-toggle {
+    display: none !important;
+  }
+
+/* Mobile - Sidebar hidden by default, shows when toggled */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 280px !important;
+    height: 100vh !important;
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease-in-out !important;
+    z-index: 10000 !important;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0) !important;
+  }
+  
+  .main-content {
+    margin-left: 0 !important;
+    padding: 70px 16px 16px 16px !important;
+    width: 100% !important;
+  }
+  
+  /* Show mobile menu button */
+  .mobile-menu-toggle {
+    display: flex !important;
+    position: fixed !important;
+    top: 15px !important;
+    left: 15px !important;
+    z-index: 10001 !important;
+    width: 45px !important;
+    height: 45px !important;
+    background: #3b82f6 !important;
+    border: none !important;
+    border-radius: 10px !important;
+    color: white !important;
+    font-size: 20px !important;
+    cursor: pointer !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  /* Sidebar overlay */
+  .sidebar-overlay {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    z-index: 9999 !important;
+  }
+  
+  .sidebar-overlay.active,
+  .sidebar.open ~ .sidebar-overlay {
+    display: block !important;
+  }
+}
+
+/* Tablet landscape */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar {
+    width: 250px !important;
+  }
+  
+  .main-content {
+    margin-left: 250px !important;
+    padding: 16px 20px !important;
+    width: calc(100% - 250px) !important;
+  }
+}
+
+/* Ensure dashboard container has proper spacing */
+.dashboard-container {
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.stats-grid {
+  gap: 16px !important;
+  margin-bottom: 20px !important;
+}
+
+.quick-actions-section {
+  margin-bottom: 20px !important;
+}
+/* ============================================
+   FIX TABLE OVERFLOW ON DESKTOP
+   ============================================ */
+
+/* Desktop tables - no horizontal scroll */
+@media (min-width: 992px) {
+  .table-container,
+  .data-table,
+  .professional-table {
+    overflow-x: visible !important;
+  }
+  
+  .data-table,
+  .professional-table {
+    min-width: 100% !important;
+    table-layout: auto !important;
+  }
+  
+  .data-table th,
+  .data-table td,
+  .professional-table th,
+  .professional-table td {
+    white-space: normal !important;
+    word-break: normal !important;
+  }
+}
+
+/* For large screens, ensure tables use full width */
+@media (min-width: 1200px) {
+  .data-table,
+  .professional-table {
+    width: 100% !important;
+    table-layout: auto !important;
+  }
+  
+  .data-table th,
+  .data-table td {
+    padding: 12px 16px !important;
+  }
+}
+
+/* Fix for specific table column widths on desktop */
+@media (min-width: 992px) {
+  /* Users table */
+  .users-table th:nth-child(1),
+  .users-table td:nth-child(1) { width: 18% !important; }  /* USER */
+  .users-table th:nth-child(2),
+  .users-table td:nth-child(2) { width: 10% !important; }  /* ROLE */
+  .users-table th:nth-child(3),
+  .users-table td:nth-child(3) { width: 25% !important; }  /* EMAIL */
+  .users-table th:nth-child(4),
+  .users-table td:nth-child(4) { width: 18% !important; }  /* LAST LOGIN */
+  .users-table th:nth-child(5),
+  .users-table td:nth-child(5) { width: 10% !important; }  /* STATUS */
+  .users-table th:nth-child(6),
+  .users-table td:nth-child(6) { width: 19% !important; }  /* ACTIONS */
+  
+  /* Students table */
+  .professional-table th:nth-child(1),
+  .professional-table td:nth-child(1) { width: 15% !important; }
+  .professional-table th:nth-child(2),
+  .professional-table td:nth-child(2) { width: 20% !important; }
+  .professional-table th:nth-child(3),
+  .professional-table td:nth-child(3) { width: 10% !important; }
+  .professional-table th:nth-child(4),
+  .professional-table td:nth-child(4) { width: 20% !important; }
+  .professional-table th:nth-child(5),
+  .professional-table td:nth-child(5) { width: 15% !important; }
+  .professional-table th:nth-child(6),
+  .professional-table td:nth-child(6) { width: 20% !important; }
+}
+
+/* Remove min-width constraint from tables on desktop */
+@media (min-width: 992px) {
+  .data-table,
+  .professional-table {
+    min-width: 100% !important;
+  }
+  
+  .table-container {
+    overflow-x: visible !important;
+  }
+}
+
+/* Keep table container scrollable only on mobile */
+@media (max-width: 768px) {
+  .table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  .data-table,
+  .professional-table {
+    min-width: 600px !important;
+  }
+}
+
+
+/* ============================================
+   COMPLETE RESPONSIVE CSS - REDUCED WIDTH & SIZE
+   Paste this at the end of your App.css
+   ============================================ */
+
+/* ============================================
+   1. MOBILE MENU BUTTON
+   ============================================ */
+.mobile-menu-toggle {
+  display: none;
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  width: 40px;
+  height: 40px;
+  background: #3b82f6;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-radius: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: flex !important;
+  }
+}
+
+/* ============================================
+   2. STATS CARDS - REDUCED SIZE
+   ============================================ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: white;
+  border: 1px solid #eef2f6;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 0 !important;
+}
+
+.stat-icon {
+  width: 32px;
+  height: 32px;
+  background: #f0f2f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #3b82f6;
+  border-radius: 0 !important;
+}
+
+.stat-info h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: #1e293b;
+}
+
+.stat-info p {
+  margin: 2px 0 0;
+  font-size: 8px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Tablet - Reduce card size */
+@media (max-width: 1024px) {
+  .stat-card {
+    padding: 6px 8px;
+  }
+  .stat-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  .stat-info h3 {
+    font-size: 14px;
+  }
+}
+
+/* Mobile - Single column, smaller cards */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .stat-card {
+    padding: 8px 10px;
+  }
+  .stat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  .stat-info h3 {
+    font-size: 16px;
+  }
+}
+
+/* ============================================
+   3. ALL BUTTONS - REDUCED WIDTH & FONT SIZE
+   ============================================ */
+.btn-add, .btn-primary, .btn-save, .btn-export, 
+.btn-refresh, .btn-search, .btn-pay, .btn-generate, 
+.btn-import, .btn-submit, .btn-reset, 
+.tab-btn, .filter-chip, .btn-close {
+  border-radius: 0 !important;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+/* DESKTOP - Normal size */
+.btn-add, .btn-primary, .btn-save, .btn-export, 
+.btn-refresh, .btn-search, .btn-pay, .btn-generate, 
+.btn-import, .btn-submit, .btn-reset {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tab-btn {
+  padding: 6px 16px;
+  font-size: 12px;
+}
+
+/* TABLET (max-width: 1024px) - Smaller width */
+@media (max-width: 1024px) {
+  .btn-add, .btn-primary, .btn-save, .btn-export, 
+  .btn-refresh, .btn-search, .btn-pay, .btn-generate, 
+  .btn-import, .btn-submit, .btn-reset {
+    padding: 4px 10px !important;
+    font-size: 11px !important;
+  }
+  
+  .tab-btn {
+    padding: 4px 12px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* MOBILE (max-width: 768px) - Much smaller width */
+@media (max-width: 768px) {
+  .btn-add, .btn-primary, .btn-save, .btn-export, 
+  .btn-refresh, .btn-search, .btn-pay, .btn-generate, 
+  .btn-import, .btn-submit, .btn-reset {
+    padding: 3px 8px !important;
+    font-size: 10px !important;
+    min-width: auto !important;
+  }
+  
+  .tab-btn {
+    padding: 3px 10px !important;
+    font-size: 10px !important;
+  }
+}
+
+/* SMALL MOBILE (max-width: 480px) - Smallest width */
+@media (max-width: 480px) {
+  .btn-add, .btn-primary, .btn-save, .btn-export, 
+  .btn-refresh, .btn-search, .btn-pay, .btn-generate, 
+  .btn-import, .btn-submit, .btn-reset {
+    padding: 2px 6px !important;
+    font-size: 9px !important;
+  }
+  
+  .tab-btn {
+    padding: 2px 8px !important;
+    font-size: 9px !important;
+  }
+}
+
+/* ============================================
+   4. FILTERS & DROPDOWNS - REDUCED WIDTH
+   ============================================ */
+.filters-row, .filters {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  background: white;
+  padding: 8px 12px;
+  border: 1px solid #eef2f6;
+  margin-bottom: 16px;
+}
+
+.filter-select, .filter-input {
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #1e293b;
+  border-radius: 0 !important;
+  flex-shrink: 0;
+}
+
+/* DESKTOP - Normal width */
+.filter-select, .filter-input {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.filter-select:first-child { width: 130px; min-width: 130px; }
+.filter-select:nth-child(2) { width: 110px; min-width: 110px; }
+.filter-input { width: 130px; min-width: 130px; }
+
+/* TABLET - Smaller width */
+@media (max-width: 1024px) {
+  .filter-select, .filter-input {
+    padding: 5px 8px !important;
+    font-size: 11px !important;
+  }
+  .filter-select:first-child { width: 100px !important; min-width: 100px !important; }
+  .filter-select:nth-child(2) { width: 90px !important; min-width: 90px !important; }
+  .filter-input { width: 100px !important; min-width: 100px !important; }
+}
+
+/* MOBILE - Even smaller width (horizontal scroll) */
+@media (max-width: 768px) {
+  .filters-row, .filters {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  
+  .filter-select, .filter-input {
+    padding: 4px 6px !important;
+    font-size: 10px !important;
+  }
+  .filter-select:first-child { width: 80px !important; min-width: 80px !important; }
+  .filter-select:nth-child(2) { width: 70px !important; min-width: 70px !important; }
+  .filter-input { width: 80px !important; min-width: 80px !important; }
+}
+
+/* SMALL MOBILE - Smallest width */
+@media (max-width: 480px) {
+  .filter-select, .filter-input {
+    padding: 3px 4px !important;
+    font-size: 9px !important;
+  }
+  .filter-select:first-child { width: 65px !important; min-width: 65px !important; }
+  .filter-select:nth-child(2) { width: 60px !important; min-width: 60px !important; }
+  .filter-input { width: 65px !important; min-width: 65px !important; }
+}
+
+/* EXTRA SMALL - Tiny width */
+@media (max-width: 380px) {
+  .filter-select:first-child { width: 55px !important; min-width: 55px !important; }
+  .filter-select:nth-child(2) { width: 50px !important; min-width: 50px !important; }
+  .filter-input { width: 55px !important; min-width: 55px !important; }
+  .filter-select, .filter-input { font-size: 8px !important; padding: 2px 3px !important; }
+}
+
+/* ============================================
+   5. SEARCH BAR - REDUCED WIDTH
+   ============================================ */
+.search-bar-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-input-wrapper {
+  flex: 1;
+  min-width: 150px;
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: 6px 8px 6px 28px;
+  border: 1px solid #e2e8f0;
+  font-size: 12px;
+  border-radius: 0 !important;
+}
+
+/* Tablet - Smaller search */
+@media (max-width: 1024px) {
+  .search-input-wrapper {
+    min-width: 120px;
+  }
+  .search-input {
+    padding: 5px 6px 5px 26px;
+    font-size: 11px;
+  }
+}
+
+/* Mobile - Smaller search */
+@media (max-width: 768px) {
+  .search-bar-container {
+    flex-wrap: nowrap;
+  }
+  .search-input-wrapper {
+    min-width: 100px;
+  }
+  .search-input {
+    padding: 4px 5px 4px 24px;
+    font-size: 10px;
+  }
+}
+
+/* Small Mobile - Smallest search */
+@media (max-width: 480px) {
+  .search-input-wrapper {
+    min-width: 80px;
+  }
+  .search-input {
+    padding: 3px 4px 3px 22px;
+    font-size: 9px;
+  }
+}
+
+/* ============================================
+   6. TABLE ACTION BUTTONS - REDUCED SIZE
+   ============================================ */
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-start;
+}
+
+.btn-view, .btn-edit, .btn-delete, .btn-info, .btn-pay, .btn-status {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  border-radius: 0 !important;
+}
+
+/* Tablet - Smaller action buttons */
+@media (max-width: 1024px) {
+  .btn-view, .btn-edit, .btn-delete, .btn-info, .btn-pay, .btn-status {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+}
+
+/* Mobile - Even smaller */
+@media (max-width: 768px) {
+  .btn-view, .btn-edit, .btn-delete, .btn-info, .btn-pay, .btn-status {
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
+  }
+}
+
+/* Small Mobile - Smallest */
+@media (max-width: 480px) {
+  .btn-view, .btn-edit, .btn-delete, .btn-info, .btn-pay, .btn-status {
+    width: 20px;
+    height: 20px;
+    font-size: 9px;
+  }
+}
+
+/* ============================================
+   7. TABLES - COMPACT
+   ============================================ */
+.table-container {
+  overflow-x: auto;
+  background: white;
+  border: 1px solid #eef2f6;
+  border-radius: 0 !important;
+}
+
+.professional-table, .data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.professional-table th, .data-table th {
+  padding: 8px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.professional-table td, .data-table td {
+  padding: 8px 6px;
+  font-size: 11px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .professional-table th, .data-table th {
+    padding: 6px 4px;
+    font-size: 10px;
+  }
+  .professional-table td, .data-table td {
+    padding: 6px 4px;
+    font-size: 10px;
+  }
+}
+
+/* Mobile - Horizontal scroll */
+@media (max-width: 768px) {
+  .professional-table, .data-table {
+    min-width: 550px;
+  }
+  .professional-table th, .data-table th {
+    padding: 5px 3px;
+    font-size: 9px;
+  }
+  .professional-table td, .data-table td {
+    padding: 5px 3px;
+    font-size: 9px;
+  }
+}
+
+/* ============================================
+   8. STATUS BADGES - COMPACT
+   ============================================ */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 600;
+  border-radius: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .status-badge {
+    padding: 2px 4px;
+    font-size: 8px;
+  }
+}
+
+/* ============================================
+   9. FORMS - COMPACT
+   ============================================ */
+.form-group {
+  margin-bottom: 10px;
+}
+
+.form-group label {
+  font-size: 11px;
+  margin-bottom: 3px;
+  display: block;
+}
+
+.form-group input, 
+.form-group select, 
+.form-group textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 11px;
+  border-radius: 0 !important;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .form-group label {
+    font-size: 10px;
+  }
+  .form-group input, 
+  .form-group select, 
+  .form-group textarea {
+    padding: 5px 6px;
+    font-size: 10px;
+  }
+  .form-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-group label {
+    font-size: 9px;
+  }
+  .form-group input, 
+  .form-group select, 
+  .form-group textarea {
+    padding: 4px 5px;
+    font-size: 9px;
+  }
+}
+
+/* ============================================
+   10. MODALS - COMPACT
+   ============================================ */
+.modal, .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal-content {
+  background: white;
+  max-width: 450px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border-radius: 0 !important;
+}
+
+.modal-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e9edf2;
+  background: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+}
+
+.modal-body {
+  padding: 14px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid #e9edf2;
+  background: #fafcff;
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    max-width: 95%;
+  }
+  .modal-header {
+    padding: 10px 14px;
+  }
+  .modal-header h2 {
+    font-size: 14px;
+  }
+  .modal-body {
+    padding: 12px;
+  }
+  .modal-actions {
+    flex-direction: column;
+  }
+  .modal-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+
+/* ============================================
+   FULL WIDTH PAGES - ADD THIS TO YOUR App.css
+   ============================================ */
+
+/* Make content wrapper full width */
+.content-wrapper {
+  padding: 20px 24px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Make all pages full width */
+.dashboard-container,
+.promotion-management-page,
+.grades-page,
+.attendance-page,
+.students-page,
+.teachers-page,
+.classes-page,
+.fees-page,
+.users-page,
+.subjects-page,
+.timetable-page {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Stats grid - full width cards */
+.stats-grid {
+  width: 100%;
+}
+
+/* Quick actions grid - full width */
+.quick-actions-grid {
+  width: 100%;
+}
+
+/* Tables full width */
+.table-container {
+  width: 100%;
+}
+
+.data-table,
+.professional-table {
+  width: 100%;
+}
+
+/* Desktop sidebar adjustment */
+@media (min-width: 769px) {
+  .main-content {
+    margin-left: 260px !important;
+    width: calc(100% - 260px) !important;
+  }
+}
+
+/* Remove max-width from any container */
+.container,
+.main-container,
+.app-container {
+  max-width: 100% !important;
+}
+
+/* Prevent horizontal scroll */
+body,
+html,
+#root,
+.app {
+  overflow-x: hidden !important;
+  width: 100% !important;
+}
+/* ============================================
+   11. REMOVE ALL BORDER-RADIUS
+   ============================================ */
+ 
+
+button, .btn, .btn-primary, .btn-add, .btn-save, .btn-export, 
+.btn-refresh, .btn-search, .btn-reset, .tab-btn, .filter-chip, 
+.filter-select, .filter-input, .stat-card, .stat-icon, 
+.table-container, .modal-content, .modal-header, .card, 
+.dashboard-card, .fee-settings-container {
+  border-radius: 0 !important;
+}
+
+/* ============================================
+   ADD BORDER-RADIUS TO ALL BUTTONS
+   ============================================ */
+
+/* All buttons - add border-radius */
+button,
+.btn,
+.btn-add,
+.btn-primary,
+.btn-save,
+.btn-export,
+.btn-refresh,
+.btn-search,
+.btn-pay,
+.btn-generate,
+.btn-import,
+.btn-submit,
+.btn-reset,
+.btn-cancel,
+.btn-danger,
+.btn-delete,
+.btn-edit,
+.btn-view,
+.btn-info,
+.btn-promote,
+.btn-graduate,
+.btn-save-modal,
+.btn-cancel-modal,
+.btn-add-small,
+.btn-edit-small,
+.btn-delete-small,
+.btn-save-small,
+.btn-cancel-small,
+.btn-status,
+.logout-btn,
+.sidebar-settings-btn,
+.tab-btn,
+.filter-chip,
+.filter-pill,
+.filter-select,
+.filter-input,
+.btn-filter,
+.nav-item,
+.modal-close,
+.close-btn,
+.promotion-btn-primary,
+.promotion-btn-secondary {
+  border-radius: 8px !important;
+}
+
+/* Specific buttons with different radius */
+.btn-add,
+.btn-primary,
+.btn-save,
+.btn-export,
+.btn-refresh,
+.btn-search,
+.btn-generate,
+.btn-promote,
+.btn-danger,
+.btn-delete,
+.btn-save-modal,
+.btn-add-small {
+  border-radius: 8px !important;
+}
+
+/* Small action buttons in tables - slightly smaller radius */
+.btn-edit,
+.btn-view,
+.btn-info,
+.btn-pay,
+.btn-edit-small,
+.btn-delete-small,
+.btn-save-small,
+.btn-cancel-small {
+  border-radius: 6px !important;
+}
+
+/* Tab buttons */
+.tab-btn {
+  border-radius: 8px !important;
+}
+
+/* Filter chips and pills */
+.filter-chip,
+.filter-pill {
+  border-radius: 20px !important;
+}
+
+/* Dropdowns and inputs - optional */
+.filter-select,
+.filter-input,
+.search-input,
+.form-input,
+.form-select {
+  border-radius: 8px !important;
+}
+
+/* Modal close button */
+.modal-close {
+  border-radius: 50% !important;
+}
+
+/* Logout button */
+.logout-btn {
+  border-radius: 8px !important;
+}
+
+/* Sidebar nav items */
+.nav-item {
+  border-radius: 10px !important;
+}
+
+/* Cancel buttons */
+.btn-cancel,
+.btn-cancel-modal {
+  border-radius: 8px !important;
+}
+
+/* ============================================
+   OVERRIDE ANY PREVIOUS border-radius: 0
+   ============================================ */
+*:not(.sidebar):not(.sidebar-header):not(.sidebar-footer):not(.stat-card):not(.stat-icon):not(.table-container):not(.modal-content):not(.card):not(.dashboard-card) {
+  border-radius: 0;
+}
+
+button, 
+.btn, 
+.btn-add, 
+.btn-primary, 
+.btn-save, 
+.btn-export, 
+.btn-refresh, 
+.btn-search, 
+.btn-pay, 
+.btn-generate, 
+.btn-import, 
+.btn-submit, 
+.btn-reset, 
+.btn-cancel, 
+.btn-danger, 
+.btn-delete, 
+.btn-edit, 
+.btn-view, 
+.btn-info, 
+.btn-promote, 
+.btn-graduate, 
+.btn-save-modal, 
+.btn-cancel-modal, 
+.btn-add-small, 
+.btn-edit-small, 
+.btn-delete-small, 
+.btn-save-small, 
+.btn-cancel-small, 
+.btn-status, 
+.logout-btn, 
+.sidebar-settings-btn, 
+.tab-btn, 
+.filter-chip, 
+.filter-pill, 
+.filter-select, 
+.filter-input, 
+.btn-filter, 
+.nav-item, 
+.modal-close, 
+.close-btn {
+  border-radius: 8px !important;
+}
+
+/* Keep table action buttons with no background but with border-radius */
+.table-container .action-buttons button,
+.professional-table .action-buttons button,
+.data-table .action-buttons button {
+  border-radius: 6px !important;
+  background: transparent !important;
+}
+
+/* Table action buttons hover - only color change */
+.table-container .action-buttons .btn-view:hover,
+.professional-table .action-buttons .btn-view:hover {
+  background: transparent !important;
+  color: #3b82f6 !important;
+}
+
+.table-container .action-buttons .btn-edit:hover,
+.professional-table .action-buttons .btn-edit:hover {
+  background: transparent !important;
+  color: #f59e0b !important;
+}
+
+.table-container .action-buttons .btn-delete:hover,
+.professional-table .action-buttons .btn-delete:hover {
+  background: transparent !important;
+  color: #ef4444 !important;
+}
+
+/* Fee page action buttons */
+.fees-page .action-buttons .btn-pay:hover {
+  background: transparent !important;
+  color: #10b981 !important;
+}
+
+.fees-page .action-buttons .btn-info:hover {
+  background: transparent !important;
+  color: #8b5cf6 !important;
+}
+
+/* ============================================
+   OVERRIDE - Let individual pages control their styles
+   ============================================ */
+.fees-page,
+.fees-page * {
+  border-radius: inherit;
+}
+
+.fees-page .stat-card,
+.fees-page .stat-icon,
+.fees-page .btn-primary,
+.fees-page .btn-refresh,
+.fees-page .tab-btn,
+.fees-page .modal-content,
+.fees-page .modal-header {
+  border-radius: 8px !important;
+}
+
+.fees-page .filter-chip,
+.fees-page .filter-pill {
+  border-radius: 20px !important;
 }

@@ -1041,7 +1041,7 @@ users: [
     email: "admin@school.edu",
     password: "$2a$10$xgZkQqQ7QXQ7QXQ7QXQ7QO", // "Admin123!" (hashed)
     first_name: "System",
-    last_name: "Administrator",
+    last_name: "Admin",
     role: "admin",
     phone: "0244000001",
     mfa_enabled: false,

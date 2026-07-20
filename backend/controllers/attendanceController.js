@@ -44,6 +44,13 @@ const attendanceController = {
           error: 'Date, term, and academic year are required'
         });
       }
+
+      // Role-based access check
+      if (req.user?.role === 'teacher' && req.user.allowedClassIds?.length > 0) {
+        if (!req.user.allowedClassIds.includes(parseInt(classId))) {
+          return res.status(403).json({ success: false, error: 'Access denied to this class' });
+        }
+      }
       
       const attendance = await attendanceModel.getClassAttendance(classId, date, term, academic_year);
       res.json({
@@ -71,6 +78,13 @@ const attendanceController = {
           error: 'Term and academic year are required'
         });
       }
+
+      // Role-based access check
+      if (req.user?.role === 'parent' && req.user.allowedStudentIds?.length > 0) {
+        if (!req.user.allowedStudentIds.includes(parseInt(studentId))) {
+          return res.status(403).json({ success: false, error: 'Access denied to this student' });
+        }
+      }
       
       const summary = await attendanceModel.getStudentAttendanceSummary(studentId, term, academic_year);
       res.json({
@@ -97,6 +111,13 @@ const attendanceController = {
           success: false,
           error: 'Month, year, term, and academic year are required'
         });
+      }
+
+      // Role-based access check
+      if (req.user?.role === 'teacher' && req.user.allowedClassIds?.length > 0) {
+        if (!req.user.allowedClassIds.includes(parseInt(classId))) {
+          return res.status(403).json({ success: false, error: 'Access denied to this class' });
+        }
       }
       
       const report = await attendanceModel.getMonthlyAttendance(classId, month, year, term, academic_year);
