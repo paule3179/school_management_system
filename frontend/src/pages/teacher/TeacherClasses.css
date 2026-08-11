@@ -113,14 +113,13 @@
 .page-icon {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  border-radius: 14px;
+  background: transparent;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #3b82f6;
   font-size: 20px;
-  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.18);
   flex-shrink: 0;
 }
 

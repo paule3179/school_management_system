@@ -1,392 +1,289 @@
 // backend/controllers/promotionController.js
-const promotionModel = require('../models/promotionModel');
-const studentModel = require('../models/studentModel');
-const classModel = require('../models/classModel');
 const pool = require('../config/database');
 
 const promotionController = {};
 
-// ============================================
-// GET PROMOTION PREVIEW
-// ============================================
-promotionController.getPromotionPreview = async (req, res) => {
+// ============================================================
+// 1. GET STUDENTS WITH QUALIFICATION (for Teachers & Admins)
+// ============================================================
+promotionController.getStudentsWithQualification = async (req, res) => {
   try {
-    const { classId } = req.params;
-    
-    const classData = await classModel.getClassById(parseInt(classId));
-    if (!classData) {
-      return res.status(404).json({
-        success: false,
-        error: 'Class not found'
-      });
+    const { class_id, academic_year, term } = req.query;
+    const year = academic_year || '2025-2026';
+    const currentTerm = parseInt(term) || 1;
+
+    const studentQuery = `
+      SELECT 
+        s.id, s.admission_number, s.first_name, s.last_name, s.gender,
+        c.name AS class_name, c.level
+      FROM students s
+      JOIN student_classes sc ON s.id = sc.student_id AND sc.is_active = true
+      JOIN classes c ON sc.class_id = c.id
+      WHERE sc.class_id = $1 
+        AND sc.academic_year = $2 
+        AND sc.term = $3
+      ORDER BY s.last_name, s.first_name
+    `;
+    const studentRes = await pool.query(studentQuery, [class_id, year, currentTerm]);
+    const students = studentRes.rows;
+
+    if (students.length === 0) {
+      return res.json({ success: true, data: [], counts: { total: 0, qualified: 0, unqualified: 0 } });
     }
-    
-    const students = await promotionModel.getEligibleStudents(parseInt(classId), '2024-2025');
-    const nextClass = await promotionModel.getNextClass(parseInt(classId));
-    
-    let targetClassId = null;
-    let targetClassExists = false;
-    
-    if (nextClass && nextClass.next_class_name !== 'GRADUATED') {
-      const allClasses = await classModel.getAllClasses();
-const targetClass = allClasses.find(c => c.class_name === nextClass.next_class_name);
-      targetClassExists = !!targetClass;
-      targetClassId = targetClass ? targetClass.id : null;
-    }
-    
-    res.json({
-      success: true,
-      data: {
-        current_class: {
-          id: classData.id,
-          name: classData.name,
-          level: classData.level,
-          capacity: classData.capacity
-        },
-        total_students: students.length,
-        students_list: students,
-        suggested_next_class: nextClass?.next_class_name || 'GRADUATED',
-        target_class_exists: targetClassExists,
-        target_class_id: targetClassId,
-        is_graduation: nextClass?.next_class_name === 'GRADUATED'
-      }
-    });
-    
+
+    const enriched = await Promise.all(students.map(async (student) => {
+      // Average grade
+      const gradeRes = await pool.query(`
+        SELECT COALESCE(AVG(continuous_assessment + exam_score), 0) AS avg
+        FROM grades
+        WHERE student_id = $1 AND term = $2 AND academic_year = $3
+      `, [student.id, currentTerm, year]);
+      const avgGrade = parseFloat(gradeRes.rows[0]?.avg) || 0;
+
+      // Attendance rate
+      const attRes = await pool.query(`
+        SELECT 
+          COUNT(*) AS total,
+          SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) AS present
+        FROM attendance
+        WHERE student_id = $1 AND term = $2 AND academic_year = $3
+      `, [student.id, currentTerm, year]);
+      const totalDays = parseInt(attRes.rows[0]?.total) || 0;
+      const presentDays = parseInt(attRes.rows[0]?.present) || 0;
+      const attendanceRate = totalDays > 0 ? (presentDays / totalDays) * 100 : 0;
+
+      // Check existing promotion status
+      const promoRes = await pool.query(`
+        SELECT status FROM promotions
+        WHERE student_id = $1 AND from_academic_year = $2 AND term = $3
+      `, [student.id, year, currentTerm]);
+      const existingStatus = promoRes.rows[0]?.status || null;
+
+      const hasPassingGrade = avgGrade >= 50;
+      const hasGoodAttendance = attendanceRate >= 75;
+      const qualified = hasPassingGrade && hasGoodAttendance;
+
+      return {
+        ...student,
+        average_grade: Math.round(avgGrade * 100) / 100,
+        attendance_rate: Math.round(attendanceRate * 100) / 100,
+        qualified,
+        current_promotion_status: existingStatus,
+        reasons: {
+          low_grades: !hasPassingGrade,
+          poor_attendance: !hasGoodAttendance
+        }
+      };
+    }));
+
+    const counts = {
+      total: enriched.length,
+      qualified: enriched.filter(s => s.qualified).length,
+      unqualified: enriched.filter(s => !s.qualified).length
+    };
+
+    res.json({ success: true, data: enriched, counts });
   } catch (error) {
-    console.error('Error getting promotion preview:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    console.error('Error in getStudentsWithQualification:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
-// ============================================
-// PROMOTE ENTIRE CLASS
-// ============================================
-promotionController.promoteClass = async (req, res) => {
+// ============================================================
+// 2. SAVE PROMOTIONS (Admin only)
+// ============================================================
+promotionController.savePromotions = async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { classId } = req.params;
-    const { target_class_id, new_academic_year } = req.body;
-    
-    const students = await promotionModel.getEligibleStudents(parseInt(classId), '2024-2025');
-    
-    if (students.length === 0) {
-      return res.status(404).json({
+    const {
+      from_academic_year,
+      to_academic_year,
+      term,
+      from_class_id,
+      to_class_id,
+      students
+    } = req.body;
+
+    const recordedBy = req.user?.id;
+    if (!recordedBy) {
+      return res.status(401).json({ success: false, error: 'User not authenticated' });
+    }
+
+    if (!students || students.length === 0) {
+      return res.status(400).json({ success: false, error: 'No students provided' });
+    }
+
+    const pending = students.filter(s => !s.status || s.status === 'pending');
+    if (pending.length > 0) {
+      return res.status(400).json({
         success: false,
-        error: 'No students found in this class'
+        error: `Please set a status for ${pending.length} student(s).`
       });
     }
-    
+
+    await client.query('BEGIN');
+
     let promotedCount = 0;
+    let retainedCount = 0;
+    let graduatedCount = 0;
     const errors = [];
-    
-    for (const student of students) {
+
+    for (const item of students) {
       try {
-        await studentModel.updateStudent(student.id, {
-          class_id: target_class_id ? parseInt(target_class_id) : null,
-          academic_year: new_academic_year,
-          previous_class_id: parseInt(classId)
-        });
-        
-        await promotionModel.recordHistory(
-          student.id, 
-          parseInt(classId), 
-          target_class_id ? parseInt(target_class_id) : null, 
-          '2024-2025', 
-          new_academic_year
-        );
-        
-        promotedCount++;
+        const { student_id, status, remarks } = item;
+
+        // Insert into promotions
+        await client.query(`
+          INSERT INTO promotions (
+            student_id, from_class_id, to_class_id,
+            from_academic_year, to_academic_year, term,
+            status, remarks, recorded_by, promotion_date
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE)
+          ON CONFLICT (student_id, from_academic_year, term)
+          DO UPDATE SET
+            to_class_id = EXCLUDED.to_class_id,
+            to_academic_year = EXCLUDED.to_academic_year,
+            status = EXCLUDED.status,
+            remarks = EXCLUDED.remarks,
+            recorded_by = EXCLUDED.recorded_by,
+            promotion_date = CURRENT_DATE,
+            updated_at = CURRENT_TIMESTAMP
+        `, [
+          student_id,
+          from_class_id,
+          status === 'Promoted' ? to_class_id : from_class_id,
+          from_academic_year,
+          to_academic_year,
+          term,
+          status,
+          remarks || null,
+          recordedBy
+        ]);
+
+        // If status is 'Promoted', update student_classes
+        if (status === 'Promoted') {
+          await client.query(`
+            UPDATE student_classes
+            SET is_active = false, left_date = CURRENT_DATE, updated_at = CURRENT_TIMESTAMP
+            WHERE student_id = $1
+              AND academic_year = $2
+              AND term = $3
+              AND is_active = true
+          `, [student_id, from_academic_year, term]);
+
+          await client.query(`
+            INSERT INTO student_classes (
+              student_id, class_id, academic_year, term,
+              is_active, enrolled_date
+            ) VALUES ($1, $2, $3, $4, true, CURRENT_DATE)
+          `, [student_id, to_class_id, to_academic_year, term]);
+
+          promotedCount++;
+        } else if (status === 'Retained') {
+          retainedCount++;
+        } else if (status === 'Graduated') {
+          await client.query(`
+            UPDATE student_classes
+            SET is_active = false, left_date = CURRENT_DATE, updated_at = CURRENT_TIMESTAMP
+            WHERE student_id = $1
+              AND academic_year = $2
+              AND term = $3
+              AND is_active = true
+          `, [student_id, from_academic_year, term]);
+          graduatedCount++;
+        }
       } catch (err) {
-        errors.push({ student_id: student.id, error: err.message });
+        errors.push({ student_id: item.student_id, error: err.message });
       }
     }
-    
+
+    await client.query('COMMIT');
+
     res.json({
       success: true,
       promoted_count: promotedCount,
-      errors: errors,
-      message: `Successfully promoted ${promotedCount} out of ${students.length} students`
+      retained_count: retainedCount,
+      graduated_count: graduatedCount,
+      total_processed: students.length,
+      errors: errors.length > 0 ? errors : undefined,
+      message: `Processed ${students.length} students (${promotedCount} promoted, ${retainedCount} retained, ${graduatedCount} graduated).`
     });
-    
+
   } catch (error) {
-    console.error('Promotion error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    await client.query('ROLLBACK');
+    console.error('Error in savePromotions:', error);
+    res.status(500).json({ success: false, error: error.message });
+  } finally {
+    client.release();
   }
 };
 
-// ============================================
-// GET PROMOTION HISTORY
-// ============================================
+// ============================================================
+// 3. GET PROMOTION HISTORY
+// ============================================================
 promotionController.getPromotionHistory = async (req, res) => {
   try {
     const { student_id, class_id, academic_year } = req.query;
-    
-    const filters = {};
-    if (student_id) filters.student_id = parseInt(student_id);
-    if (class_id) filters.class_id = parseInt(class_id);
-    if (academic_year) filters.academic_year = academic_year;
-    
-    const history = await promotionModel.getPromotionHistory(filters);
-    
-    res.json({
-      success: true,
-      data: history,
-      count: history.length
-    });
-    
+    let query = `
+      SELECT 
+        p.*,
+        s.first_name, s.last_name, s.admission_number,
+        fc.name AS from_class_name,
+        tc.name AS to_class_name,
+        u.username AS recorded_by_name
+      FROM promotions p
+      JOIN students s ON p.student_id = s.id
+      LEFT JOIN classes fc ON p.from_class_id = fc.id
+      LEFT JOIN classes tc ON p.to_class_id = tc.id
+      LEFT JOIN users u ON p.recorded_by = u.id
+      WHERE 1=1
+    `;
+    const params = [];
+    let idx = 1;
+    if (student_id) {
+      query += ` AND p.student_id = $${idx++}`;
+      params.push(parseInt(student_id));
+    }
+    if (class_id) {
+      query += ` AND (p.from_class_id = $${idx++} OR p.to_class_id = $${idx++})`;
+      params.push(parseInt(class_id), parseInt(class_id));
+    }
+    if (academic_year) {
+      query += ` AND (p.from_academic_year = $${idx++} OR p.to_academic_year = $${idx++})`;
+      params.push(academic_year, academic_year);
+    }
+    query += ' ORDER BY p.promotion_date DESC, p.created_at DESC';
+
+    const result = await pool.query(query, params);
+    res.json({ success: true, data: result.rows });
   } catch (error) {
     console.error('Error fetching promotion history:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
-// ============================================
-// PROMOTE SINGLE STUDENT
-// ============================================
-promotionController.promoteStudent = async (req, res) => {
-  try {
-    const { studentId } = req.params;
-    const { new_class_id, new_academic_year } = req.body;
-    
-    const student = await studentModel.getStudentById(parseInt(studentId));
-    
-    if (!student) {
-      return res.status(404).json({
-        success: false,
-        error: 'Student not found'
-      });
-    }
-    
-    const oldClassId = student.class_id;
-    
-    await studentModel.updateStudent(parseInt(studentId), {
-      class_id: parseInt(new_class_id),
-      academic_year: new_academic_year,
-      previous_class_id: oldClassId
-    });
-    
-    await promotionModel.recordHistory(
-      parseInt(studentId), 
-      oldClassId, 
-      parseInt(new_class_id),
-      student.academic_year || '2024-2025', 
-      new_academic_year
-    );
-    
-    res.json({
-      success: true,
-      message: 'Student promoted successfully'
-    });
-    
-  } catch (error) {
-    console.error('Error promoting student:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
-// ============================================
-// CHECK STUDENT QUALIFICATION
-// ============================================
-promotionController.checkStudentQualification = async (req, res) => {
-  try {
-    const { studentId } = req.params;
-    const { term, academic_year } = req.query;
-    
-    // Get student's average grade
-    const gradesResult = await pool.query(`
-      SELECT COALESCE(AVG((continuous_assessment + exam_score)), 0) as average
-      FROM grades 
-      WHERE student_id = $1 AND term = $2 AND academic_year = $3
-    `, [studentId, term || 1, academic_year || '2024-2025']);
-    
-    const averageGrade = parseFloat(gradesResult.rows[0]?.average) || 0;
-    
-    // Get attendance rate
-    const attendanceResult = await pool.query(`
-      SELECT 
-        COUNT(*) as total_days,
-        SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as present_days
-      FROM attendance 
-      WHERE student_id = $1 AND term = $2 AND academic_year = $3
-    `, [studentId, term || 1, academic_year || '2024-2025']);
-    
-    const totalDays = parseInt(attendanceResult.rows[0]?.total_days) || 1;
-    const presentDays = parseInt(attendanceResult.rows[0]?.present_days) || 0;
-    const attendanceRate = (presentDays / totalDays) * 100;
-    
-    // Qualification criteria
-    const hasPassingGrades = averageGrade >= 50;
-    const hasGoodAttendance = attendanceRate >= 75;
-    
-    res.json({
-      success: true,
-      data: {
-        student_id: parseInt(studentId),
-        qualified: hasPassingGrades && hasGoodAttendance,
-        average_grade: averageGrade,
-        attendance_rate: attendanceRate,
-        reasons: {
-          low_grades: !hasPassingGrades,
-          poor_attendance: !hasGoodAttendance
-        }
-      }
-    });
-    
-  } catch (error) {
-    console.error('Error checking qualification:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
-// ============================================
-// PROMOTE SELECTED STUDENTS
-// ============================================
-promotionController.promoteSelectedStudents = async (req, res) => {
+// ============================================================
+// 4. GET NEXT CLASS (helper for preview)
+// ============================================================
+promotionController.getNextClass = async (req, res) => {
   try {
     const { classId } = req.params;
-    const { student_ids, target_class_id, new_academic_year } = req.body;
-    
-    if (!student_ids || student_ids.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'No students selected for promotion'
-      });
+    const classRes = await pool.query('SELECT name, level FROM classes WHERE id = $1', [classId]);
+    if (classRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Class not found' });
     }
-    
-    let promotedCount = 0;
-    const notPromoted = [];
-    
-    for (const studentId of student_ids) {
-      try {
-        await studentModel.updateStudent(parseInt(studentId), {
-          class_id: target_class_id ? parseInt(target_class_id) : null,
-          academic_year: new_academic_year,
-          previous_class_id: parseInt(classId)
-        });
-        
-        await promotionModel.recordHistory(
-          parseInt(studentId), 
-          parseInt(classId), 
-          target_class_id ? parseInt(target_class_id) : null, 
-          '2024-2025', 
-          new_academic_year
-        );
-        
-        promotedCount++;
-      } catch (err) {
-        notPromoted.push({ student_id: studentId, error: err.message });
-      }
+    const { name, level } = classRes.rows[0];
+    const match = name.match(/(\d+)/);
+    let nextName = 'GRADUATED';
+    if (match) {
+      const num = parseInt(match[1]);
+      if (level === 'KG' && num < 2) nextName = 'Primary 1A';
+      else if (level === 'Primary' && num < 6) nextName = `Primary ${num + 1}A`;
+      else if (level === 'JHS' && num < 3) nextName = `JHS${num + 1}A`;
     }
-    
-    res.json({
-      success: true,
-      promoted_count: promotedCount,
-      not_promoted_count: notPromoted.length,
-      not_promoted: notPromoted,
-      message: `Successfully promoted ${promotedCount} out of ${student_ids.length} selected students`
-    });
-    
+    res.json({ success: true, data: { current_class: name, next_class: nextName } });
   } catch (error) {
-    console.error('Promotion error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
-// ============================================
-// BULK PROMOTE STUDENTS
-// ============================================
-promotionController.promoteBulkStudents = async (req, res) => {
-  try {
-    const { student_ids, new_academic_year } = req.body;
-    
-    if (!student_ids || student_ids.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'No students selected for promotion'
-      });
-    }
-    
-    let promotedCount = 0;
-    const notPromoted = [];
-    
-    for (const studentId of student_ids) {
-      try {
-        // Get current student info
-        const student = await studentModel.getStudentById(parseInt(studentId));
-        if (!student) {
-          notPromoted.push({ student_id: studentId, error: 'Student not found' });
-          continue;
-        }
-        
-        // Get next class based on current class
-        const nextClassInfo = await promotionModel.getNextClass(student.class_id);
-        if (!nextClassInfo || nextClassInfo.next_class_name === 'GRADUATED') {
-          notPromoted.push({ student_id: studentId, error: 'No target class found' });
-          continue;
-        }
-        
-        // Find target class ID
-        const allClasses = await classModel.getAllClasses();
-const targetClass = allClasses.find(c => c.class_name === nextClassInfo.next_class_name);
-        
-        if (!targetClass) {
-          notPromoted.push({ student_id: studentId, error: 'Target class does not exist' });
-          continue;
-        }
-        
-        // Update student
-        await studentModel.updateStudent(parseInt(studentId), {
-          class_id: targetClass.id,
-          academic_year: new_academic_year,
-          previous_class_id: student.class_id
-        });
-        
-        // Record promotion history
-        await promotionModel.recordHistory(
-          parseInt(studentId), 
-          student.class_id, 
-          targetClass.id, 
-          '2024-2025', 
-          new_academic_year
-        );
-        
-        promotedCount++;
-      } catch (err) {
-        notPromoted.push({ student_id: studentId, error: err.message });
-      }
-    }
-    
-    res.json({
-      success: true,
-      promoted_count: promotedCount,
-      not_promoted_count: notPromoted.length,
-      not_promoted: notPromoted,
-      message: `Successfully promoted ${promotedCount} out of ${student_ids.length} students`
-    });
-    
-  } catch (error) {
-    console.error('Bulk promotion error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 

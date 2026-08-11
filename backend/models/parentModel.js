@@ -3,7 +3,6 @@ const pool = require('../config/database');
 const bcrypt = require('bcrypt');
 
 class ParentModel {
-  // Get all parents
   async getAllParents() {
     const result = await pool.query(`
       SELECT p.*, COUNT(s.id) as children_count
@@ -31,11 +30,9 @@ class ParentModel {
         }))
       });
     }
-    
     return parentsWithChildren;
   }
-  
-  // Get parent by ID
+
   async getParentById(id) {
     const result = await pool.query(`
       SELECT p.*, COUNT(s.id) as children_count
@@ -48,7 +45,6 @@ class ParentModel {
     if (result.rows.length === 0) return null;
     
     const parent = result.rows[0];
-    
     const childrenResult = await pool.query(`
       SELECT id, admission_number, first_name, last_name, class_id,
              (SELECT class_name FROM classes WHERE id = students.class_id) as class_name
@@ -64,8 +60,7 @@ class ParentModel {
       }))
     };
   }
-  
-  // Get parent by user ID
+
   async getParentByUserId(userId) {
     const result = await pool.query(`
       SELECT p.*, u.email, u.first_name, u.last_name
@@ -75,19 +70,25 @@ class ParentModel {
     `, [userId]);
     return result.rows[0] || null;
   }
-  
-  // Get parent by email
+
   async getParentByEmail(email) {
     const result = await pool.query(`
       SELECT * FROM parents WHERE email = $1
     `, [email]);
     return result.rows[0] || null;
   }
-  
-  // Get children for a parent
+
   async getMyChildren(parentId) {
-    const result = await pool.query(`
-      SELECT 
+    const emailResult = await pool.query(`
+      SELECT u.email 
+      FROM parents p
+      JOIN users u ON p.user_id = u.id
+      WHERE p.id = $1
+    `, [parentId]);
+    const parentEmail = emailResult.rows[0]?.email || null;
+
+    const query = `
+      SELECT DISTINCT
         s.id,
         s.admission_number,
         s.first_name,
@@ -100,13 +101,21 @@ class ParentModel {
         c.level
       FROM students s
       LEFT JOIN classes c ON s.class_id = c.id
-      WHERE s.parent_id = $1 AND LOWER(s.status) = 'active'
+      WHERE
+        s.parent_id = $1
+        OR EXISTS (
+          SELECT 1 FROM parent_students ps
+          WHERE ps.student_id = s.id AND ps.parent_id = $1
+        )
+        ${parentEmail ? `OR s.parent_email = $2` : ''}
       ORDER BY s.first_name, s.last_name
-    `, [parentId]);
+    `;
+    
+    const params = parentEmail ? [parentId, parentEmail] : [parentId];
+    const result = await pool.query(query, params);
     return result.rows;
   }
-  
-  // Get children by parent email (fallback)
+
   async getChildrenByParentEmail(email) {
     const result = await pool.query(`
       SELECT 
@@ -122,13 +131,12 @@ class ParentModel {
         c.level
       FROM students s
       LEFT JOIN classes c ON s.class_id = c.id
-      WHERE s.parent_email = $1 AND LOWER(s.status) = 'active'
+      WHERE s.parent_email = $1
       ORDER BY s.first_name, s.last_name
     `, [email]);
     return result.rows;
   }
-  
-  // Get parent dashboard stats
+
   async getParentDashboard(parentId) {
     const result = await pool.query(`
       SELECT 
@@ -147,7 +155,10 @@ class ParentModel {
       LEFT JOIN grades g ON s.id = g.student_id
       LEFT JOIN attendance a ON s.id = a.student_id
       LEFT JOIN fees f ON s.id = f.student_id
-      WHERE s.parent_id = $1 AND LOWER(s.status) = 'active'
+      WHERE
+        s.parent_id = $1
+        OR EXISTS (SELECT 1 FROM parent_students ps WHERE ps.student_id = s.id AND ps.parent_id = $1)
+        OR s.parent_email = (SELECT u.email FROM parents p JOIN users u ON p.user_id = u.id WHERE p.id = $1)
     `, [parentId]);
     
     return result.rows[0] || {
@@ -159,105 +170,243 @@ class ParentModel {
       attendance_rate: 0
     };
   }
-  
-  // Get child's grades
+
+  async getChildPerformance(studentId) {
+    const studentResult = await pool.query(`
+      SELECT 
+        s.id,
+        s.first_name,
+        s.last_name,
+        s.admission_number,
+        s.class_id,
+        c.class_name,
+        c.level
+      FROM students s
+      LEFT JOIN classes c ON s.class_id = c.id
+      WHERE s.id = $1
+    `, [studentId]);
+    if (studentResult.rows.length === 0) return null;
+    const student = studentResult.rows[0];
+
+    const gradeResult = await pool.query(`
+      SELECT 
+        COALESCE(AVG(continuous_assessment + exam_score), 0) as average,
+        COUNT(*) as subject_count
+      FROM grades
+      WHERE student_id = $1
+    `, [studentId]);
+    const average = parseFloat(gradeResult.rows[0]?.average) || 0;
+    const subjectCount = parseInt(gradeResult.rows[0]?.subject_count) || 0;
+
+    const attendanceResult = await pool.query(`
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN LOWER(status) = 'present' THEN 1 ELSE 0 END) as present,
+        SUM(CASE WHEN LOWER(status) = 'absent' THEN 1 ELSE 0 END) as absent,
+        SUM(CASE WHEN LOWER(status) = 'late' THEN 1 ELSE 0 END) as late
+      FROM attendance
+      WHERE student_id = $1
+    `, [studentId]);
+    const total = parseInt(attendanceResult.rows[0]?.total) || 0;
+    const present = parseInt(attendanceResult.rows[0]?.present) || 0;
+    const attendanceRate = total > 0 ? Math.round((present / total) * 100) : 0;
+
+    const feesResult = await pool.query(`
+      SELECT 
+        COALESCE(SUM(amount), 0) as total_fees,
+        COALESCE(SUM(paid_amount), 0) as total_paid,
+        COALESCE(SUM(amount) - SUM(paid_amount), 0) as balance
+      FROM fees
+      WHERE student_id = $1
+    `, [studentId]);
+    const totalFees = parseFloat(feesResult.rows[0]?.total_fees) || 0;
+    const totalPaid = parseFloat(feesResult.rows[0]?.total_paid) || 0;
+    const balance = parseFloat(feesResult.rows[0]?.balance) || 0;
+
+    const recentGrades = await pool.query(`
+      SELECT
+        subject,
+        continuous_assessment,
+        exam_score,
+        continuous_assessment + exam_score as total,
+        grade,
+        term,
+        academic_year
+      FROM grades
+      WHERE student_id = $1
+      ORDER BY term DESC, created_at DESC
+      LIMIT 5
+    `, [studentId]);
+
+    return {
+      student,
+      performance: {
+        average_score: Math.round(average),
+        subject_count: subjectCount,
+        attendance_rate: attendanceRate,
+        total_days: total,
+        present_days: present,
+        absent_days: parseInt(attendanceResult.rows[0]?.absent) || 0,
+        late_days: parseInt(attendanceResult.rows[0]?.late) || 0
+      },
+      fees: {
+        total_fees: totalFees,
+        total_paid: totalPaid,
+        balance: balance
+      },
+      recent_grades: recentGrades.rows
+    };
+  }
+
   async getChildGrades(studentId) {
     const result = await pool.query(`
       SELECT 
-        g.*,
-        s.first_name,
-        s.last_name
+        g.id,
+        g.subject,
+        g.continuous_assessment,
+        g.exam_score,
+        g.continuous_assessment + g.exam_score as total,
+        g.grade,
+        g.term,
+        g.academic_year,
+        g.created_at
       FROM grades g
-      JOIN students s ON g.student_id = s.id
       WHERE g.student_id = $1
-      ORDER BY g.term, g.created_at
+      ORDER BY g.term, g.subject
     `, [studentId]);
     return result.rows;
   }
-  
-  // Get child's attendance
+
   async getChildAttendance(studentId) {
     const result = await pool.query(`
       SELECT 
-        a.id,
-        a.date,
-        a.status,
-        a.term,
-        a.term_name,
-        a.remarks,
-        a.created_at
-      FROM attendance a
-      WHERE a.student_id = $1
-      ORDER BY a.date DESC
+        id,
+        date,
+        status,
+        term,
+        term_name,
+        remarks,
+        created_at
+      FROM attendance
+      WHERE student_id = $1
+      ORDER BY date DESC
       LIMIT 30
     `, [studentId]);
     return result.rows;
   }
-  
-  // Get child's fees
+
   async getChildFees(studentId) {
     const result = await pool.query(`
       SELECT 
-        f.id,
-        f.fee_type,
-        f.term,
-        f.term_name,
-        f.academic_year,
-        f.amount,
-        f.paid_amount,
-        f.balance,
-        f.status,
-        f.payment_date,
-        f.payment_method,
-        f.transaction_id,
-        f.receipt_number,
-        f.created_at,
-        s.first_name,
-        s.last_name
-      FROM fees f
-      JOIN students s ON f.student_id = s.id
-      WHERE f.student_id = $1
-      ORDER BY f.created_at DESC
+        id,
+        fee_type,
+        term,
+        term_name,
+        academic_year,
+        amount,
+        paid_amount,
+        balance,
+        status,
+        payment_date,
+        payment_method,
+        transaction_id,
+        receipt_number,
+        created_at
+      FROM fees
+      WHERE student_id = $1
+      ORDER BY payment_date DESC, created_at DESC
     `, [studentId]);
     return result.rows;
   }
-  
-  // Create new parent
+
+  async getChildSubjects(studentId) {
+    const classResult = await pool.query(
+      'SELECT class_id FROM students WHERE id = $1',
+      [studentId]
+    );
+    if (classResult.rows.length === 0) return [];
+    const classId = classResult.rows[0].class_id;
+    if (!classId) return [];
+
+    const result = await pool.query(`
+      SELECT 
+        s.id,
+        s.name,
+        s.code,
+        s.description,
+        cs.hours_per_week
+      FROM class_subjects cs
+      JOIN subjects s ON cs.subject_id = s.id
+      WHERE cs.class_id = $1
+      ORDER BY s.name
+    `, [classId]);
+    return result.rows;
+  }
+
+  async getChildTeachers(studentId) {
+    const classResult = await pool.query(
+      'SELECT class_id FROM students WHERE id = $1',
+      [studentId]
+    );
+    if (classResult.rows.length === 0) return [];
+    const classId = classResult.rows[0].class_id;
+    if (!classId) return [];
+
+    const result = await pool.query(`
+      SELECT DISTINCT
+        t.id,
+        t.teacher_code,
+        t.first_name,
+        t.last_name,
+        t.subject_specialty,
+        t.email,
+        t.phone,
+        s.name as subject_name,
+        s.code as subject_code
+      FROM class_subjects cs
+      JOIN subjects s ON cs.subject_id = s.id
+      LEFT JOIN teacher_subjects ts ON s.id = ts.subject_id
+      LEFT JOIN teachers t ON ts.teacher_id = t.id
+      WHERE cs.class_id = $1 AND t.id IS NOT NULL
+      ORDER BY t.first_name, t.last_name, s.name
+    `, [classId]);
+    return result.rows;
+  }
+
   async createParent(parentData) {
     const { first_name, last_name, phone, email, address } = parentData;
-    
+
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let tempPassword = '';
     for (let i = 0; i < 8; i++) {
       tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
-    
+
     const insertResult = await pool.query(`
       INSERT INTO parents (
         first_name, last_name, phone, email, address, password, is_active
       ) VALUES ($1, $2, $3, $4, $5, $6, true)
       RETURNING id
     `, [first_name, last_name, phone, email, address || null, hashedPassword]);
-    
+
     const newId = insertResult.rows[0].id;
     const parentIdValue = `PARENT${newId}`;
-    
+
     await pool.query(`
       UPDATE parents SET parent_id = $1 WHERE id = $2
     `, [parentIdValue, newId]);
-    
+
     const result = await pool.query(`
       SELECT id, parent_id, first_name, last_name, email, phone
       FROM parents WHERE id = $1
     `, [newId]);
-    
+
+    // Send welcome email (if configured)
     if (email) {
       try {
         const { sendEmail, getParentWelcomeTemplate } = require('../config/email');
         const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login`;
-        
         await sendEmail(
           email,
           'Welcome to Parent Portal',
@@ -274,17 +423,16 @@ class ParentModel {
         console.error('Failed to send welcome email:', emailError.message);
       }
     }
-    
+
     return {
       ...result.rows[0],
       temp_password: tempPassword
     };
   }
-  
-  // Update parent
+
   async updateParent(id, updateData) {
     const { first_name, last_name, phone, email, address, is_active } = updateData;
-    
+
     const result = await pool.query(`
       UPDATE parents 
       SET first_name = COALESCE($1, first_name),
@@ -297,92 +445,64 @@ class ParentModel {
       WHERE id = $7
       RETURNING *
     `, [first_name, last_name, phone, email, address, is_active, id]);
-    
+
     return result.rows[0] || null;
   }
-  
-  // Delete parent
+
   async deleteParent(id) {
     const childCheck = await pool.query(`
       SELECT COUNT(*) as count FROM students WHERE parent_id = $1 AND LOWER(status) = 'active'
     `, [id]);
-    
+
     if (parseInt(childCheck.rows[0].count) > 0) {
       throw new Error('Cannot delete parent with registered children. Deactivate instead.');
     }
-    
+
     const result = await pool.query(`
       DELETE FROM parents WHERE id = $1 RETURNING id
     `, [id]);
-    
+
     return result.rows.length > 0;
   }
-  
-  // Soft delete parent
+
   async deactivateParent(id) {
     const result = await pool.query(`
       UPDATE parents SET is_active = false WHERE id = $1 RETURNING id
     `, [id]);
     return result.rows.length > 0;
   }
-  
-  // Link parent to student
+
   async linkParentToStudent(parentId, studentId) {
     const result = await pool.query(`
       UPDATE students SET parent_id = $1 WHERE id = $2 RETURNING id
     `, [parentId, studentId]);
     return result.rows.length > 0;
   }
-  
-  // Get parent dashboard with full details
+
   async getParentDashboardDetails(parentId) {
     const parent = await this.getParentById(parentId);
     if (!parent) return null;
-    
+
     const childrenPerformance = [];
-    
     for (const child of parent.children) {
-      const gradesResult = await pool.query(`
-        SELECT * FROM grades 
-        WHERE student_id = $1 
-        ORDER BY term, created_at DESC
-      `, [child.id]);
-      
-      const average = gradesResult.rows.length > 0 
-        ? gradesResult.rows.reduce((sum, g) => sum + (g.continuous_assessment + g.exam_score), 0) / gradesResult.rows.length 
-        : 0;
-      
-      const attendanceResult = await pool.query(`
-        SELECT * FROM attendance 
-        WHERE student_id = $1 
-        ORDER BY date DESC
-      `, [child.id]);
-      
-      const attendanceRate = attendanceResult.rows.length > 0
-        ? (attendanceResult.rows.filter(a => LOWER(a.status) === 'present').length / attendanceResult.rows.length) * 100
-        : 0;
-      
-      const feesResult = await pool.query(`
-        SELECT SUM(amount) as total_fees, SUM(paid_amount) as total_paid
-        FROM fees 
-        WHERE student_id = $1
-      `, [child.id]);
-      
-      childrenPerformance.push({
-        student_id: child.id,
-        student_name: child.full_name,
-        class: child.class_name,
-        class_id: child.class_id,
-        admission_number: child.admission_number,
-        average_grade: parseFloat(average).toFixed(2),
-        attendance_rate: parseFloat(attendanceRate).toFixed(2),
-        total_fees: parseFloat(feesResult.rows[0]?.total_fees || 0),
-        total_paid: parseFloat(feesResult.rows[0]?.total_paid || 0),
-        balance: parseFloat(feesResult.rows[0]?.total_fees || 0) - parseFloat(feesResult.rows[0]?.total_paid || 0),
-        recent_grades: gradesResult.rows.slice(0, 5)
-      });
+      const perf = await this.getChildPerformance(child.id);
+      if (perf) {
+        childrenPerformance.push({
+          student_id: child.id,
+          student_name: child.full_name,
+          class: child.class_name,
+          class_id: child.class_id,
+          admission_number: child.admission_number,
+          average_grade: perf.performance.average_score,
+          attendance_rate: perf.performance.attendance_rate,
+          total_fees: perf.fees.total_fees,
+          total_paid: perf.fees.total_paid,
+          balance: perf.fees.balance,
+          recent_grades: perf.recent_grades
+        });
+      }
     }
-    
+
     return {
       parent_info: {
         id: parent.id,

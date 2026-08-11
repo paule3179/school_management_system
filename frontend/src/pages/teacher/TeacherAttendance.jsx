@@ -82,7 +82,7 @@ const TeacherAttendance = ({ API_BASE = 'http://localhost:5000/api' }) => {
     loadMyClasses();
   }, [loadMyClasses]);
 
-  const loadStudents = async (classId) => {
+const loadStudents = async (classId, date = attendanceDate) => {
     setLoading(true);
     try {
       const headers = getAuthHeaders();
@@ -92,9 +92,25 @@ const TeacherAttendance = ({ API_BASE = 'http://localhost:5000/api' }) => {
       const data = await response.json();
       
       if (data.success) {
+        // Fetch existing attendance for this class/date so saved statuses are preserved
+        let attendanceMap = {};
+        try {
+          const attRes = await fetch(`${API_BASE}/teacher/attendance/${classId}/${date}`, {
+            headers: headers
+          });
+          const attData = await attRes.json();
+          if (attData.success && Array.isArray(attData.data)) {
+            attData.data.forEach((rec) => {
+              attendanceMap[rec.student_id] = rec.status;
+            });
+          }
+        } catch (e) {
+          console.warn('Could not load existing attendance:', e);
+        }
+
         const studentsWithAttendance = (data.data || []).map((student) => ({
           ...student,
-          status: 'present',
+          status: attendanceMap[student.id] || 'present',
         }));
         setStudents(studentsWithAttendance);
       } else {

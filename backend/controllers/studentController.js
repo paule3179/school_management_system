@@ -1,4 +1,4 @@
-// backend/controllers/studentController.js - CORRECTED
+// backend/controllers/studentController.js
 
 const StudentModel = require('../models/StudentModel');
 const bcrypt = require('bcrypt');
@@ -47,7 +47,7 @@ const studentController = {
         }
     },
 
-    // Get students by class - FIXED: c.class_name instead of c.name
+    // Get students by class
     async getStudentsByClass(req, res) {
         try {
             const { classId } = req.params;
@@ -90,7 +90,7 @@ const studentController = {
         }
     },
 
-    // Get parent's children - FIXED: c.class_name instead of c.name
+    // Get parent's children
     async getParentChildren(req, res) {
         try {
             const { parentId } = req.params;
@@ -133,7 +133,9 @@ const studentController = {
         }
     },
 
-    // Create student
+    // ============================================================
+    // CREATE STUDENT (FIXED)
+    // ============================================================
     async createStudent(req, res) {
         try {
             const {
@@ -157,48 +159,78 @@ const studentController = {
                     error: 'Parent email is required to send login credentials' 
                 });
             }
-            
+
+            const normalizedEmail = parent_email.trim().toLowerCase();
             const admission_number = generateAdmissionNumber();
-            const parentFirstName = parent_name?.split(' ')[0]?.toLowerCase() || 'parent';
-            const schoolEmail = `${parentFirstName}${Math.floor(Math.random() * 1000)}@kingschool.edu`;
             const tempPassword = generateRandomPassword();
             const hashedPassword = await bcrypt.hash(tempPassword, 10);
-            
+
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
-                
+
+                // 1. Find or create the user with the parent's email
+                let userResult = await client.query(
+                    'SELECT id FROM users WHERE email = $1',
+                    [normalizedEmail]
+                );
+
+                let userId;
+                if (userResult.rows.length === 0) {
+                    // Create user with parent's actual email
+                    const firstName = parent_name?.split(' ')[0] || 'Parent';
+                    const lastName = parent_name?.split(' ').slice(1).join(' ') || '';
+                    const insertUser = await client.query(`
+                        INSERT INTO users (email, password, first_name, last_name, role, phone, status)
+                        VALUES ($1, $2, $3, $4, 'parent', $5, 'active')
+                        RETURNING id
+                    `, [normalizedEmail, hashedPassword, firstName, lastName, parent_phone || null]);
+                    userId = insertUser.rows[0].id;
+                } else {
+                    userId = userResult.rows[0].id;
+                }
+
+                // 2. Find or create the parent record
+                let parentResult = await client.query(
+                    'SELECT id FROM parents WHERE user_id = $1',
+                    [userId]
+                );
+
+                let parentId;
+                if (parentResult.rows.length === 0) {
+                    const firstName = parent_name?.split(' ')[0] || 'Parent';
+                    const lastName = parent_name?.split(' ').slice(1).join(' ') || '';
+                    const insertParent = await client.query(`
+                        INSERT INTO parents (user_id, first_name, last_name, phone, email, address, is_active)
+                        VALUES ($1, $2, $3, $4, $5, $6, true)
+                        RETURNING id
+                    `, [userId, firstName, lastName, parent_phone || null, normalizedEmail, address || null]);
+                    parentId = insertParent.rows[0].id;
+                } else {
+                    parentId = parentResult.rows[0].id;
+                }
+
+                // 3. Insert the student with parent_id AND parent_email
                 const studentResult = await client.query(`
                     INSERT INTO students (
                         admission_number, first_name, last_name, date_of_birth, gender,
-                        class_id, parent_name, parent_phone, parent_email, address,
+                        class_id, parent_id, parent_name, parent_phone, parent_email, address,
                         ghana_card_number,
                         emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
                         blood_group, allergies, medical_conditions, status, enrollment_date
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'Active', NOW())
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'Active', NOW())
                     RETURNING *
                 `, [
                     admission_number, first_name, last_name, date_of_birth, gender,
-                    class_id || null, parent_name, parent_phone, parent_email, address || null,
+                    class_id || null, parentId, parent_name, parent_phone, normalizedEmail, address || null,
                     ghana_card_number || null,
                     emergency_contact_name || null, emergency_contact_phone || null, emergency_contact_relationship || null,
                     blood_group || null, allergies || null, medical_conditions || null
                 ]);
-                
+
                 const student = studentResult.rows[0];
-                
-                const existingUser = await client.query(
-                    'SELECT id FROM users WHERE email = $1',
-                    [schoolEmail]
-                );
-                
-                if (existingUser.rows.length === 0) {
-                    await client.query(`
-                        INSERT INTO users (email, password, first_name, last_name, role, phone, status)
-                        VALUES ($1, $2, $3, $4, 'parent', $5, 'active')
-                    `, [schoolEmail, hashedPassword, parentFirstName, '', parent_phone || null]);
-                }
-                
+
+                // 4. Link to class (if provided)
                 if (class_id) {
                     await client.query(`
                         INSERT INTO class_students (class_id, student_id, academic_year)
@@ -206,39 +238,39 @@ const studentController = {
                         ON CONFLICT DO NOTHING
                     `, [class_id, student.id, '2024-2025']);
                 }
-                
+
                 await client.query('COMMIT');
-                
+
+                // 5. Send welcome email (optional)
                 const loginUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/login`;
-                
                 console.log('\n=========================================');
                 console.log('✅ STUDENT ENROLLED');
                 console.log('=========================================');
                 console.log(`👤 Student: ${first_name} ${last_name}`);
-                console.log(`📧 Parent Email: ${parent_email}`);
+                console.log(`📧 Parent Email: ${normalizedEmail}`);
                 console.log(`🔑 Temporary Password: ${tempPassword}`);
                 console.log(`🪪 Ghana Card: ${ghana_card_number || 'N/A'}`);
                 console.log(`🔗 Login URL: ${loginUrl}`);
                 console.log('=========================================\n');
-                
+
                 res.status(201).json({
                     success: true,
                     data: student,
-                    parent_account: { 
-                        email: parent_email,
-                        school_email: schoolEmail,
-                        password: tempPassword
+                    parent_account: {
+                        email: normalizedEmail,
+                        password: tempPassword,
+                        parent_id: parentId
                     },
-                    message: 'Student enrolled successfully'
+                    message: 'Student enrolled successfully and parent account linked.'
                 });
-                
+
             } catch (error) {
                 await client.query('ROLLBACK');
                 throw error;
             } finally {
                 client.release();
             }
-            
+
         } catch (error) {
             console.error('Error creating student:', error);
             res.status(500).json({ success: false, error: error.message });

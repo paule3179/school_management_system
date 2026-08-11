@@ -1,4 +1,6 @@
-/* Promotion Page - Consistent with Dashboard & Other Pages */
+/* ============================================
+   PROMOTION PAGE - DASHBOARD CONSISTENT DESIGN
+   ============================================ */
 
 .promotion-management-page {
   padding: 16px;
@@ -7,10 +9,10 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
- 
-/* Promotion Page Header - Match Students Page */
+/* Page Header */
 .promotion-management-page .page-header {
   width: 100%;
+  margin-bottom: 20px;
 }
 
 .promotion-management-page .page-header h1 {
@@ -29,66 +31,7 @@
   margin: 0;
 }
 
-/* Stats Grid - Exactly like Dashboard (4 cards) */
-.promotion-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.promotion-stats-grid .stat-card {
-  background: white;
-  border: 1px solid #eef2f6;
-  padding: 12px 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  cursor: pointer;
-  border-radius: 0 !important;
-}
-
-.promotion-stats-grid .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.promotion-stats-grid .stat-icon {
-  width: 40px;
-  height: 40px;
-  background: #f0f2f8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  color: #3b82f6;
-  border-radius: 0 !important;
-}
-
-.promotion-stats-grid .stat-info {
-  text-align: right;
-}
-
-.promotion-stats-grid .stat-info h3 {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0;
-  color: #1e293b;
-  line-height: 1.2;
-}
-
-.promotion-stats-grid .stat-info p {
-  margin: 4px 0 0;
-  color: #64748b;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-/* Promotion Tabs - Like Dashboard section */
+/* Promotion Tabs - Consistent with dashboard section */
 .promotion-tabs {
   display: flex;
   gap: 8px;
@@ -102,6 +45,7 @@
   padding: 8px 16px;
   background: white;
   border: 1px solid #e2e8f0;
+  border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
   color: #64748b;
@@ -110,7 +54,6 @@
   align-items: center;
   gap: 8px;
   transition: all 0.2s;
-  border-radius: 0 !important;
 }
 
 .promotion-tabs .tab-btn:hover {
@@ -146,55 +89,13 @@
   gap: 8px;
 }
 
-/* Filters Row - Like StudentsPage */
-.promotion-management-page .filters {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  background: white;
-  padding: 12px 16px;
-  border: 1px solid #eef2f6;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  border-radius: 0 !important;
-}
-
-.promotion-management-page .filters select {
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 0 !important;
-  font-size: 12px;
-  background: white;
-  color: #1e293b;
-  min-width: 160px;
-}
-
-.promotion-management-page .filters .btn-primary {
-  padding: 8px 16px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 0 !important;
-}
-
-.promotion-management-page .filters .btn-primary:hover {
-  background: #2563eb;
-  transform: translateY(-1px);
-}
-
 /* Table Container - Like other pages */
 .promotion-management-page .table-container {
   overflow-x: auto;
   background: white;
-  border: 1px solid #eef2f6;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   margin-top: 16px;
-  border-radius: 0 !important;
 }
 
 .promotion-management-page .data-table {
@@ -232,7 +133,7 @@
   padding: 4px 10px;
   font-size: 10px;
   font-weight: 600;
-  border-radius: 0 !important;
+  border-radius: 6px;
 }
 
 .promotion-management-page .status-ready {
@@ -254,13 +155,14 @@
   background: #f8fafc;
   border: 1px solid #eef2f6;
   flex-wrap: wrap;
-  border-radius: 0 !important;
+  border-radius: 10px;
 }
 
 .promotion-management-page .bulk-actions button {
   padding: 6px 14px;
   background: white;
   border: 1px solid #e2e8f0;
+  border-radius: 8px;
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -268,7 +170,6 @@
   align-items: center;
   gap: 6px;
   transition: all 0.2s;
-  border-radius: 0 !important;
 }
 
 .promotion-management-page .bulk-actions button:hover {
@@ -287,7 +188,49 @@
   background: #059669;
 }
 
-/* Qualification Badges */
+/* Filter Section */
+.promotion-management-page .filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  background: white;
+  padding: 12px 16px;
+  border: 1px solid #eef2f6;
+  border-radius: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.promotion-management-page .filters select {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  background: white;
+  color: #1e293b;
+  min-width: 160px;
+}
+
+.promotion-management-page .filters .btn-primary {
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.promotion-management-page .filters .btn-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* /* Qualification Badges */
 .qualified-badge {
   display: inline-flex;
   align-items: center;
@@ -297,7 +240,7 @@
   color: #065f46;
   font-size: 11px;
   font-weight: 600;
-  border-radius: 0 !important;
+  border-radius: 6px;
 }
 
 .unqualified-badge {
@@ -309,7 +252,7 @@
   color: #991b1b;
   font-size: 11px;
   font-weight: 600;
-  border-radius: 0 !important;
+  border-radius: 6px;
 }
 
 .grade-pass {
@@ -337,87 +280,6 @@
   opacity: 0.9;
 }
 
-/* Settings Form Section */
-.promotion-settings-section {
-  background: white;
-  border: 1px solid #eef2f6;
-  padding: 20px;
-  max-width: 100%;
-  border-radius: 0 !important;
-}
-
-.promotion-settings-section h2 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.settings-form {
-  max-width: 500px;
-}
-
-.settings-form .form-group {
-  margin-bottom: 20px;
-}
-
-.settings-form .form-group label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: #334155;
-  margin-bottom: 6px;
-}
-
-.settings-form .form-group input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  font-size: 13px;
-  transition: all 0.2s;
-  background: white;
-  color: #1e293b;
-  border-radius: 0 !important;
-}
-
-.settings-form .form-group input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-
-.settings-form .form-group small {
-  display: block;
-  font-size: 11px;
-  color: #64748b;
-  margin-top: 6px;
-}
-
-.settings-form .btn-save {
-  padding: 8px 20px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
-  border-radius: 0 !important;
-}
-
-.settings-form .btn-save:hover {
-  background: #2563eb;
-  transform: translateY(-1px);
-}
-
 /* No Data */
 .promotion-management-page .no-data {
   text-align: center;
@@ -426,11 +288,35 @@
   font-size: 14px;
   background: white;
   border: 1px solid #eef2f6;
-  border-radius: 0 !important;
+  border-radius: 12px;
 }
 
 /* ============================================
-   CENTERED MODAL - Like Sign In Page
+   PROMOTION BUTTONS IN TABLE
+   ============================================ */
+
+.promotion-classes-section .btn-promote,
+.promotion-classes-section .btn-graduate {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.promotion-classes-section .btn-promote:hover,
+.promotion-classes-section .btn-graduate:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* ============================================
+   PROMOTION MODAL - CENTERED, CONSISTENT DESIGN
    ============================================ */
 
 /* Modal Overlay */
@@ -449,16 +335,16 @@
   padding: 20px;
 }
 
-/* Modal Content - Centered, Small Width */
+/* Modal Content */
 .promotion-modal-content {
   background: white;
   max-width: 500px;
   width: 100%;
   max-height: 85vh;
   overflow-y: auto;
+  border-radius: 16px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   animation: modalSlideUp 0.3s ease;
-  border-radius: 0 !important;
 }
 
 @keyframes modalSlideUp {
@@ -480,7 +366,7 @@
   padding: 16px 20px;
   border-bottom: 1px solid #e9edf2;
   background: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
-  border-radius: 0 !important;
+  border-radius: 16px 16px 0 0;
 }
 
 .promotion-modal-header h2 {
@@ -499,20 +385,19 @@
   border: none;
   width: 32px;
   height: 32px;
+  border-radius: 50%;
   cursor: pointer;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  font-weight: bold;
   transition: all 0.2s ease;
-  border-radius: 0 !important;
 }
 
 .promotion-modal-close:hover {
   background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
+  transform: rotate(90deg);
 }
 
 /* Modal Body */
@@ -520,8 +405,6 @@
   padding: 20px;
   background: white;
 }
-
-/* Move modal stats cards to the top (above header) */
 
 /* Modal Footer */
 .promotion-modal-footer {
@@ -531,14 +414,15 @@
   padding: 14px 20px;
   border-top: 1px solid #e9edf2;
   background: #fafcff;
-  border-radius: 0 !important;
+  border-radius: 0 0 16px 16px;
 }
 
 /* Modal Buttons */
 .promotion-btn-secondary {
-  padding: 6px 16px;
+  padding: 8px 16px;
   border: 1px solid #e2e8f0;
-  font-size: 12px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -548,7 +432,6 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: 0 !important;
 }
 
 .promotion-btn-secondary:hover {
@@ -559,9 +442,10 @@
 }
 
 .promotion-btn-primary {
-  padding: 6px 18px;
+  padding: 8px 18px;
   border: none;
-  font-size: 12px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -571,7 +455,6 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: 0 !important;
 }
 
 .promotion-btn-primary:hover:not(:disabled) {
@@ -587,8 +470,11 @@
   box-shadow: none;
 }
 
-/* Modal Stats Cards (inside modal) */
-.promotion-modal-body .promotion-stats-grid {
+/* ============================================
+   MODAL STATS CARDS - DASHBOARD STYLE
+   ============================================ */
+
+.promotion-modal-body .promotion-stats-grid--modal-top {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
@@ -596,131 +482,245 @@
 }
 
 .promotion-modal-body .promotion-stat-card {
-  background: #f8fafc;
-  border: 1px solid #eef2f6;
-  padding: 10px;
-  text-align: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
 }
 
-.promotion-modal-body .promotion-stat-card h4 {
+.promotion-modal-body .promotion-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.promotion-modal-body .stat-card-icon {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  background: #eef2ff;
+  color: #4361ee;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.promotion-modal-body .stat-card-info {
+  flex: 1;
+}
+
+.promotion-modal-body .stat-card-info h4 {
   margin: 0 0 4px 0;
   font-size: 9px;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .promotion-modal-body .promotion-stat-value {
   font-size: 18px;
   font-weight: 700;
   color: #1e293b;
+  line-height: 1.2;
+}
+
+.promotion-modal-body .promotion-stat-value.primary {
+  color: #4361ee;
+}
+
+.promotion-modal-body .promotion-stat-value.success {
+  color: #10b981;
+}
+
+.promotion-modal-body .promotion-stat-value.warning {
+  color: #f59e0b;
+}
+
+/* Graduation Alert */
+.promotion-graduation-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.promotion-graduation-alert .alert-icon {
+  color: #f59e0b;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.promotion-graduation-alert .alert-text {
+  margin: 0;
+  font-size: 12px;
+  color: #92400e;
+  font-weight: 500;
+}
+
+/* Form groups inside modal */
+.promotion-form-group {
+  margin-bottom: 16px;
+}
+
+.promotion-form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.promotion-form-group .required {
+  color: #ef4444;
+}
+
+.promotion-select,
+.promotion-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  background: white;
+  color: #1e293b;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.promotion-select:focus,
+.promotion-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+/* Student list inside modal */
+.promotion-student-list {
+  margin-top: 16px;
+}
+
+.promotion-student-list h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.promotion-student-table-container {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.promotion-student-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.promotion-student-table th {
+  padding: 8px 12px;
+  text-align: left;
+  background: #f8fafc;
+  font-weight: 600;
+  font-size: 10px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.promotion-student-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+.promotion-student-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* Loading state */
+.promotion-loading {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}
+
+.promotion-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin: 0 auto 12px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Empty state */
+.promotion-empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
+}
+
+.promotion-empty-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+  color: #cbd5e1;
+}
+
+.promotion-empty-state p {
+  margin: 0;
+  font-size: 14px;
 }
 
 /* ============================================
-   RESPONSIVE
+   PROMOTE / GRADUATE MODAL TABLES
    ============================================ */
 
-/* Tablet */
-@media (max-width: 1024px) {
-  .promotion-management-page {
-    padding: 14px;
-  }
-  
-  .promotion-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-  }
-  
-  .promotion-stats-grid .stat-card {
-    padding: 10px 12px;
-  }
-  
-  .promotion-stats-grid .stat-icon {
-    width: 36px;
-    height: 36px;
-    font-size: 16px;
-  }
-  
-  .promotion-stats-grid .stat-info h3 {
-    font-size: 18px;
-  }
-  
-  .promotion-tabs .tab-btn {
-    padding: 6px 14px;
-    font-size: 11px;
-  }
+.promote-modal-container,
+.graduate-modal-container {
+  width: 100%;
+  max-width: 900px;
 }
 
-/* Mobile */
-@media (max-width: 768px) {
-  .promotion-management-page {
-    padding: 12px;
-  }
-  
-  .promotion-management-page .page-header h1 {
-    font-size: 18px;
-  }
-  
-  .promotion-management-page .page-header p {
-    font-size: 11px;
-  }
-  
-  /* Stats - 2 cards per row */
-  .promotion-stats-grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px !important;
-    margin-bottom: 16px;
-  }
-  
-  .promotion-stats-grid .stat-card {
-    padding: 8px 10px;
-  }
-  
-  .promotion-stats-grid .stat-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
-  }
-  
-  .promotion-stats-grid .stat-info h3 {
-    font-size: 16px;
-  }
-  
-  .promotion-stats-grid .stat-info p {
-    font-size: 8px;
-  }
-  
-  /* Tabs - stack */
-  .promotion-tabs {
-    flex-direction: column;
-    gap: 6px;
-  }
-  
-  .promotion-tabs .tab-btn {
-    width: 100%;
-    justify-content: center;
-    padding: 8px 12px;
-  }
-  
-  /* Filters - stack */
-  .promotion-management-page .filters {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .promotion-management-page .filters select {
-    width: 100%;
-  }
-  
-  .promotion-management-page .filters .btn-primary {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  /* Bulk actions - stack */
-  .promotion-management-page .bulk-actions {
-    flex-direction: column;
+.promote-modal-container .modal-table-wrapper,
+.graduate-modal-container .modal-table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+  margin: 16px 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.promote-modal-table,
+.graduate-modal-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  font-size: 12px;
+}
+
+.promote-modal-table thead,
+.graduate-modal-table thead {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
   }
   
   .promotion-management-page .bulk-actions button {
@@ -1923,3 +1923,86 @@
   }
 }
 
+
+/* Form row */
+.promotion-form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+/* Bulk actions */
+.promotion-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+.promotion-bulk-btn {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.promotion-bulk-btn.promote {
+  background: #dcfce7;
+  color: #166534;
+}
+.promotion-bulk-btn.promote:hover {
+  background: #bbf7d0;
+}
+
+.promotion-bulk-btn.retain {
+  background: #fef3c7;
+  color: #92400e;
+}
+.promotion-bulk-btn.retain:hover {
+  background: #fde68a;
+}
+
+.promotion-counts {
+  margin-left: auto;
+  font-size: 0.85rem;
+  display: flex;
+  gap: 12px;
+}
+
+.promotion-counts .count.promoted { color: #166534; }
+.promotion-counts .count.retained { color: #92400e; }
+.promotion-counts .count.graduated { color: #1e40af; }
+
+/* Status select in table */
+.promotion-status-select {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: white;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.promotion-status-select:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Disabled state */
+.promotion-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}

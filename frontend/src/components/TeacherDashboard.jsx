@@ -18,6 +18,7 @@ import {
   faUserGraduate,
   faSchool,
   faChartLine,
+  faArrowUp,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +30,8 @@ import TeacherGrades from '../pages/teacher/TeacherGrades';
 import TeacherStudents from '../pages/teacher/TeacherStudents';
 import AssessmentEntryPage from '../pages/teacher/AssessmentEntryPage';
 import ExamEntryPage from '../pages/teacher/ExamEntryPage';
+import PromotionManagement from './PromotionManagement';
+import TeacherPromotion from '../pages/teacher/TeacherPromotion';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -58,9 +61,19 @@ const TeacherDashboard = () => {
     if (savedPic) setProfilePicUrl(savedPic);
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  // Refetch dashboard data whenever the user navigates back to the dashboard
+  // route (e.g. after marking attendance). Because this layout component stays
+  // mounted while navigating between /teacher/* pages, the stats cards would
+  // otherwise keep showing stale data (e.g. attendance stuck at 0%).
+  useEffect(() => {
+    if (location.pathname === '/teacher' || location.pathname === '/teacher/') {
+      fetchDashboardData();
+    }
+  }, [location.pathname]);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
@@ -179,7 +192,9 @@ const TeacherDashboard = () => {
           })));
         }
       }
-    }catch (_) { /* ignore */ }
+} catch {
+      /* ignore */
+    }
 
   } catch (error) {
     console.error('❌ Error fetching dashboard data:', error);
@@ -222,12 +237,13 @@ const TeacherDashboard = () => {
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
-  const menuItems = [
+const menuItems = [
     { path: '/teacher', name: 'Dashboard', icon: faDashboard },
     { path: '/teacher/classes', name: 'My Classes', icon: faChalkboard },
     { path: '/teacher/students', name: 'My Students', icon: faUsers },
     { path: '/teacher/attendance', name: 'Take Attendance', icon: faCalendarCheck },
     { path: '/teacher/results', name: 'Enter Results', icon: faClipboardList },
+    { path: '/teacher/promotion', name: 'Promotion', icon: faArrowUp },
   ];
 
   const renderDashboardContent = () => (
@@ -243,7 +259,7 @@ const TeacherDashboard = () => {
         )}
       </div>
 
-      {/* 4 STAT CARDS – display actual data from API */}
+{/* 4 STAT CARDS – display actual data from API */}
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon blue">
@@ -453,7 +469,8 @@ const TeacherDashboard = () => {
             <Route path="grades/:classId" element={<TeacherGrades API_BASE={API_BASE} />} />
             <Route path="grades/ca-entry" element={<AssessmentEntryPage API_BASE={API_BASE} />} />
             <Route path="grades/exam-entry" element={<ExamEntryPage API_BASE={API_BASE} />} />
-            <Route path="results" element={<TeacherGrades API_BASE={API_BASE} />} />
+<Route path="results" element={<TeacherGrades API_BASE={API_BASE} />} />
+            <Route path="promotion" element={<TeacherPromotion API_BASE={API_BASE} />} />
             <Route path="*" element={renderDashboardContent()} />
           </Routes>
         </div>

@@ -17,6 +17,9 @@ router.get('/messages', verifyToken, parentController.getMessages);
 // Children routes
 router.get('/children', verifyToken, parentController.getMyChildren);
 
+// Dashboard summary (unified data for dashboard)
+router.get('/dashboard-summary', verifyToken, parentController.getDashboardSummary);
+
 // Child detail routes - IMPORTANT: Specific routes BEFORE parameterized
 router.get('/child/:childId/performance', verifyToken, parentController.getChildPerformance);
 router.get('/child/:childId/grades', verifyToken, parentController.getChildGrades);

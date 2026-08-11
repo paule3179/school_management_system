@@ -2,16 +2,62 @@
 const parentModel = require('../models/parentModel');
 const pool = require('../config/database');
 
+// ============================================================
+// HELPERS
+// ============================================================
+
+async function hasAccessToChild(parentId, childId) {
+  const result = await pool.query(`
+    SELECT 1
+    FROM students s
+    WHERE s.id = $2
+      AND (
+        s.parent_id = $1
+        OR EXISTS (SELECT 1 FROM parent_students ps WHERE ps.student_id = s.id AND ps.parent_id = $1)
+        OR (s.parent_email IS NOT NULL AND s.parent_email = (
+          SELECT u.email FROM parents p JOIN users u ON p.user_id = u.id WHERE p.id = $1
+        ))
+      )
+  `, [parentId, childId]);
+  return result.rows.length > 0;
+}
+
+async function getParentIdFromUserId(userId) {
+  const result = await pool.query('SELECT id FROM parents WHERE user_id = $1', [userId]);
+  if (result.rows.length === 0) return null;
+  return result.rows[0].id;
+}
+
+/**
+ * Helper to safely build GROUP BY queries – prevents the "column must appear in GROUP BY" error
+ * @param {string} selectColumns - comma-separated columns (can include aggregates)
+ * @param {string} table - table name
+ * @param {string} groupByColumns - comma-separated columns for GROUP BY
+ * @param {string} whereClause - optional WHERE clause (with placeholders)
+ * @param {array} params - parameter values
+ * @param {string} orderBy - optional ORDER BY
+ * @returns {string} complete SQL query
+ */
+function buildSafeGroupQuery(selectColumns, table, groupByColumns, whereClause = '', params = [], orderBy = '') {
+  let sql = `SELECT ${selectColumns} FROM ${table}`;
+  if (whereClause) sql += ` WHERE ${whereClause}`;
+  sql += ` GROUP BY ${groupByColumns}`;
+  if (orderBy) sql += ` ORDER BY ${orderBy}`;
+  return sql;
+}
+
+// ============================================================
+// CONTROLLER
+// ============================================================
+
 const parentController = {
-  // GET /api/parents/notifications - Get notifications for logged-in parent
+
+  // GET /api/parents/notifications
   async getNotifications(req, res) {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
 
       const result = await pool.query(
@@ -37,22 +83,16 @@ const parentController = {
       });
     } catch (error) {
       console.error('Get notifications error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
-  // GET /api/parents/messages - Get messages for logged-in parent
+  // GET /api/parents/messages
   async getMessages(req, res) {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
 
       const result = await pool.query(
@@ -87,22 +127,16 @@ const parentController = {
       });
     } catch (error) {
       console.error('Get messages error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
-  // GET /api/parents/profile - Get parent profile for logged-in parent
+  // GET /api/parents/profile
   async getProfile(req, res) {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
 
       const result = await pool.query(
@@ -127,23 +161,17 @@ const parentController = {
       );
 
       if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'Parent profile not found'
-        });
+        return res.status(404).json({ success: false, error: 'Parent profile not found' });
       }
 
       res.json({ success: true, data: result.rows[0] });
     } catch (error) {
       console.error('Get profile error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
-  // GET /api/parents - Get all parents
+  // GET /api/parents
   async getAllParents(req, res) {
     try {
       const parents = await parentModel.getAllParents();
@@ -154,707 +182,323 @@ const parentController = {
       });
     } catch (error) {
       console.error('Get all parents error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
-  
-  // GET /api/parents/:id - Get single parent
+
+  // GET /api/parents/:id
   async getParentById(req, res) {
     try {
       const parent = await parentModel.getParentById(req.params.id);
       if (!parent) {
-        return res.status(404).json({
-          success: false,
-          error: 'Parent not found'
-        });
+        return res.status(404).json({ success: false, error: 'Parent not found' });
       }
-      res.json({
-        success: true,
-        data: parent
-      });
+      res.json({ success: true, data: parent });
     } catch (error) {
       console.error('Get parent by ID error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
-  
-  // POST /api/parents - Create parent (with auto-generated parent_id)
+
+  // POST /api/parents
   async createParent(req, res) {
     try {
-      const required = ['first_name', 'last_name', 'phone', 'email'];
-      const missing = required.filter(field => !req.body[field]);
-      
-      if (missing.length > 0) {
-        return res.status(400).json({
-          success: false,
-          error: `Missing required fields: ${missing.join(', ')}`
-        });
-      }
-      
-      const countResult = await pool.query("SELECT COUNT(*) as count FROM parents");
-      const count = parseInt(countResult.rows[0].count) + 1;
-      const parentIdValue = `PARENT${count}`;
-      
-      let password = req.body.password;
-      if (!password) {
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        password = '';
-        for (let i = 0; i < 8; i++) {
-          password += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-      }
-      
-      const bcrypt = require('bcrypt');
-      const hashedPassword = await bcrypt.hash(password, 10);
-      
-      const result = await pool.query(`
-        INSERT INTO parents (
-          parent_id, 
-          first_name, 
-          last_name, 
-          phone, 
-          email, 
-          password, 
-          is_active
-        ) VALUES ($1, $2, $3, $4, $5, $6, true)
-        RETURNING id, parent_id, first_name, last_name, email, phone
-      `, [parentIdValue, req.body.first_name, req.body.last_name, req.body.phone, req.body.email, hashedPassword]);
-      
-      const newParent = result.rows[0];
-      
-      if (req.body.email) {
-        try {
-          const { sendEmail, getParentWelcomeTemplate } = require('../config/email');
-          const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login`;
-          
-          await sendEmail(
-            req.body.email,
-            'Welcome to Parent Portal - School Management System',
-            getParentWelcomeTemplate(
-              `${req.body.first_name} ${req.body.last_name}`,
-              'Your Child',
-              'N/A',
-              parentIdValue,
-              password,
-              loginUrl
-            )
-          );
-          console.log('Welcome email sent to parent');
-        } catch (emailError) {
-          console.error('Failed to send welcome email:', emailError);
-        }
-      }
-      
+      const newParent = await parentModel.createParent(req.body);
       res.status(201).json({
         success: true,
-        message: 'Parent created successfully. Login credentials sent to email.',
         data: newParent,
-        temp_password: password
+        message: 'Parent created successfully. Temporary password generated.'
       });
-      
     } catch (error) {
       console.error('Create parent error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
-  
-  // PUT /api/parents/:id - Update parent
+
+  // PUT /api/parents/:id
   async updateParent(req, res) {
     try {
-      // Enforce required phone value (no empty string / whitespace)
-      const phone = req.body?.phone;
-      const phoneStr = typeof phone === 'string' ? phone.trim() : phone;
-
-      // If your frontend always sends phone on update, treat it as required.
-      // If it sometimes omits phone, uncomment the alternative validation below.
-      const phoneMissing = phoneStr === undefined || phoneStr === null || phoneStr === '';
-      if (phoneMissing) {
-        return res.status(400).json({
-          success: false,
-          error: 'Phone is required'
-        });
+      const updated = await parentModel.updateParent(req.params.id, req.body);
+      if (!updated) {
+        return res.status(404).json({ success: false, error: 'Parent not found' });
       }
-
-      const updatedParent = await parentModel.updateParent(req.params.id, req.body);
-      if (!updatedParent) {
-        return res.status(404).json({
-          success: false,
-          error: 'Parent not found'
-        });
-      }
-      res.json({
-        success: true,
-        data: updatedParent
-      });
+      res.json({ success: true, data: updated, message: 'Parent updated successfully' });
     } catch (error) {
       console.error('Update parent error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
-  
-  // DELETE /api/parents/:id - Delete parent
+
+  // DELETE /api/parents/:id
   async deleteParent(req, res) {
     try {
       const deleted = await parentModel.deleteParent(req.params.id);
       if (!deleted) {
-        return res.status(404).json({
-          success: false,
-          error: 'Parent not found'
-        });
+        return res.status(404).json({ success: false, error: 'Parent not found or cannot be deleted' });
       }
-      res.json({
-        success: true,
-        message: 'Parent deleted successfully'
-      });
+      res.json({ success: true, message: 'Parent deleted successfully' });
     } catch (error) {
       console.error('Delete parent error:', error);
-      res.status(400).json({
-        success: false,
-        error: error.message
-      });
-    }
-  },
-  
-  // GET /api/parents/:id/dashboard - Get parent dashboard
-  async getParentDashboard(req, res) {
-    try {
-      const dashboard = await parentModel.getParentDashboard(req.params.id);
-      if (!dashboard) {
-        return res.status(404).json({
-          success: false,
-          error: 'Parent not found'
-        });
-      }
-      res.json({
-        success: true,
-        data: dashboard
-      });
-    } catch (error) {
-      console.error('Get parent dashboard error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
-  // GET /api/parents/children - Get all children of logged-in parent
+  // GET /api/parents/:id/dashboard
+  async getParentDashboard(req, res) {
+    try {
+      const parentId = req.params.id;
+      const dashboardData = await parentModel.getParentDashboardDetails(parentId);
+      if (!dashboardData) {
+        return res.status(404).json({ success: false, error: 'Parent not found' });
+      }
+      res.json({ success: true, data: dashboardData });
+    } catch (error) {
+      console.error('Get parent dashboard error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+
+  // GET /api/parents/children
   async getMyChildren(req, res) {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
 
-      const parentResult = await pool.query('SELECT id FROM parents WHERE user_id = $1', [userId]);
-      if (parentResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'Parent not found'
-        });
+      const parentId = await getParentIdFromUserId(userId);
+      if (!parentId) {
+        return res.status(404).json({ success: false, error: 'Parent record not found for this user' });
       }
 
-      const parentId = parentResult.rows[0].id;
-
-      const childrenResult = await pool.query(`
-        SELECT DISTINCT
-          s.id, 
-          s.admission_number,
-          s.first_name, 
-          s.last_name, 
-          s.class_id, 
-          c.class_name,
-          c.level,
-          s.date_of_birth,
-          s.gender,
-          s.status
-        FROM students s
-        LEFT JOIN classes c ON s.class_id = c.id
-        WHERE LOWER(s.status) = 'active'
-          AND (
-            -- direct link
-            s.parent_id = $1
-            OR
-            -- junction-table link
-            EXISTS (
-              SELECT 1 FROM parent_students ps
-              WHERE ps.student_id = s.id
-                AND ps.parent_id = $1
-            )
-            OR
-            -- email link (email is stored in users table, not parents)
-            s.parent_email IS NOT NULL
-              AND s.parent_email = (
-                SELECT u.email FROM parents p
-                JOIN users u ON p.user_id = u.id
-                WHERE p.id = $1
-              )
-          )
-        ORDER BY s.first_name, s.last_name
-      `, [parentId]);
-
-
-      let finalChildren = childrenResult.rows;
-      if (finalChildren.length === 0) {
-        const parentEmailRes = await pool.query(
-          `SELECT u.email 
-           FROM parents p 
-           JOIN users u ON p.user_id = u.id 
-           WHERE p.id = $1`,
-          [parentId]
-        );
-        const parentEmail = parentEmailRes.rows[0]?.email;
-
-        if (parentEmail) {
-          const emailChildrenResult = await pool.query(`
-            SELECT 
-              s.id, 
-              s.admission_number,
-              s.first_name, 
-              s.last_name, 
-              s.class_id, 
-              c.class_name,
-              c.level,
-              s.date_of_birth,
-              s.gender,
-              s.status
-            FROM students s
-            LEFT JOIN classes c ON s.class_id = c.id
-            WHERE s.parent_email = $1 AND LOWER(s.status) = 'active'
-            ORDER BY s.first_name, s.last_name
-          `, [parentEmail]);
-
-          finalChildren = emailChildrenResult.rows;
-        }
-      }
-
+      const children = await parentModel.getMyChildren(parentId);
       res.json({
         success: true,
-        data: finalChildren,
-        count: finalChildren.length
+        data: children,
+        count: children.length
       });
-
     } catch (error) {
       console.error('Get my children error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
-  // GET /api/parents/child/:childId/performance - Get child performance summary (FIXED)
+  // GET /api/parents/child/:childId/performance
   async getChildPerformance(req, res) {
     try {
       const { childId } = req.params;
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
 
-      // Verify parent has access to this child
-      const parentResult = await pool.query(
-        `SELECT id FROM parents WHERE user_id = $1`,
-        [userId]
-      );
-
-      if (parentResult.rows.length === 0) {
-        return res.status(403).json({
-          success: false,
-          error: 'Parent not found'
-        });
+      const parentId = await getParentIdFromUserId(userId);
+      if (!parentId) {
+        return res.status(404).json({ success: false, error: 'Parent not found' });
       }
 
-      const parentId = parentResult.rows[0].id;
-
-      // Check if child belongs to this parent
-      const childCheck = await pool.query(
-        `SELECT id FROM parent_students WHERE parent_id = $1 AND student_id = $2`,
-        [parentId, childId]
-      );
-
-      if (childCheck.rows.length === 0) {
-        return res.status(403).json({
-          success: false,
-          error: 'You do not have access to this child'
-        });
+      const hasAccess = await hasAccessToChild(parentId, childId);
+      if (!hasAccess) {
+        return res.status(403).json({ success: false, error: 'You do not have access to this child' });
       }
 
-      // Get child info
-      const childResult = await pool.query(`
-        SELECT 
-          s.id,
-          s.first_name,
-          s.last_name,
-          s.admission_number,
-          s.class_id,
-          c.class_name,
-          c.level
-        FROM students s
-        LEFT JOIN classes c ON s.class_id = c.id
-        WHERE s.id = $1
-      `, [childId]);
-
-      if (childResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'Student not found'
-        });
+      const performanceData = await parentModel.getChildPerformance(childId);
+      if (!performanceData) {
+        return res.status(404).json({ success: false, error: 'Student not found' });
       }
 
-      const child = childResult.rows[0];
+      // Get all subjects with grades for breakdown  
+      let subjects = [];
+      try {
+        const allGrades = await pool.query(`
+          SELECT
+            g.subject,
+            g.continuous_assessment,
+            g.exam_score,
+            g.continuous_assessment + g.exam_score as total,
+            g.grade,
+            g.term,
+            g.academic_year,
+            g.id as grade_id
+          FROM grades g
+          WHERE g.student_id = $1
+          ORDER BY g.subject, g.term DESC
+        `, [childId]);
 
-      // Get grades - FIXED: removed created_at
-      const gradesResult = await pool.query(`
-        SELECT 
-          COALESCE(AVG(continuous_assessment + exam_score), 0) as average,
-          COUNT(*) as subject_count
-        FROM grades 
-        WHERE student_id = $1
-      `, [childId]);
-
-      const average = parseFloat(gradesResult.rows[0]?.average) || 0;
-      const subjectCount = parseInt(gradesResult.rows[0]?.subject_count) || 0;
-
-      // Get attendance - FIXED: removed created_at
-      const attendanceResult = await pool.query(`
-        SELECT 
-          COUNT(*) as total,
-          SUM(CASE WHEN LOWER(status) = 'present' THEN 1 ELSE 0 END) as present,
-          SUM(CASE WHEN LOWER(status) = 'absent' THEN 1 ELSE 0 END) as absent,
-          SUM(CASE WHEN LOWER(status) = 'late' THEN 1 ELSE 0 END) as late
-        FROM attendance 
-        WHERE student_id = $1
-      `, [childId]);
-
-      const total = parseInt(attendanceResult.rows[0]?.total) || 0;
-      const present = parseInt(attendanceResult.rows[0]?.present) || 0;
-      const absent = parseInt(attendanceResult.rows[0]?.absent) || 0;
-      const late = parseInt(attendanceResult.rows[0]?.late) || 0;
-      const attendanceRate = total > 0 ? Math.round((present / total) * 100) : 0;
-
-      // Get fees summary
-      const feesResult = await pool.query(`
-        SELECT 
-          COALESCE(SUM(amount), 0) as total_fees,
-          COALESCE(SUM(paid_amount), 0) as total_paid,
-          COALESCE(SUM(amount) - SUM(paid_amount), 0) as balance
-        FROM fees 
-        WHERE student_id = $1
-      `, [childId]);
-
-      const totalFees = parseFloat(feesResult.rows[0]?.total_fees) || 0;
-      const totalPaid = parseFloat(feesResult.rows[0]?.total_paid) || 0;
-      const balance = parseFloat(feesResult.rows[0]?.balance) || 0;
-
-      // Get recent grades - FIXED: removed created_at
-      const recentGrades = await pool.query(`
-        SELECT 
-          subject,
-          continuous_assessment,
-          exam_score,
-          continuous_assessment + exam_score as total,
-          grade,
-          term,
-          academic_year
-        FROM grades 
-        WHERE student_id = $1
-        ORDER BY term DESC
-        LIMIT 5
-      `, [childId]);
-
-      res.json({
-        success: true,
-        data: {
-          student: child,
-          performance: {
-            average_score: Math.round(average),
-            subject_count: subjectCount,
-            attendance_rate: attendanceRate,
-            total_days: total,
-            present_days: present,
-            absent_days: absent,
-            late_days: late
-          },
-          fees: {
-            total_fees: totalFees,
-            total_paid: totalPaid,
-            balance: balance
-          },
-          recent_grades: recentGrades.rows
+        const subjectMap = {};
+        for (const g of allGrades.rows) {
+          if (!subjectMap[g.subject]) {
+            subjectMap[g.subject] = {
+              name: g.subject,
+              subject_id: g.grade_id,
+              score: Math.round(parseFloat(g.total) || 0),
+              grade: g.grade || '—',
+              term: g.term,
+              academic_year: g.academic_year
+            };
+          }
         }
-      });
+        subjects = Object.values(subjectMap);
+      } catch (gradeErr) {
+        console.warn('Grades query failed for child', childId, gradeErr.message);
+      }
 
+      const data = {
+        student: performanceData.student,
+        performance: {
+          ...performanceData.performance,
+          subjects: subjects,
+          rank: 'N/A',
+          comment: null
+        },
+        fees: performanceData.fees,
+        recent_grades: performanceData.recent_grades
+      };
+
+      res.json({ success: true, data });
     } catch (error) {
       console.error('Get child performance error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
-  // GET /api/parents/child/:childId/grades - Get child's grades (FIXED)
+  // GET /api/parents/child/:childId/grades
   async getChildGrades(req, res) {
     try {
       const { childId } = req.params;
       const userId = req.user?.id;
-
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
 
-      const gradesResult = await pool.query(`
-        SELECT 
-          g.id,
-          g.subject,
-          g.continuous_assessment,
-          g.exam_score,
-          g.continuous_assessment + g.exam_score as total,
-          g.grade,
-          g.term,
-          g.academic_year
-        FROM grades g
-        WHERE g.student_id = $1
-        ORDER BY g.term, g.subject
-      `, [childId]);
+      const parentId = await getParentIdFromUserId(userId);
+      if (!parentId) {
+        return res.status(404).json({ success: false, error: 'Parent not found' });
+      }
 
-      res.json({
-        success: true,
-        data: gradesResult.rows,
-        count: gradesResult.rows.length
-      });
+      const hasAccess = await hasAccessToChild(parentId, childId);
+      if (!hasAccess) {
+        return res.status(403).json({ success: false, error: 'You do not have access to this child' });
+      }
 
+      const grades = await parentModel.getChildGrades(childId);
+      res.json({ success: true, data: grades, count: grades.length });
     } catch (error) {
       console.error('Get child grades error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
-  // GET /api/parents/child/:childId/attendance - Get child's attendance (FIXED)
+  // GET /api/parents/child/:childId/attendance
   async getChildAttendance(req, res) {
     try {
       const { childId } = req.params;
       const userId = req.user?.id;
-
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
 
-      const attendanceResult = await pool.query(`
-        SELECT 
-          a.id,
-          a.date,
-          a.status,
-          a.term,
-          a.term_name,
-          a.remarks
-        FROM attendance a
-        WHERE a.student_id = $1
-        ORDER BY a.date DESC
-        LIMIT 30
-      `, [childId]);
+      const parentId = await getParentIdFromUserId(userId);
+      if (!parentId) {
+        return res.status(404).json({ success: false, error: 'Parent not found' });
+      }
 
-      res.json({
-        success: true,
-        data: attendanceResult.rows,
-        count: attendanceResult.rows.length
-      });
+      const hasAccess = await hasAccessToChild(parentId, childId);
+      if (!hasAccess) {
+        return res.status(403).json({ success: false, error: 'You do not have access to this child' });
+      }
 
+      const attendance = await parentModel.getChildAttendance(childId);
+      res.json({ success: true, data: attendance, count: attendance.length });
     } catch (error) {
       console.error('Get child attendance error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
-  // GET /api/parents/child/:childId/fees - Get child's fees
+  // GET /api/parents/child/:childId/fees
   async getChildFees(req, res) {
     try {
       const { childId } = req.params;
       const userId = req.user?.id;
-
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
 
-      const feesResult = await pool.query(`
-        SELECT 
-          f.id,
-          f.fee_type,
-          f.term,
-          f.term_name,
-          f.academic_year,
-          f.amount,
-          f.paid_amount,
-          f.balance,
-          f.status,
-          f.payment_date,
-          f.payment_method,
-          f.transaction_id,
-          f.receipt_number
-        FROM fees f
-        WHERE f.student_id = $1
-        ORDER BY f.payment_date DESC
-      `, [childId]);
+      const parentId = await getParentIdFromUserId(userId);
+      if (!parentId) {
+        return res.status(404).json({ success: false, error: 'Parent not found' });
+      }
 
-      res.json({
-        success: true,
-        data: feesResult.rows,
-        count: feesResult.rows.length
-      });
+      const hasAccess = await hasAccessToChild(parentId, childId);
+      if (!hasAccess) {
+        return res.status(403).json({ success: false, error: 'You do not have access to this child' });
+      }
 
+      const fees = await parentModel.getChildFees(childId);
+      res.json({ success: true, data: fees, count: fees.length });
     } catch (error) {
       console.error('Get child fees error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
-  // GET /api/parents/child/:childId/subjects - Get subjects for a child
+  // GET /api/parents/child/:childId/subjects
   async getChildSubjects(req, res) {
     try {
       const { childId } = req.params;
-      
-      const childResult = await pool.query(
-        'SELECT class_id FROM students WHERE id = $1',
-        [childId]
-      );
-
-      if (childResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'Student not found'
-        });
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
 
-      const classId = childResult.rows[0].class_id;
-      if (!classId) {
-        return res.json({
-          success: true,
-          data: []
-        });
+      const parentId = await getParentIdFromUserId(userId);
+      if (!parentId) {
+        return res.status(404).json({ success: false, error: 'Parent not found' });
       }
 
-      const subjectsResult = await pool.query(`
-        SELECT 
-          s.id,
-          s.name,
-          s.code,
-          s.description,
-          cs.hours_per_week
-        FROM class_subjects cs
-        JOIN subjects s ON cs.subject_id = s.id
-        WHERE cs.class_id = $1
-        ORDER BY s.name
-      `, [classId]);
+      const hasAccess = await hasAccessToChild(parentId, childId);
+      if (!hasAccess) {
+        return res.status(403).json({ success: false, error: 'You do not have access to this child' });
+      }
 
-      res.json({
-        success: true,
-        data: subjectsResult.rows
-      });
+      const subjects = await parentModel.getChildSubjects(childId);
+      res.json({ success: true, data: subjects });
     } catch (error) {
       console.error('Get child subjects error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
-  // GET /api/parents/child/:childId/teachers - Get teachers for a child's subjects
+  // GET /api/parents/child/:childId/teachers
   async getChildTeachers(req, res) {
     try {
       const { childId } = req.params;
-
-      const childResult = await pool.query(
-        'SELECT class_id FROM students WHERE id = $1',
-        [childId]
-      );
-
-      if (childResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'Student not found'
-        });
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
 
-      const classId = childResult.rows[0].class_id;
-      if (!classId) {
-        return res.json({
-          success: true,
-          data: []
-        });
+      const parentId = await getParentIdFromUserId(userId);
+      if (!parentId) {
+        return res.status(404).json({ success: false, error: 'Parent not found' });
       }
 
-      const teachersResult = await pool.query(`
-        SELECT DISTINCT
-          t.id,
-          t.teacher_code,
-          t.first_name,
-          t.last_name,
-          t.subject_specialty,
-          t.email,
-          t.phone,
-          s.name as subject_name,
-          s.code as subject_code
-        FROM class_subjects cs
-        JOIN subjects s ON cs.subject_id = s.id
-        LEFT JOIN teacher_subjects ts ON s.id = ts.subject_id
-        LEFT JOIN teachers t ON ts.teacher_id = t.id
-        WHERE cs.class_id = $1 AND t.id IS NOT NULL
-        ORDER BY t.first_name, t.last_name, s.name
-      `, [classId]);
+      const hasAccess = await hasAccessToChild(parentId, childId);
+      if (!hasAccess) {
+        return res.status(403).json({ success: false, error: 'You do not have access to this child' });
+      }
 
-      res.json({
-        success: true,
-        data: teachersResult.rows
-      });
+      const teachers = await parentModel.getChildTeachers(childId);
+      res.json({ success: true, data: teachers });
     } catch (error) {
       console.error('Get child teachers error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
-  // POST /api/parents/child/:childId/pay - Parent pays fee for child
+  // POST /api/parents/child/:childId/pay
   async payChildFee(req, res) {
     try {
       const { childId } = req.params;
@@ -862,38 +506,17 @@ const parentController = {
       const { fee_type, amount, payment_method, transaction_id, term, term_name, academic_year } = req.body;
 
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
 
-      // Verify parent has access to this child
-      const parentResult = await pool.query(
-        `SELECT id FROM parents WHERE user_id = $1`,
-        [userId]
-      );
-
-      if (parentResult.rows.length === 0) {
-        return res.status(403).json({
-          success: false,
-          error: 'Parent not found'
-        });
+      const parentId = await getParentIdFromUserId(userId);
+      if (!parentId) {
+        return res.status(404).json({ success: false, error: 'Parent not found' });
       }
 
-      const parentId = parentResult.rows[0].id;
-
-      // Check if child belongs to this parent
-      const childCheck = await pool.query(
-        `SELECT id FROM parent_students WHERE parent_id = $1 AND student_id = $2`,
-        [parentId, childId]
-      );
-
-      if (childCheck.rows.length === 0) {
-        return res.status(403).json({
-          success: false,
-          error: 'You do not have access to this child'
-        });
+      const hasAccess = await hasAccessToChild(parentId, childId);
+      if (!hasAccess) {
+        return res.status(403).json({ success: false, error: 'You do not have access to this child' });
       }
 
       if (!fee_type || !amount || !payment_method) {
@@ -905,26 +528,20 @@ const parentController = {
 
       const payAmount = parseFloat(amount);
       if (isNaN(payAmount) || payAmount <= 0) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid payment amount'
-        });
+        return res.status(400).json({ success: false, error: 'Invalid payment amount' });
       }
 
       const payTerm = term || 1;
       const payTermName = term_name || 'Term 1';
       const payAcademicYear = academic_year || '2024-2025';
+      const receiptNumber = `RCP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-      // Check if fee record exists
       const existing = await pool.query(`
         SELECT id, paid_amount, balance, amount as total_amount FROM fees
         WHERE student_id = $1 AND fee_type = $2 AND term = $3 AND academic_year = $4
       `, [childId, fee_type, payTerm, payAcademicYear]);
 
-      const receiptNumber = `RCP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
       if (existing.rows.length > 0) {
-        // Update existing record
         const existingPaid = parseFloat(existing.rows[0].paid_amount) || 0;
         const existingTotal = parseFloat(existing.rows[0].total_amount) || payAmount;
         const newPaidAmount = existingPaid + payAmount;
@@ -932,7 +549,7 @@ const parentController = {
         const status = newBalance <= 0 ? 'paid' : 'partial';
 
         const result = await pool.query(`
-          UPDATE fees 
+          UPDATE fees
           SET paid_amount = $1,
               balance = $2,
               status = $3,
@@ -957,10 +574,6 @@ const parentController = {
           message: 'Payment recorded successfully'
         });
       } else {
-        // Create new fee record
-        const status = 'paid';
-        const balance = 0;
-
         const result = await pool.query(`
           INSERT INTO fees (
             student_id, fee_type, term, term_name, academic_year,
@@ -969,7 +582,7 @@ const parentController = {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE, $10, $11, $12, $13)
           RETURNING *
         `, [childId, fee_type, payTerm, payTermName, payAcademicYear,
-            payAmount, payAmount, balance, status,
+            payAmount, payAmount, 0, 'paid',
             payment_method, transaction_id, receiptNumber, null]);
 
         res.json({
@@ -984,23 +597,116 @@ const parentController = {
           message: 'Payment recorded successfully'
         });
       }
-
     } catch (error) {
       console.error('Pay child fee error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
-  // GET /api/parents/child/:childId/overview - Get complete child overview
+  // GET /api/parents/dashboard-summary
+  async getDashboardSummary(req, res) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
+      }
+
+      const parentId = await getParentIdFromUserId(userId);
+      if (!parentId) {
+        return res.status(404).json({ success: false, error: 'Parent record not found' });
+      }
+
+      const children = await parentModel.getMyChildren(parentId);
+
+      let totalAvgScore = 0, totalAttRate = 0, childCount = 0;
+      let totalFeeBalance = 0, totalFeePaid = 0, totalFeeAmount = 0;
+
+      for (const child of children) {
+        childCount++;
+        const gradesRes = await pool.query(`
+          SELECT COALESCE(AVG(continuous_assessment + exam_score), 0) as avg_score
+          FROM grades WHERE student_id = $1
+        `, [child.id]);
+        totalAvgScore += parseFloat(gradesRes.rows[0]?.avg_score) || 0;
+
+        const attRes = await pool.query(`
+          SELECT COUNT(*) as total,
+                 SUM(CASE WHEN LOWER(status) = 'present' THEN 1 ELSE 0 END) as present
+          FROM attendance WHERE student_id = $1
+        `, [child.id]);
+        const attTotal = parseInt(attRes.rows[0]?.total) || 0;
+        const attPresent = parseInt(attRes.rows[0]?.present) || 0;
+        totalAttRate += attTotal > 0 ? Math.round((attPresent / attTotal) * 100) : 0;
+
+        const feesRes = await pool.query(`
+          SELECT COALESCE(SUM(amount), 0) as total_amount,
+                 COALESCE(SUM(paid_amount), 0) as total_paid,
+                 COALESCE(SUM(balance), 0) as total_balance
+          FROM fees WHERE student_id = $1
+        `, [child.id]);
+        totalFeeAmount += parseFloat(feesRes.rows[0]?.total_amount) || 0;
+        totalFeePaid += parseFloat(feesRes.rows[0]?.total_paid) || 0;
+        totalFeeBalance += parseFloat(feesRes.rows[0]?.total_balance) || 0;
+      }
+
+      const avgPerformance = childCount > 0 ? Math.round(totalAvgScore / childCount) : 0;
+      const avgAttendance = childCount > 0 ? Math.round(totalAttRate / childCount) : 0;
+
+      const notifResult = await pool.query(`
+        SELECT id, title, message, type, is_read, created_at
+        FROM notifications
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        LIMIT 10
+      `, [userId]);
+      const unreadCount = notifResult.rows.filter(n => !n.is_read).length;
+
+      res.json({
+        success: true,
+        data: {
+          children: children,
+          stats: {
+            total_children: children.length,
+            avg_performance: avgPerformance,
+            avg_attendance: avgAttendance,
+            unread_notifications: unreadCount,
+            total_notifications: notifResult.rows.length
+          },
+          fees_summary: {
+            total_fees: totalFeeAmount,
+            total_paid: totalFeePaid,
+            total_balance: totalFeeBalance
+          },
+          notifications: notifResult.rows
+        }
+      });
+    } catch (error) {
+      console.error('Get dashboard summary error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+
+  // GET /api/parents/child/:childId/overview
   async getChildOverview(req, res) {
     try {
       const { childId } = req.params;
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
+      }
+
+      const parentId = await getParentIdFromUserId(userId);
+      if (!parentId) {
+        return res.status(404).json({ success: false, error: 'Parent not found' });
+      }
+
+      const hasAccess = await hasAccessToChild(parentId, childId);
+      if (!hasAccess) {
+        return res.status(403).json({ success: false, error: 'You do not have access to this child' });
+      }
 
       const studentResult = await pool.query(`
-        SELECT 
+        SELECT
           s.id,
           s.admission_number,
           s.first_name,
@@ -1016,29 +722,21 @@ const parentController = {
       `, [childId]);
 
       if (studentResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'Student not found'
-        });
+        return res.status(404).json({ success: false, error: 'Student not found' });
       }
 
       const student = studentResult.rows[0];
-      const classId = student.class_id;
-
       let subjects = [];
       let teachers = [];
 
-      if (classId) {
+      if (student.class_id) {
         const subjectsResult = await pool.query(`
-          SELECT 
-            s.id,
-            s.name,
-            s.code
+          SELECT s.id, s.name, s.code
           FROM class_subjects cs
           JOIN subjects s ON cs.subject_id = s.id
           WHERE cs.class_id = $1
           ORDER BY s.name
-        `, [classId]);
+        `, [student.class_id]);
         subjects = subjectsResult.rows;
 
         const teachersResult = await pool.query(`
@@ -1053,76 +751,17 @@ const parentController = {
           JOIN class_subjects cs ON ts.subject_id = cs.subject_id
           WHERE cs.class_id = $1
           ORDER BY t.first_name, t.last_name
-        `, [classId]);
+        `, [student.class_id]);
         teachers = teachersResult.rows;
-      }
-
-      if (!classId) {
-        const fallbackClassResult = await pool.query(`
-          SELECT DISTINCT cs.class_id
-          FROM class_students cs
-          WHERE cs.student_id = $1 AND cs.academic_year = COALESCE($2, '2024-2025')
-          LIMIT 1
-        `, [childId, req.query.academic_year || null]);
-
-        if (fallbackClassResult.rows.length > 0) {
-          const fallbackClassId = fallbackClassResult.rows[0].class_id;
-
-          const subjectsResult = await pool.query(`
-            SELECT 
-              s.id,
-              s.name,
-              s.code
-            FROM class_subjects cs
-            JOIN subjects s ON cs.subject_id = s.id
-            WHERE cs.class_id = $1
-            ORDER BY s.name
-          `, [fallbackClassId]);
-          subjects = subjectsResult.rows;
-
-          const teachersResult = await pool.query(`
-            SELECT DISTINCT
-              t.id,
-              t.first_name,
-              t.last_name,
-              t.email,
-              t.subject_specialty
-            FROM teacher_subjects ts
-            JOIN teachers t ON ts.teacher_id = t.id
-            JOIN class_subjects cs ON ts.subject_id = cs.subject_id
-            WHERE cs.class_id = $1
-            ORDER BY t.first_name, t.last_name
-          `, [fallbackClassId]);
-          teachers = teachersResult.rows;
-
-          const classMeta = await pool.query(`
-            SELECT id, class_name, level
-            FROM classes
-            WHERE id = $1
-          `, [fallbackClassId]);
-
-          if (classMeta.rows.length > 0) {
-            student.class_id = fallbackClassId;
-            student.class_name = classMeta.rows[0].class_name;
-            student.level = classMeta.rows[0].level;
-          }
-        }
       }
 
       res.json({
         success: true,
-        data: {
-          student,
-          subjects,
-          teachers
-        }
+        data: { student, subjects, teachers }
       });
     } catch (error) {
       console.error('Get child overview error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
+      res.status(500).json({ success: false, error: error.message });
     }
   }
 };

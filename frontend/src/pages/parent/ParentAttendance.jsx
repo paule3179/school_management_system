@@ -1,177 +1,106 @@
 // src/pages/parent/ParentAttendance.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendarAlt, faSpinner, faUserGraduate } from '@fortawesome/free-solid-svg-icons';
+import { faCalendarAlt, faSpinner, faCheckCircle, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 
 const ParentAttendance = ({ API_BASE }) => {
-  const [children, setChildren] = useState([]);
-  const [selectedChild, setSelectedChild] = useState(null);
-  const [attendance, setAttendance] = useState(null);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const childId = searchParams.get('child');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [records, setRecords] = useState([]);
 
-  const loadChildren = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/parent/children`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setChildren(data.data || []);
-        if (data.data.length > 0) {
-          setSelectedChild(data.data[0]);
-          await loadAttendance(data.data[0].id);
-        }
-      }
-    } catch (err) {
-      setError('Failed to load children.');
-    } finally {
-      setLoading(false);
-    }
-  }, [API_BASE]);
-
-  const loadAttendance = useCallback(async (childId) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/parent/child/${childId}/attendance`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setAttendance(data.data);
-        setError(null);
-      } else {
-        setError(data.message || 'Failed to load attendance.');
-      }
-    } catch (err) {
-      setError('Network error while loading attendance.');
-    }
-  }, [API_BASE]);
-
+  // Auto-fetch children if no childId in URL
   useEffect(() => {
-    loadChildren();
-  }, [loadChildren]);
+    if (!childId) {
+      const fetchChildren = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch(`${API_BASE}/parent/children`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const json = await res.json();
+          if (json.success && json.data && json.data.length > 0) {
+            navigate(`/parent/attendance?child=${json.data[0].id}`, { replace: true });
+          } else {
+            setError('No children found. Contact school administrator.');
+            setLoading(false);
+          }
+        } catch {
+          setError('Failed to load children');
+          setLoading(false);
+        }
+      };
+      fetchChildren();
+    }
+  }, [childId, API_BASE, navigate]);
 
-  const handleChildChange = (child) => {
-    setSelectedChild(child);
-    setAttendance(null);
-    loadAttendance(child.id);
-  };
+  // Fetch attendance records when childId is present
+  useEffect(() => {
+    if (!childId) return;
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_BASE}/parent/child/${childId}/attendance`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success) {
+          setRecords(json.data || []);
+        } else {
+          setError(json.error || 'Failed to load attendance');
+        }
+      } catch (err) {
+        setError('Network error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [childId, API_BASE]);
 
-  if (loading) {
-    return (
-      <div className="loading-state">
-        <FontAwesomeIcon icon={faSpinner} spin /> Loading attendance...
-      </div>
-    );
-  }
+  if (loading) return <div className="loading-state"><FontAwesomeIcon icon={faSpinner} spin /> Loading attendance...</div>;
+  if (error) return <div className="error-state">{error}</div>;
 
-  if (error) {
-    return <div className="error-state">{error}</div>;
-  }
-
-  // Compute summary from attendance records array
-  const attendanceArray = Array.isArray(attendance) ? attendance : [];
-  const presentCount = attendanceArray.filter(a => a.status?.toLowerCase() === 'present').length;
-  const absentCount = attendanceArray.filter(a => a.status?.toLowerCase() === 'absent').length;
-  const totalCount = attendanceArray.length;
-  const percentage = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
+  const present = records.filter(r => r.status?.toLowerCase() === 'present').length;
+  const absent = records.filter(r => r.status?.toLowerCase() === 'absent').length;
+  const total = records.length;
+  const rate = total ? Math.round((present / total) * 100) : 0;
 
   return (
     <div className="parent-attendance-page">
       <div className="section-header">
-        <h2><FontAwesomeIcon icon={faCalendarAlt} /> Attendance Records</h2>
+        <h2><FontAwesomeIcon icon={faCalendarAlt} /> Attendance</h2>
       </div>
-
-      {children.length === 0 ? (
-        <div className="empty-state">No children found.</div>
-      ) : (
-        <>
-          <div className="child-selector">
-            <label><FontAwesomeIcon icon={faUserGraduate} style={{ marginRight: '6px' }} /> Select Child:</label>
-            <div className="select-wrapper">
-              <select
-                className="child-dropdown"
-                value={selectedChild?.id || ''}
-                onChange={(e) => {
-                  const child = children.find(c => c.id === parseInt(e.target.value));
-                  if (child) handleChildChange(child);
-                }}
-              >
-                {children.map(child => (
-                  <option key={child.id} value={child.id}>
-                    {child.first_name} {child.last_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <span className="child-info">{children.length} child{children.length !== 1 ? 'ren' : ''} registered</span>
-          </div>
-
-          {attendance && (
-            <div className="attendance-container">
-              <div className="stats-grid attendance-summary">
-                <div className="stat-card">
-                  <div className="stat-icon green">
-                    <FontAwesomeIcon icon={faCalendarAlt} />
-                  </div>
-                  <div className="stat-info">
-                    <h3>{presentCount}</h3>
-                    <p>Present</p>
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-icon red">
-                    <FontAwesomeIcon icon={faCalendarAlt} />
-                  </div>
-                  <div className="stat-info">
-                    <h3>{absentCount}</h3>
-                    <p>Absent</p>
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-icon purple">
-                    <FontAwesomeIcon icon={faCalendarAlt} />
-                  </div>
-                  <div className="stat-info">
-                    <h3>{percentage}%</h3>
-                    <p>Attendance Rate</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="attendance-log">
-                <h3>Daily Attendance Log</h3>
-                {attendanceArray.length > 0 ? (
-                  <table className="professional-table">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {attendanceArray.map((rec, idx) => (
-                        <tr key={idx}>
-                          <td>{new Date(rec.date).toLocaleDateString()}</td>
-                          <td>
-                            <span className={`status-badge ${rec.status?.toLowerCase() === 'present' ? 'present' : 'absent'}`}>
-                              {rec.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <p>No attendance records found.</p>
-                )}
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      <div className="stats-grid attendance-summary">
+        <div className="stat-card">
+          <div className="stat-icon green"><FontAwesomeIcon icon={faCheckCircle} /></div>
+          <div className="stat-info"><h3>{present}</h3><p>Present</p></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon red"><FontAwesomeIcon icon={faExclamationTriangle} /></div>
+          <div className="stat-info"><h3>{absent}</h3><p>Absent</p></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon purple"><FontAwesomeIcon icon={faCalendarAlt} /></div>
+          <div className="stat-info"><h3>{rate}%</h3><p>Attendance Rate</p></div>
+        </div>
+      </div>
+      {records.length > 0 ? (
+        <table className="professional-table">
+          <thead><tr><th>Date</th><th>Status</th></tr></thead>
+          <tbody>
+            {records.map((r, i) => (
+              <tr key={i}>
+                <td>{new Date(r.date).toLocaleDateString()}</td>
+                <td><span className={`status-badge ${r.status?.toLowerCase() === 'present' ? 'present' : 'absent'}`}>{r.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : <div className="empty-state">No attendance records found.</div>}
     </div>
   );
 };

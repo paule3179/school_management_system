@@ -14,9 +14,8 @@ import {
   faCheckCircle,
   faAward,
   faEye,
-  faExclamationTriangle,
+faExclamationTriangle,
   faUserTie,
-  faDownload,
   faChevronLeft,
   faChevronRight
 } from '@fortawesome/free-solid-svg-icons';
@@ -728,12 +727,17 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
           return;
         }
 
+const studentName = selectedStudent
+          ? `${selectedStudent.first_name || ''} ${selectedStudent.last_name || ''}`.trim()
+          : 'Student';
+        const printTitle = `${studentName} - Report Card`;
+
         win.document.write(`
           <!DOCTYPE html>
           <html>
             <head>
               <meta charset="utf-8">
-              <title>Student report</title>
+              <title>${printTitle}</title>
               <style>
                 body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: white; }
                 img { max-width: 100%; height: auto; display: block; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
@@ -741,7 +745,7 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
               </style>
             </head>
             <body>
-              <img src="${imgData}" alt="Report Card" />
+              <img src="${imgData}" alt="${printTitle}" />
               <script>
                 window.onload = function() {
                   setTimeout(function() {
@@ -1045,14 +1049,8 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
             <button className="report-modal-btn-close-modal" onClick={closeReportModal}>
               Cancel
             </button>
-            <button className="report-modal-btn-print-modal" onClick={() => { printReportCard(); }}>
+<button className="report-modal-btn-print-modal" onClick={() => { printReportCard(); }}>
               Print Report Card
-            </button>
-
-            <button className="report-modal-btn-download" onClick={() => {
-              showToast('Downloading report card...', 'info');
-            }}>
-              <FontAwesomeIcon icon={faDownload} /> Download PDF
             </button>
           </div>
         </div>

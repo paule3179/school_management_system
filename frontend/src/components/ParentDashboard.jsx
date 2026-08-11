@@ -23,6 +23,7 @@ import ParentPerformance from '../pages/parent/ParentPerformance';
 import ParentAttendance from '../pages/parent/ParentAttendance';
 import ParentSubjects from '../pages/parent/ParentSubjects';
 import ParentFees from '../pages/parent/ParentFees';
+import geebzLogo from '../assets/logo.png';
 import '../styles/ParentDashboard.css';
 
 const API_BASE = 'http://localhost:5000/api';
@@ -42,6 +43,15 @@ const ParentDashboard = () => {
     avgPerformance: 0,
     attendanceRate: 0
   });
+  const [logoExists, setLogoExists] = useState(true);
+
+  // Check if logo exists
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setLogoExists(true);
+    img.onerror = () => setLogoExists(false);
+    img.src = geebzLogo;
+  }, []);
 
   // Load profile picture from localStorage
   useEffect(() => {
@@ -49,7 +59,7 @@ const ParentDashboard = () => {
     if (savedPic) setProfilePicUrl(savedPic);
   }, []);
 
-  // Fetch all parent data
+  // Fetch parent data
   useEffect(() => {
     const fetchParentData = async () => {
       setLoading(true);
@@ -65,7 +75,7 @@ const ParentDashboard = () => {
 
         const headers = { Authorization: `Bearer ${token}` };
 
-        // 1. Fetch children
+        // 1. Fetch children (primary)
         console.log('📡 Fetching children...');
         const childrenRes = await fetch(`${API_BASE}/parent/children`, { headers });
         let childrenData = [];
@@ -73,55 +83,44 @@ const ParentDashboard = () => {
           const childrenJson = await childrenRes.json();
           childrenData = childrenJson.success ? (childrenJson.data || []) : [];
         } else {
-          console.warn('⚠️ Children endpoint returned:', childrenRes.status);
+          console.warn('Children endpoint failed:', childrenRes.status);
         }
         setChildren(childrenData);
 
-        // 2. Fetch notifications
-        console.log('📡 Fetching notifications...');
+        // 2. Fetch notifications (optional)
         try {
           const notifRes = await fetch(`${API_BASE}/parent/notifications`, { headers });
           if (notifRes.ok) {
             const notifJson = await notifRes.json();
             setNotifications(notifJson.success ? (notifJson.data || []) : []);
           }
-        } catch (e) {
-          console.warn('⚠️ Notifications not available:', e.message);
+        } catch (_) {
           setNotifications([]);
         }
 
-        // 3. Fetch overall performance and attendance stats (if children exist)
+        // 3. Compute stats from children data
         if (childrenData.length > 0) {
-          try {
-            const perfRes = await fetch(`${API_BASE}/parent/performance`, { headers });
-            if (perfRes.ok) {
-              const perfJson = await perfRes.json();
-              if (perfJson.success && perfJson.data) {
-                // Calculate averages across all children
-                const data = perfJson.data;
-                let totalPerf = 0, totalAtt = 0, count = 0;
-                if (Array.isArray(data)) {
-                  data.forEach(child => {
-                    totalPerf += child.average_score || 0;
-                    totalAtt += child.attendance_rate || 0;
-                    count++;
-                  });
-                } else if (typeof data === 'object') {
-                  // If it's a single object
-                  totalPerf = data.average_score || 0;
-                  totalAtt = data.attendance_rate || 0;
-                  count = 1;
-                }
-                if (count > 0) {
-                  setStats({
-                    avgPerformance: Math.round(totalPerf / count),
-                    attendanceRate: Math.round(totalAtt / count)
-                  });
+          let totalPerf = 0, totalAtt = 0, count = 0;
+          for (const child of childrenData) {
+            try {
+              const perfRes = await fetch(`${API_BASE}/parent/child/${child.id}/performance`, { headers });
+              if (perfRes.ok) {
+                const perfJson = await perfRes.json();
+                if (perfJson.success && perfJson.data?.performance) {
+                  totalPerf += perfJson.data.performance.average_score || 0;
+                  totalAtt += perfJson.data.performance.attendance_rate || 0;
+                  count++;
                 }
               }
+            } catch (_) {
+              // skip if performance fails
             }
-          } catch (e) {
-            console.warn('⚠️ Performance stats not available:', e.message);
+          }
+          if (count > 0) {
+            setStats({
+              avgPerformance: Math.round(totalPerf / count),
+              attendanceRate: Math.round(totalAtt / count)
+            });
           }
         }
       } catch (error) {
@@ -135,12 +134,10 @@ const ParentDashboard = () => {
     fetchParentData();
   }, []);
 
-  // Get parent display name from user context or fallback
   const getParentDisplayName = () => {
     if (user?.first_name && user?.first_name !== 'Test' && user?.first_name !== 'test') {
       return `${user.first_name} ${user.last_name || ''}`.trim();
     }
-    // Fallback: try localStorage
     try {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
@@ -148,15 +145,10 @@ const ParentDashboard = () => {
         if (parsed.first_name && parsed.first_name !== 'Test' && parsed.first_name !== 'test') {
           return `${parsed.first_name} ${parsed.last_name || ''}`.trim();
         }
-        if (parsed.email) {
-          return parsed.email.split('@')[0];
-        }
+        if (parsed.email) return parsed.email.split('@')[0];
       }
-    } catch (e) { /* ignore */ }
-    // Last resort: use email prefix
-    if (user?.email) {
-      return user.email.split('@')[0];
-    }
+    } catch { /* ignore */ }
+    if (user?.email) return user.email.split('@')[0];
     return 'Parent';
   };
 
@@ -164,9 +156,7 @@ const ParentDashboard = () => {
     const name = getParentDisplayName();
     if (name && name !== 'Parent') {
       const parts = name.split(' ');
-      if (parts.length >= 2) {
-        return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
-      }
+      if (parts.length >= 2) return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
       return name.charAt(0).toUpperCase();
     }
     return 'P';
@@ -267,7 +257,6 @@ const ParentDashboard = () => {
               <button className="action-btn secondary" onClick={() => navigate('/parent/fees')}>
                 <FontAwesomeIcon icon={faReceipt} /> Fee Status
               </button>
-              {/* Send Message button removed */}
             </div>
           </div>
 
@@ -306,14 +295,14 @@ const ParentDashboard = () => {
                 {children.map(child => (
                   <div key={child.id} className="child-item">
                     <span className="child-name">{child.first_name} {child.last_name}</span>
-                    <button className="child-select-btn" onClick={() => navigate('/parent/performance')}>
+                    <button className="child-select-btn" onClick={() => navigate(`/parent/performance?child=${child.id}`)}>
                       View Performance
                     </button>
                   </div>
                 ))}
               </div>
             )}
-            <p className="children-hint">Select a child from the sidebar to see detailed reports.</p>
+            <p className="children-hint">Select a child to see detailed reports.</p>
           </div>
         </div>
       </div>
@@ -340,7 +329,11 @@ const ParentDashboard = () => {
       <aside className={`parent-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="logo">
-            <FontAwesomeIcon icon={faChildren} />
+            {logoExists ? (
+              <img src={geebzLogo} alt="Geebz SMS Logo" className="logo-image" />
+            ) : (
+              <FontAwesomeIcon icon={faChildren} />
+            )}
             <span>Parent Portal</span>
           </div>
           <button className="toggle-btn" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>

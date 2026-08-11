@@ -5,7 +5,7 @@ import {
   faGauge as faDashboard, faChalkboard, faUsers, faUserTie, faBook, 
   faUserPlus, faSignOutAlt, faBell, 
   faEnvelope, faCalendarAlt, faBars, faSchool, faCog,
-  faCoins
+  faCoins, faArrowUp
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../context/AuthContext';
 import geebzLogo from '../assets/logo.png';
@@ -20,6 +20,7 @@ import UsersPage from './UsersPage';
 import TimetablePage from './TimetablePage';
 import Fees from '../pages/Fees';
 import SettingsPage from './SettingsPage';
+import PromotionManagement from './PromotionManagement';
 import '../styles/AdminDashboard.css';
 
 const API_BASE = 'http://localhost:5000/api';
@@ -50,7 +51,8 @@ const AdminDashboard = () => {
     { path: '/admin/subjects', name: 'Subjects', icon: faBook },
     { path: '/admin/timetable', name: 'Timetable', icon: faCalendarAlt },
     { path: '/admin/users', name: 'Users', icon: faUserPlus },
-    { path: '/admin/fees', name: 'Fees', icon: faCoins },
+{ path: '/admin/fees', name: 'Fees', icon: faCoins },
+    { path: '/admin/promotion', name: 'Promotion', icon: faArrowUp },
     { path: '/admin/settings', name: 'Settings', icon: faCog }
   ];
 
@@ -110,9 +112,10 @@ const AdminDashboard = () => {
       'users': '/admin/users',
       'fees': '/admin/fees',
       'settings': '/admin/settings',
-      'attendance': '/admin/attendance',
+'attendance': '/admin/attendance',
       'grades': '/admin/grades',
-      'performance': '/admin/grades'
+      'performance': '/admin/grades',
+      'promotion': '/admin/promotion'
     };
     
     const targetPath = routeMap[page] || `/admin/${page}`;
@@ -242,7 +245,8 @@ const AdminDashboard = () => {
               <Route path="subjects" element={<Subjects API_BASE={API_BASE} />} />
               <Route path="timetable" element={<TimetablePage API_BASE={API_BASE} />} />
               <Route path="users" element={<UsersPage API_BASE={API_BASE} />} />
-              <Route path="fees" element={<Fees API_BASE={API_BASE} />} />
+<Route path="fees" element={<Fees API_BASE={API_BASE} />} />
+              <Route path="promotion" element={<PromotionManagement API_BASE={API_BASE} />} />
               <Route path="settings" element={
                 <SettingsPage 
                   currentUser={user} 

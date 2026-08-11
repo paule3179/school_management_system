@@ -121,31 +121,39 @@ const PromotionManagement = ({ API_BASE, setShowPromotionModal, setSelectedClass
 
   return (
     <div className="promotion-management-page">
-      {/* Stats Cards */}
+      {/* Stats Cards - Dashboard style */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faBookOpen} /></div>
+          <div className="stat-icon" style={{ background: '#eef2ff', color: '#4361ee' }}>
+            <FontAwesomeIcon icon={faBookOpen} />
+          </div>
           <div className="stat-info">
             <h3>{classes.filter(c => (c.current_count || 0) > 0).length}</h3>
             <p>Classes with Students</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faUsers} /></div>
+          <div className="stat-icon" style={{ background: '#e6faf5', color: '#06d6a0' }}>
+            <FontAwesomeIcon icon={faUsers} />
+          </div>
           <div className="stat-info">
             <h3>{classes.reduce((sum, c) => sum + (c.current_count || 0), 0)}</h3>
             <p>Total Students</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faArrowUp} /></div>
+          <div className="stat-icon" style={{ background: '#fff8e7', color: '#ffd166' }}>
+            <FontAwesomeIcon icon={faArrowUp} />
+          </div>
           <div className="stat-info">
             <h3>{classes.filter(c => (c.current_count || 0) > 0 && c.level !== 'JHS').length}</h3>
             <p>Ready for Promotion</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faGraduationCap} /></div>
+          <div className="stat-icon" style={{ background: '#fef3c7', color: '#f59e0b' }}>
+            <FontAwesomeIcon icon={faGraduationCap} />
+          </div>
           <div className="stat-info">
             <h3>{classes.filter(c => c.name === 'JHS3A' && (c.current_count || 0) > 0).length}</h3>
             <p>Graduating Classes</p>
