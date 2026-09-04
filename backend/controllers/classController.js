@@ -32,10 +32,12 @@ classController.getAllClasses = async (req, res) => {
         t.last_name as teacher_last_name,
         t.email as teacher_email,
         (
-          SELECT COUNT(*) 
-          FROM students s 
-          WHERE s.class_id = c.id 
-          AND s.status = 'Active'
+          SELECT COUNT(*)
+          FROM (
+            SELECT student_id FROM student_classes sc WHERE sc.class_id = c.id AND sc.is_active = true
+            UNION
+            SELECT s.id FROM students s WHERE s.class_id = c.id AND s.status = 'Active'
+          ) active_students
         ) as student_count,
         (
           SELECT json_agg(

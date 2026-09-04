@@ -15,7 +15,7 @@ promotionController.getStudentsWithQualification = async (req, res) => {
     const studentQuery = `
       SELECT 
         s.id, s.admission_number, s.first_name, s.last_name, s.gender,
-        c.name AS class_name, c.level
+        c.class_name AS class_name, c.level
       FROM students s
       JOIN student_classes sc ON s.id = sc.student_id AND sc.is_active = true
       JOIN classes c ON sc.class_id = c.id
@@ -228,8 +228,8 @@ promotionController.getPromotionHistory = async (req, res) => {
       SELECT 
         p.*,
         s.first_name, s.last_name, s.admission_number,
-        fc.name AS from_class_name,
-        tc.name AS to_class_name,
+        fc.class_name AS from_class_name,
+        tc.class_name AS to_class_name,
         u.username AS recorded_by_name
       FROM promotions p
       JOIN students s ON p.student_id = s.id
@@ -268,12 +268,12 @@ promotionController.getPromotionHistory = async (req, res) => {
 promotionController.getNextClass = async (req, res) => {
   try {
     const { classId } = req.params;
-    const classRes = await pool.query('SELECT name, level FROM classes WHERE id = $1', [classId]);
+    const classRes = await pool.query('SELECT class_name, level FROM classes WHERE id = $1', [classId]);
     if (classRes.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Class not found' });
     }
-    const { name, level } = classRes.rows[0];
-    const match = name.match(/(\d+)/);
+    const { class_name, level } = classRes.rows[0];
+    const match = class_name?.match(/(\d+)/);
     let nextName = 'GRADUATED';
     if (match) {
       const num = parseInt(match[1]);
@@ -281,7 +281,7 @@ promotionController.getNextClass = async (req, res) => {
       else if (level === 'Primary' && num < 6) nextName = `Primary ${num + 1}A`;
       else if (level === 'JHS' && num < 3) nextName = `JHS${num + 1}A`;
     }
-    res.json({ success: true, data: { current_class: name, next_class: nextName } });
+    res.json({ success: true, data: { current_class: class_name, next_class: nextName } });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

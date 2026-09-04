@@ -265,10 +265,10 @@ gradeController.getClassPerformance = async (req, res) => {
 gradeController.getStudentReportCard = async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { academic_year } = req.query;
+    const { academic_year, term } = req.query;
     const year = academic_year || '2024-2025';
-    
-    // Get student info
+    const requestedTerm = term !== undefined && term !== null && term !== '' ? Number(term) : null;
+
     const studentResult = await pool.query(`
       SELECT 
         s.id,
@@ -279,53 +279,100 @@ gradeController.getStudentReportCard = async (req, res) => {
       FROM students s
       WHERE s.id = $1
     `, [studentId]);
-    
+
     if (studentResult.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Student not found' });
     }
-    
-    // Get all grades for the student
-    const gradesResult = await pool.query(`
-      SELECT 
-        subject,
-        exam_type,
-        marks,
-        grade,
-        remarks,
-        created_at
-      FROM grades
-      WHERE student_id = $1 AND academic_year = $2
-      ORDER BY exam_type, subject
-    `, [studentId, year]);
-    
-    // Organize by exam type
+
+    let reportRows = [];
+
+    const marksQuery = `
+      SELECT
+        m.student_id,
+        s.name AS subject,
+        m.exam_type,
+        m.marks,
+        m.grade,
+        m.remarks,
+        m.created_at,
+        m.term_id,
+        m.academic_year
+      FROM marks m
+      LEFT JOIN subjects s ON s.id = m.subject_id
+      WHERE m.student_id = $1
+        AND ($2::text IS NULL OR m.academic_year = $2)
+        AND ($3::int IS NULL OR m.term_id = $3)
+      ORDER BY m.exam_type, s.name
+    `;
+
+    const marksResult = await pool.query(marksQuery, [studentId, year, requestedTerm]);
+    reportRows = marksResult.rows;
+
+    if (reportRows.length === 0) {
+      const legacyGradesResult = await pool.query(`
+        SELECT
+          subject,
+          exam_type,
+          marks,
+          grade,
+          remarks,
+          created_at
+        FROM grades
+        WHERE student_id = $1 AND academic_year = $2
+        ORDER BY exam_type, subject
+      `, [studentId, year]);
+
+      reportRows = legacyGradesResult.rows.map(row => ({
+        subject: row.subject,
+        exam_type: row.exam_type,
+        marks: row.marks,
+        grade: row.grade,
+        remarks: row.remarks,
+        created_at: row.created_at,
+        academic_year: year,
+        term_id: requestedTerm
+      }));
+    }
+
+    if (reportRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'No report card available for this student in the selected term/year.'
+      });
+    }
+
     const exams = {};
-    gradesResult.rows.forEach(grade => {
-      if (!exams[grade.exam_type]) {
-        exams[grade.exam_type] = [];
+    reportRows.forEach(row => {
+      const examType = row.exam_type || 'Exam';
+      if (!exams[examType]) {
+        exams[examType] = [];
       }
-      exams[grade.exam_type].push({
-        subject: grade.subject,
-        marks: grade.marks,
-        grade: grade.grade,
-        remarks: grade.remarks
+
+      const gradeLetter = row.grade || calculateGrade(row.marks);
+      exams[examType].push({
+        subject: row.subject || 'Unknown Subject',
+        marks: row.marks,
+        grade: gradeLetter,
+        remarks: row.remarks
       });
     });
-    
-    // Calculate totals
-    const allMarks = gradesResult.rows.map(g => parseFloat(g.marks) || 0);
-    const totalMarks = allMarks.reduce((sum, m) => sum + m, 0);
-    const average = gradesResult.rows.length > 0 ? (totalMarks / gradesResult.rows.length).toFixed(2) : 0;
-    
-    res.json({ 
-      success: true, 
+
+    const allMarks = reportRows
+      .map(row => parseFloat(row.marks))
+      .filter(value => !Number.isNaN(value));
+
+    const totalMarks = allMarks.reduce((sum, value) => sum + value, 0);
+    const average = allMarks.length > 0 ? (totalMarks / allMarks.length).toFixed(2) : 0;
+
+    return res.json({
+      success: true,
       data: {
         student: studentResult.rows[0],
-        exams: exams,
+        exams,
         summary: {
           total_marks: totalMarks,
-          average: average,
-          subjects_count: gradesResult.rows.length
+          average,
+          subjects_count: allMarks.length
         }
       }
     });

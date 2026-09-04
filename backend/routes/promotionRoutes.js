@@ -6,16 +6,22 @@ const promotionController = require('../controllers/promotionController');
 const { verifyToken, isAdmin } = require('../middleware/auth');
 
 // ============================================================
+// DEBUG ROUTES
+// ============================================================
+router.get('/ping', (req, res) => {
+  res.json({ pong: true, message: 'Promotion router is alive!' });
+});
+
+// ============================================================
 // CLASS ROUTES (for admin page)
 // ============================================================
 
-// Get all classes with student counts
 router.get('/classes', verifyToken, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
         c.id,
-        c.class_name,  -- ✅ CORRECT: 'class_name', not 'name'
+        c.class_name,
         c.level,
         c.capacity,
         COUNT(DISTINCT sc.student_id) AS student_count
@@ -59,6 +65,7 @@ router.get('/students/class/:classId', verifyToken, async (req, res) => {
 // ============================================================
 
 // Get teacher's assigned classes (for the dropdown)
+// ✅ Uses the same logic as the dashboard – returns classes for this teacher
 router.get('/teacher/classes', verifyToken, async (req, res) => {
   try {
     const teacherId = req.user.id;
@@ -82,12 +89,111 @@ router.get('/teacher/classes', verifyToken, async (req, res) => {
   }
 });
 
-// Get students with qualification status for a class
-router.get(
-  '/teacher/promotion/students',
-  verifyToken,
-  promotionController.getStudentsWithQualification
-);
+// ============================================================
+// ✅ FIXED: Fetch students with qualification + next class
+// Removed the teacher check because the dropdown already enforces
+// that the teacher is assigned to the selected class.
+// ============================================================
+router.get('/teacher/promotion/students', verifyToken, async (req, res) => {
+  try {
+    const { class_id, academic_year, term } = req.query;
+
+    if (!class_id || !academic_year || !term) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required filters: class_id, academic_year, term',
+      });
+    }
+
+    const classIdInt = parseInt(class_id, 10);
+    if (isNaN(classIdInt)) {
+      return res.status(400).json({ success: false, error: 'Invalid class_id' });
+    }
+
+    const query = `
+      WITH student_data AS (
+        SELECT 
+          s.id,
+          s.first_name,
+          s.last_name,
+          s.admission_number,
+          c.class_name,
+          c.level,
+          CAST(regexp_replace(c.class_name, '[^0-9]', '', 'g') AS INTEGER) AS num_part,
+          substring(c.class_name FROM '[A-Z]$') AS letter_part,
+          COALESCE(
+            (SELECT AVG(g.grade::numeric) 
+             FROM grades g 
+             WHERE g.student_id = s.id 
+               AND g.academic_year = $2 
+               AND g.term = $3), 
+            0
+          ) AS average_grade,
+          COALESCE(
+            (SELECT COUNT(*) FILTER (WHERE a.status = 'present')::float / NULLIF(COUNT(*), 0) * 100
+             FROM attendance a 
+             WHERE a.student_id = s.id 
+               AND a.academic_year = $2 
+               AND a.term = $3), 
+            0
+          ) AS attendance_rate
+        FROM students s
+        JOIN student_classes sc ON s.id = sc.student_id
+        JOIN classes c ON sc.class_id = c.id
+        WHERE sc.class_id = $1 
+          AND sc.is_active = true
+        -- ❌ Removed teacher check – already guaranteed by frontend dropdown
+      ),
+      with_next_class AS (
+        SELECT 
+          *,
+          CASE
+            WHEN level = 'KG' AND num_part = 1 THEN 'KG'
+            WHEN level = 'KG' AND num_part = 2 THEN 'Primary'
+            WHEN level = 'Primary' AND num_part < 6 THEN 'Primary'
+            WHEN level = 'Primary' AND num_part = 6 THEN 'JHS'
+            WHEN level = 'JHS' AND num_part < 3 THEN 'JHS'
+            ELSE 'GRADUATED'
+          END 
+          || ' ' 
+          || 
+          CASE
+            WHEN level = 'KG' AND num_part = 1 THEN 2
+            WHEN level = 'KG' AND num_part = 2 THEN 1
+            WHEN level = 'Primary' AND num_part < 6 THEN num_part + 1
+            WHEN level = 'Primary' AND num_part = 6 THEN 1
+            WHEN level = 'JHS' AND num_part < 3 THEN num_part + 1
+            ELSE NULL
+          END
+          || COALESCE(letter_part, 'A') AS next_class_name_candidate
+        FROM student_data
+      )
+      SELECT 
+        id,
+        first_name,
+        last_name,
+        admission_number,
+        class_name,
+        average_grade,
+        attendance_rate,
+        COALESCE(
+          (SELECT class_name FROM classes 
+           WHERE class_name = next_class_name_candidate LIMIT 1),
+          'GRADUATED'
+        ) AS suggested_next_class,
+        average_grade >= 50 AND attendance_rate >= 75 AS qualified
+      FROM with_next_class
+      ORDER BY last_name, first_name
+    `;
+
+    const result = await pool.query(query, [classIdInt, academic_year, term]);
+
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Error fetching promotion students:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // Get next class for preview
 router.get(
@@ -100,7 +206,6 @@ router.get(
 // ADMIN ROUTES (full control)
 // ============================================================
 
-// Get students with qualification status – admin version
 router.get(
   '/admin/promotion/students',
   verifyToken,
@@ -108,7 +213,6 @@ router.get(
   promotionController.getStudentsWithQualification
 );
 
-// Save promotions – processes the final promotion transaction
 router.post(
   '/admin/promotion/save',
   verifyToken,
@@ -117,10 +221,9 @@ router.post(
 );
 
 // ============================================================
-// HISTORY (both teachers and admins)
+// HISTORY
 // ============================================================
 
-// Get promotion history with filters
 router.get(
   '/promotion-history',
   verifyToken,
@@ -128,7 +231,7 @@ router.get(
 );
 
 // ============================================================
-// TEST ROUTE (no auth)
+// TEST ROUTE
 // ============================================================
 router.get('/test', (req, res) => {
   res.json({ success: true, message: 'Promotion routes are working!' });

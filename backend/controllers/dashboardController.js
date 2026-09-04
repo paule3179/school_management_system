@@ -776,32 +776,34 @@ dashboardController.getMarksByClass = async (req, res) => {
     try {
         const { classId } = req.params;
         const { term, academic_year, subject_id } = req.query;
-        const userId = req.user.id;
-        
-        console.log(`📊 Getting marks for class: ${classId}`);
-        
-        // Get teacher ID
-        const teacherResult = await pool.query(
-            'SELECT id FROM teachers WHERE user_id = $1',
-            [userId]
-        );
-        
-        if (teacherResult.rows.length === 0) {
-            return res.json({
-                success: true,
-                data: [],
-                count: 0
-            });
+        const userId = req.user?.id;
+        const isAdminRequest = req.user?.role === 'admin';
+
+        console.log(`📊 Getting marks for class: ${classId} by role: ${req.user?.role || 'unknown'}`);
+
+        let teacherId = null;
+        if (!isAdminRequest) {
+            const teacherResult = await pool.query(
+                'SELECT id FROM teachers WHERE user_id = $1',
+                [userId]
+            );
+
+            if (teacherResult.rows.length === 0) {
+                return res.json({
+                    success: true,
+                    data: [],
+                    count: 0
+                });
+            }
+
+            teacherId = teacherResult.rows[0].id;
         }
-        
-        const teacherId = teacherResult.rows[0].id;
-        
-        // Use subject_id (NOT subject)
+
         let query = `
             SELECT 
                 m.id,
                 m.student_id,
-                m.subject_id,  /* ← CORRECT: Use subject_id */
+                m.subject_id,
                 s.name AS subject_name,
                 m.class_id,
                 m.teacher_id,
@@ -810,42 +812,49 @@ dashboardController.getMarksByClass = async (req, res) => {
                 m.grade,
                 m.remarks,
                 m.academic_year,
+                m.term_id,
                 m.created_at,
                 m.updated_at
             FROM marks m
             LEFT JOIN subjects s ON s.id = m.subject_id
-            WHERE m.class_id = $1 AND m.teacher_id = $2
+            WHERE m.class_id = $1
         `;
-        
-        const params = [classId, teacherId];
-        let paramIndex = 3;
-        
+
+        const params = [classId];
+        let paramIndex = 2;
+
+        if (!isAdminRequest) {
+            query += ` AND m.teacher_id = $${paramIndex}`;
+            params.push(teacherId);
+            paramIndex++;
+        }
+
         if (term) {
-            query += ` AND m.term = $${paramIndex}`;
+            query += ` AND m.term_id = $${paramIndex}`;
             params.push(term);
             paramIndex++;
         }
-        
+
         if (academic_year) {
             query += ` AND m.academic_year = $${paramIndex}`;
             params.push(academic_year);
             paramIndex++;
         }
-        
+
         if (subject_id) {
             query += ` AND m.subject_id = $${paramIndex}`;
             params.push(subject_id);
             paramIndex++;
         }
-        
+
         query += ` ORDER BY m.student_id, m.subject_id, m.exam_type`;
-        
+
         const result = await pool.query(query, params);
-        
+
         console.log(`✅ Found ${result.rows.length} marks for class ${classId}`);
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             data: result.rows,
             count: result.rows.length
         });

@@ -54,6 +54,15 @@ const studentController = {
             const academicYear = req.query.academic_year || '2024-2025';
             
             const result = await pool.query(`
+                WITH active_enrollments AS (
+                    SELECT student_id, class_id
+                    FROM student_classes
+                    WHERE class_id = $1 AND is_active = true
+                    UNION
+                    SELECT s.id AS student_id, s.class_id
+                    FROM students s
+                    WHERE s.class_id = $1 AND s.status = 'Active'
+                )
                 SELECT 
                     s.id,
                     s.admission_number,
@@ -66,7 +75,6 @@ const studentController = {
                     s.parent_phone,
                     s.parent_email,
                     s.address,
-                    s.ghana_card_number,
                     s.emergency_contact_name,
                     s.emergency_contact_phone,
                     s.emergency_contact_relationship,
@@ -76,12 +84,12 @@ const studentController = {
                     s.enrollment_date,
                     c.class_name as class_name,
                     c.level as class_level
-                FROM students s
-                JOIN class_students cs ON s.id = cs.student_id
-                LEFT JOIN classes c ON cs.class_id = c.id
-                WHERE cs.class_id = $1 AND cs.academic_year = $2 AND s.status = 'Active'
+                FROM active_enrollments ae
+                JOIN students s ON s.id = ae.student_id
+                LEFT JOIN classes c ON c.id = ae.class_id
+                WHERE s.status = 'Active'
                 ORDER BY s.first_name, s.last_name
-            `, [classId, academicYear]);
+            `, [classId]);
             
             res.json({ success: true, data: result.rows });
         } catch (error) {
@@ -141,7 +149,6 @@ const studentController = {
             const {
                 first_name, last_name, date_of_birth, gender,
                 class_id, parent_name, parent_phone, parent_email, address,
-                ghana_card_number,
                 emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
                 blood_group, allergies, medical_conditions
             } = req.body;
@@ -215,15 +222,13 @@ const studentController = {
                     INSERT INTO students (
                         admission_number, first_name, last_name, date_of_birth, gender,
                         class_id, parent_id, parent_name, parent_phone, parent_email, address,
-                        ghana_card_number,
                         emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
                         blood_group, allergies, medical_conditions, status, enrollment_date
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'Active', NOW())
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'Active', NOW())
                     RETURNING *
                 `, [
                     admission_number, first_name, last_name, date_of_birth, gender,
                     class_id || null, parentId, parent_name, parent_phone, normalizedEmail, address || null,
-                    ghana_card_number || null,
                     emergency_contact_name || null, emergency_contact_phone || null, emergency_contact_relationship || null,
                     blood_group || null, allergies || null, medical_conditions || null
                 ]);
@@ -249,7 +254,6 @@ const studentController = {
                 console.log(`👤 Student: ${first_name} ${last_name}`);
                 console.log(`📧 Parent Email: ${normalizedEmail}`);
                 console.log(`🔑 Temporary Password: ${tempPassword}`);
-                console.log(`🪪 Ghana Card: ${ghana_card_number || 'N/A'}`);
                 console.log(`🔗 Login URL: ${loginUrl}`);
                 console.log('=========================================\n');
 
@@ -284,7 +288,6 @@ const studentController = {
             const {
                 first_name, last_name, date_of_birth, gender,
                 class_id, parent_name, parent_phone, parent_email, address,
-                ghana_card_number,
                 emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
                 blood_group, allergies, medical_conditions, status
             } = req.body;
@@ -300,21 +303,19 @@ const studentController = {
                     parent_phone = COALESCE($7, parent_phone),
                     parent_email = COALESCE($8, parent_email),
                     address = COALESCE($9, address),
-                    ghana_card_number = COALESCE($10, ghana_card_number),
-                    emergency_contact_name = COALESCE($11, emergency_contact_name),
-                    emergency_contact_phone = COALESCE($12, emergency_contact_phone),
-                    emergency_contact_relationship = COALESCE($13, emergency_contact_relationship),
-                    blood_group = COALESCE($14, blood_group),
-                    allergies = COALESCE($15, allergies),
-                    medical_conditions = COALESCE($16, medical_conditions),
-                    status = COALESCE($17, status),
+                    emergency_contact_name = COALESCE($10, emergency_contact_name),
+                    emergency_contact_phone = COALESCE($11, emergency_contact_phone),
+                    emergency_contact_relationship = COALESCE($12, emergency_contact_relationship),
+                    blood_group = COALESCE($13, blood_group),
+                    allergies = COALESCE($14, allergies),
+                    medical_conditions = COALESCE($15, medical_conditions),
+                    status = COALESCE($16, status),
                     updated_at = NOW()
-                WHERE id = $18
+                WHERE id = $17
                 RETURNING *
             `, [
                 first_name, last_name, date_of_birth, gender,
                 class_id, parent_name, parent_phone, parent_email, address,
-                ghana_card_number,
                 emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
                 blood_group, allergies, medical_conditions, status, id
             ]);
