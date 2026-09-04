@@ -11,6 +11,9 @@ const PromotionManagement = ({ API_BASE, setShowPromotionModal, setSelectedClass
   const [loading, setLoading] = useState(false);
   const [promotionTab, setPromotionTab] = useState('classes');
   const [promotionHistory, setPromotionHistory] = useState([]);
+  const [selectedClassId, setSelectedClassId] = useState('');
+  const [selectedClassStudents, setSelectedClassStudents] = useState([]);
+  const [performanceLoading, setPerformanceLoading] = useState(false);
 
   const loadClasses = useCallback(async () => {
     setLoading(true);
@@ -65,14 +68,89 @@ const PromotionManagement = ({ API_BASE, setShowPromotionModal, setSelectedClass
     }
   }, [API_BASE]);
 
+  const loadClassPerformance = useCallback(async (classId) => {
+    if (!classId) {
+      setSelectedClassStudents([]);
+      return;
+    }
+
+    setPerformanceLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+      const [studentsResponse, marksResponse, subjectsResponse] = await Promise.all([
+        fetch(`${API_BASE}/students/class/${classId}`, { headers }),
+        fetch(`${API_BASE}/teacher/marks/${classId}`, { headers }),
+        fetch(`${API_BASE}/classes/${classId}/subjects`, { headers })
+      ]);
+
+      const studentsResult = await studentsResponse.json();
+      const marksResult = await marksResponse.json();
+      const subjectsResult = await subjectsResponse.json();
+
+      const students = studentsResult.data || [];
+      const marks = marksResult.data || [];
+      const subjectMap = {};
+      (subjectsResult.data || []).forEach(subject => {
+        subjectMap[subject.id] = subject.name || subject.subject_name || 'Subject';
+      });
+
+      const byStudent = {};
+      marks.forEach(mark => {
+        const studentId = String(mark.student_id);
+        if (!byStudent[studentId]) byStudent[studentId] = [];
+        byStudent[studentId].push(mark);
+      });
+
+      const rows = students.map(student => {
+        const studentMarks = byStudent[String(student.id)] || [];
+        const subjectGrades = studentMarks.length
+          ? studentMarks.map(mark => {
+              const subjectName = subjectMap[mark.subject_id] || 'Subject';
+              const grade = mark.grade || getGradeLetter(Number(mark.marks));
+              return `${subjectName}: ${grade}`;
+            })
+          : ['No report card grades yet'];
+
+        const scores = studentMarks
+          .map(mark => Number(mark.marks))
+          .filter(value => !Number.isNaN(value));
+
+        const averageScore = scores.length > 0
+          ? scores.reduce((sum, value) => sum + value, 0) / scores.length
+          : null;
+
+        return {
+          ...student,
+          overallGrade: averageScore === null ? 'N/A' : getGradeLetter(averageScore),
+          averageScore,
+          reportGrades: subjectGrades
+        };
+      });
+
+      setSelectedClassStudents(rows);
+    } catch (error) {
+      console.error('Error loading class performance:', error);
+      setSelectedClassStudents([]);
+    } finally {
+      setPerformanceLoading(false);
+    }
+  }, [API_BASE]);
+
   useEffect(() => {
     loadClasses();
     loadPromotionHistory();
   }, [loadClasses, loadPromotionHistory]);
 
-  const getNextClassName = (currentClassName, level) => {
-    if (!currentClassName) return 'Unknown';
-    const classNum = parseInt(currentClassName.match(/(\d+)/)?.[1] || 0);
+  useEffect(() => {
+    loadClassPerformance(selectedClassId);
+  }, [selectedClassId, loadClassPerformance]);
+
+  // ✅ FIXED: Use cls.class_name instead of cls.name
+  const getNextClassName = (className, level) => {
+    if (!className) return 'Unknown';
+    const classNum = parseInt(className.match(/(\d+)/)?.[1] || 0);
     if (level === 'KG') {
       if (classNum < 2) return 'Primary 1A';
     } else if (level === 'Primary') {
@@ -83,6 +161,15 @@ const PromotionManagement = ({ API_BASE, setShowPromotionModal, setSelectedClass
       return 'GRADUATED';
     }
     return 'GRADUATED';
+  };
+
+  const getGradeLetter = (score) => {
+    if (score === null || score === undefined || Number.isNaN(score)) return 'N/A';
+    if (score >= 80) return 'A';
+    if (score >= 70) return 'B';
+    if (score >= 60) return 'C';
+    if (score >= 50) return 'D';
+    return 'F';
   };
 
   const openPromotionModal = (cls) => {
@@ -121,10 +208,10 @@ const PromotionManagement = ({ API_BASE, setShowPromotionModal, setSelectedClass
 
   return (
     <div className="promotion-management-page">
-      {/* Stats Cards - Dashboard style */}
+      {/* Stats Cards */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#eef2ff', color: '#4361ee' }}>
+          <div className="stat-icon blue">
             <FontAwesomeIcon icon={faBookOpen} />
           </div>
           <div className="stat-info">
@@ -133,7 +220,7 @@ const PromotionManagement = ({ API_BASE, setShowPromotionModal, setSelectedClass
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#e6faf5', color: '#06d6a0' }}>
+          <div className="stat-icon green">
             <FontAwesomeIcon icon={faUsers} />
           </div>
           <div className="stat-info">
@@ -142,7 +229,7 @@ const PromotionManagement = ({ API_BASE, setShowPromotionModal, setSelectedClass
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#fff8e7', color: '#ffd166' }}>
+          <div className="stat-icon orange">
             <FontAwesomeIcon icon={faArrowUp} />
           </div>
           <div className="stat-info">
@@ -151,11 +238,11 @@ const PromotionManagement = ({ API_BASE, setShowPromotionModal, setSelectedClass
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#fef3c7', color: '#f59e0b' }}>
+          <div className="stat-icon purple">
             <FontAwesomeIcon icon={faGraduationCap} />
           </div>
           <div className="stat-info">
-            <h3>{classes.filter(c => c.name === 'JHS3A' && (c.current_count || 0) > 0).length}</h3>
+            <h3>{classes.filter(c => c.class_name?.includes('JHS 3') && (c.current_count || 0) > 0).length}</h3>
             <p>Graduating Classes</p>
           </div>
         </div>
@@ -183,6 +270,77 @@ const PromotionManagement = ({ API_BASE, setShowPromotionModal, setSelectedClass
           <div className="section-header">
             <h2>Promote Students by Class</h2>
           </div>
+
+          <div className="promotion-filter-row">
+            <label htmlFor="admin-promotion-class-select">Select Class</label>
+            <select
+              id="admin-promotion-class-select"
+              value={selectedClassId}
+              onChange={(e) => setSelectedClassId(e.target.value)}
+            >
+              <option value="">Select Class</option>
+              {/* ✅ SHOW ALL CLASSES */}
+              {classes.map(cls => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.class_name || cls.name || `Class ${cls.id}`} ({cls.level}) – {cls.current_count || 0} students
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedClassId && (
+            <div className="selection-preview">
+              <div className="selection-preview-header">
+                <h3>Student Performance Preview</h3>
+                <button
+                  className="btn-promote"
+                  onClick={() => {
+                    const selectedClass = classes.find(cls => String(cls.id) === String(selectedClassId));
+                    if (selectedClass) openPromotionModal(selectedClass);
+                  }}
+                  disabled={selectedClassStudents.length === 0}
+                >
+                  Promote Selected Class
+                </button>
+              </div>
+
+              {performanceLoading ? (
+                <div className="loading-container">Loading student performance...</div>
+              ) : selectedClassStudents.length > 0 ? (
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Student</th>
+                        <th>Admission No</th>
+                        <th>Overall Grade</th>
+                        <th>Report Card Grades</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedClassStudents.map(student => (
+                        <tr key={student.id}>
+                          <td><strong>{student.first_name} {student.last_name}</strong></td>
+                          <td>{student.admission_number}</td>
+                          <td>{student.overallGrade}</td>
+                          <td>{student.reportGrades.join(', ')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="no-data">No students found for this class.</div>
+              )}
+            </div>
+          )}
+
+          {!selectedClassId && (
+            <div className="no-data" style={{ marginTop: '8px' }}>
+              Select a class to review student performance before promoting.
+            </div>
+          )}
+
           <div className="table-container">
             <table className="data-table">
               <thead>
@@ -196,30 +354,39 @@ const PromotionManagement = ({ API_BASE, setShowPromotionModal, setSelectedClass
                 </tr>
               </thead>
               <tbody>
-                {classes.filter(c => (c.current_count || 0) > 0).map(cls => {
-                  const nextClass = getNextClassName(cls.name, cls.level);
+                {/* ✅ SHOW ALL CLASSES */}
+                {classes.map(cls => {
+                  // ✅ FIXED: Use cls.class_name
+                  const nextClass = getNextClassName(cls.class_name || cls.name, cls.level);
                   const isGraduated = nextClass === 'GRADUATED';
+                  const studentCount = cls.current_count || 0;
                   return (
                     <tr key={cls.id}>
-                      <td><strong>{cls.name}</strong></td>
+                      <td><strong>{cls.class_name || cls.name || `Class ${cls.id}`}</strong></td>
                       <td>{cls.level}</td>
-                      <td>{cls.current_count} student(s)</td>
+                      <td>{studentCount} student{studentCount !== 1 ? 's' : ''}</td>
                       <td>{isGraduated ? 'GRADUATED' : nextClass}</td>
-                      <td>{isGraduated ? 'Ready to Graduate' : 'Ready for Promotion'}</td>
+                      <td>
+                        {studentCount === 0 ? (
+                          <span style={{ color: '#94a3b8' }}>No Students</span>
+                        ) : isGraduated ? (
+                          <span className="status-badge status-graduated">Ready to Graduate</span>
+                        ) : (
+                          <span className="status-badge status-ready">Ready for Promotion</span>
+                        )}
+                      </td>
                       <td>
                         <button 
-                          className="btn-promote"
+                          className={`btn-promote ${isGraduated ? 'btn-graduate' : ''}`}
                           onClick={() => openPromotionModal(cls)}
+                          disabled={studentCount === 0}
                         >
                           {isGraduated ? 'Graduate' : 'Promote'}
                         </button>
-                       </td>
+                      </td>
                     </tr>
                   );
                 })}
-                {classes.filter(c => (c.current_count || 0) > 0).length === 0 && (
-                  <tr><td colSpan="6" className="no-data">No classes with students found</td></tr>
-                )}
               </tbody>
             </table>
           </div>

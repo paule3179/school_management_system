@@ -1,24 +1,24 @@
 /* ============================================
-   PROMOTION PAGE - DASHBOARD CONSISTENT DESIGN
+   PROMOTION MANAGEMENT – Consistent with Dashboard
    ============================================ */
 
 .promotion-management-page {
-  padding: 16px;
+  padding: 20px;
   background: #f5f7fa;
   min-height: 100vh;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #0f172a;
 }
 
-/* Page Header */
+/* ─── Page Header ─────────────────────────── */
 .promotion-management-page .page-header {
-  width: 100%;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .promotion-management-page .page-header h1 {
   font-size: 22px;
   font-weight: 700;
-  color: #1e293b;
+  color: #0f172a;
   margin: 0 0 4px 0;
   display: flex;
   align-items: center;
@@ -31,22 +31,83 @@
   margin: 0;
 }
 
-/* Promotion Tabs - Consistent with dashboard section */
-.promotion-tabs {
+/* ─── Stats Grid ──────────────────────────── */
+.promotion-management-page .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.promotion-management-page .stat-card {
+  background: white;
+  border: 1px solid #eef2f6;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.promotion-management-page .stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  border-color: #d1d9e6;
+}
+
+.promotion-management-page .stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.promotion-management-page .stat-icon.blue { background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #3b82f6; }
+.promotion-management-page .stat-icon.green { background: linear-gradient(135deg, #ecfdf5, #d1fae5); color: #10b981; }
+.promotion-management-page .stat-icon.orange { background: linear-gradient(135deg, #fffbeb, #fef3c7); color: #f59e0b; }
+.promotion-management-page .stat-icon.purple { background: linear-gradient(135deg, #f5f3ff, #ede9fe); color: #7c3aed; }
+
+.promotion-management-page .stat-info {
+  text-align: right;
+}
+
+.promotion-management-page .stat-info h3 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+}
+
+.promotion-management-page .stat-info p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ─── Tabs ─────────────────────────────────── */
+.promotion-management-page .promotion-tabs {
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
   flex-wrap: wrap;
-  background: transparent;
-  padding: 0;
 }
 
-.promotion-tabs .tab-btn {
+.promotion-management-page .promotion-tabs .tab-btn {
   padding: 8px 16px;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   color: #64748b;
   cursor: pointer;
@@ -56,20 +117,20 @@
   transition: all 0.2s;
 }
 
-.promotion-tabs .tab-btn:hover {
+.promotion-management-page .promotion-tabs .tab-btn:hover {
   background: #f8fafc;
   border-color: #cbd5e1;
   color: #1e293b;
   transform: translateY(-1px);
 }
 
-.promotion-tabs .tab-btn.active {
+.promotion-management-page .promotion-tabs .tab-btn.active {
   background: #3b82f6;
   color: white;
   border-color: #3b82f6;
 }
 
-/* Section Header */
+/* ─── Section Header ──────────────────────── */
 .promotion-management-page .section-header {
   display: flex;
   justify-content: space-between;
@@ -80,16 +141,54 @@
 }
 
 .promotion-management-page .section-header h2 {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
-  color: #1e293b;
+  color: #0f172a;
   margin: 0;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-/* Table Container - Like other pages */
+/* ─── Filter Row ───────────────────────────── */
+.promotion-management-page .promotion-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.promotion-management-page .promotion-filter-row label {
+  font-weight: 600;
+  color: #475569;
+  font-size: 13px;
+  min-width: 100px;
+}
+
+.promotion-management-page .promotion-filter-row select {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: white;
+  font-size: 14px;
+  color: #0f172a;
+  min-width: 220px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23495057' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+.promotion-management-page .promotion-filter-row select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ─── Tables ───────────────────────────────── */
 .promotion-management-page .table-container {
   overflow-x: auto;
   background: white;
@@ -101,15 +200,18 @@
 .promotion-management-page .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px;
   background: white;
-  min-width: 800px;
+  min-width: 700px;
+}
+
+.promotion-management-page .data-table thead {
+  background: #f8fafc;
 }
 
 .promotion-management-page .data-table th {
-  padding: 12px;
+  padding: 14px 16px;
   text-align: left;
-  background: #f8fafc;
   font-weight: 600;
   font-size: 11px;
   color: #64748b;
@@ -119,19 +221,26 @@
 }
 
 .promotion-management-page .data-table td {
-  padding: 12px;
+  padding: 12px 16px;
   border-bottom: 1px solid #f1f5f9;
   color: #1e293b;
   vertical-align: middle;
-  font-size: 12px;
 }
 
-/* Status Badges */
+.promotion-management-page .data-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.promotion-management-page .data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ─── Status Badges ────────────────────────── */
 .promotion-management-page .status-badge {
   display: inline-flex;
   align-items: center;
   padding: 4px 10px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   border-radius: 6px;
 }
@@ -146,91 +255,6 @@
   color: #065f46;
 }
 
-/* Bulk Actions */
-.promotion-management-page .bulk-actions {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 16px;
-  padding: 12px;
-  background: #f8fafc;
-  border: 1px solid #eef2f6;
-  flex-wrap: wrap;
-  border-radius: 10px;
-}
-
-.promotion-management-page .bulk-actions button {
-  padding: 6px 14px;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s;
-}
-
-.promotion-management-page .bulk-actions button:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
-}
-
-.promotion-management-page .bulk-actions .btn-promote {
-  background: #10b981;
-  color: white;
-  border: none;
-}
-
-.promotion-management-page .bulk-actions .btn-promote:hover {
-  background: #059669;
-}
-
-/* Filter Section */
-.promotion-management-page .filters {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  background: white;
-  padding: 12px 16px;
-  border: 1px solid #eef2f6;
-  border-radius: 10px;
-  flex-wrap: wrap;
-  align-items: flex-end;
-}
-
-.promotion-management-page .filters select {
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 12px;
-  background: white;
-  color: #1e293b;
-  min-width: 160px;
-}
-
-.promotion-management-page .filters .btn-primary {
-  padding: 8px 16px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.promotion-management-page .filters .btn-primary:hover {
-  background: #2563eb;
-  transform: translateY(-1px);
-}
-
-/* /* Qualification Badges */
 .qualified-badge {
   display: inline-flex;
   align-items: center;
@@ -255,48 +279,9 @@
   border-radius: 6px;
 }
 
-.grade-pass {
-  color: #10b981;
-  font-weight: 600;
-}
-
-.grade-fail {
-  color: #ef4444;
-  font-weight: 600;
-}
-
-.attendance-good {
-  color: #10b981;
-  font-weight: 600;
-}
-
-.attendance-bad {
-  color: #f59e0b;
-  font-weight: 600;
-}
-
-.unqualified-row {
-  background: #fef2f2;
-  opacity: 0.9;
-}
-
-/* No Data */
-.promotion-management-page .no-data {
-  text-align: center;
-  padding: 60px 20px;
-  color: #94a3b8;
-  font-size: 14px;
-  background: white;
-  border: 1px solid #eef2f6;
-  border-radius: 12px;
-}
-
-/* ============================================
-   PROMOTION BUTTONS IN TABLE
-   ============================================ */
-
-.promotion-classes-section .btn-promote,
-.promotion-classes-section .btn-graduate {
+/* ─── Buttons ───────────────────────────────── */
+.promotion-management-page .btn-promote,
+.promotion-management-page .btn-graduate {
   background: #10b981;
   color: white;
   border: none;
@@ -308,18 +293,73 @@
   transition: all 0.2s ease;
 }
 
-.promotion-classes-section .btn-promote:hover,
-.promotion-classes-section .btn-graduate:hover {
+.promotion-management-page .btn-promote:hover,
+.promotion-management-page .btn-graduate:hover {
   background: #059669;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
-/* ============================================
-   PROMOTION MODAL - CENTERED, CONSISTENT DESIGN
-   ============================================ */
+.promotion-management-page .btn-promote:disabled,
+.promotion-management-page .btn-graduate:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 
-/* Modal Overlay */
+.promotion-management-page .btn-export {
+  padding: 6px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.promotion-management-page .btn-export:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* ─── No Data ──────────────────────────────── */
+.promotion-management-page .no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #94a3b8;
+  font-size: 14px;
+  background: white;
+  border: 1px solid #eef2f6;
+  border-radius: 12px;
+}
+
+.promotion-management-page .loading-container {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}
+
+/* ─── Selection Preview ────────────────────── */
+.promotion-management-page .selection-preview {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.promotion-management-page .selection-preview h3 {
+  font-size: 18px;
+  margin: 0 0 12px 0;
+}
+
+/* ─── Modal Styles ─────────────────────────── */
 .promotion-modal-overlay {
   position: fixed;
   top: 0;
@@ -335,10 +375,9 @@
   padding: 20px;
 }
 
-/* Modal Content */
 .promotion-modal-content {
   background: white;
-  max-width: 500px;
+  max-width: 550px;
   width: 100%;
   max-height: 85vh;
   overflow-y: auto;
@@ -348,30 +387,23 @@
 }
 
 @keyframes modalSlideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-/* Modal Header */
 .promotion-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
   border-bottom: 1px solid #e9edf2;
-  background: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   border-radius: 16px 16px 0 0;
 }
 
 .promotion-modal-header h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: white;
   display: flex;
@@ -379,9 +411,8 @@
   gap: 8px;
 }
 
-/* Close Button */
 .promotion-modal-close {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255,255,255,0.2);
   border: none;
   width: 32px;
   height: 32px;
@@ -392,21 +423,18 @@
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
 .promotion-modal-close:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255,255,255,0.3);
   transform: rotate(90deg);
 }
 
-/* Modal Body */
 .promotion-modal-body {
   padding: 20px;
-  background: white;
 }
 
-/* Modal Footer */
 .promotion-modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -417,7 +445,6 @@
   border-radius: 0 0 16px 16px;
 }
 
-/* Modal Buttons */
 .promotion-btn-secondary {
   padding: 8px 16px;
   border: 1px solid #e2e8f0;
@@ -425,13 +452,9 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
   background: white;
   color: #64748b;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  transition: all 0.2s;
 }
 
 .promotion-btn-secondary:hover {
@@ -448,12 +471,11 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
   background: #3b82f6;
   color: white;
+  transition: all 0.2s;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
 }
 
@@ -467,13 +489,9 @@
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
-  box-shadow: none;
 }
 
-/* ============================================
-   MODAL STATS CARDS - DASHBOARD STYLE
-   ============================================ */
-
+/* ─── Modal Stats Cards ────────────────────── */
 .promotion-modal-body .promotion-stats-grid--modal-top {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -489,12 +507,6 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  transition: all 0.2s;
-}
-
-.promotion-modal-body .promotion-stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .promotion-modal-body .stat-card-icon {
@@ -510,13 +522,9 @@
   font-size: 18px;
 }
 
-.promotion-modal-body .stat-card-info {
-  flex: 1;
-}
-
 .promotion-modal-body .stat-card-info h4 {
   margin: 0 0 4px 0;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
@@ -527,22 +535,13 @@
   font-size: 18px;
   font-weight: 700;
   color: #1e293b;
-  line-height: 1.2;
 }
 
-.promotion-modal-body .promotion-stat-value.primary {
-  color: #4361ee;
-}
+.promotion-modal-body .promotion-stat-value.primary { color: #4361ee; }
+.promotion-modal-body .promotion-stat-value.success { color: #10b981; }
+.promotion-modal-body .promotion-stat-value.warning { color: #f59e0b; }
 
-.promotion-modal-body .promotion-stat-value.success {
-  color: #10b981;
-}
-
-.promotion-modal-body .promotion-stat-value.warning {
-  color: #f59e0b;
-}
-
-/* Graduation Alert */
+/* ─── Graduation Alert ─────────────────────── */
 .promotion-graduation-alert {
   display: flex;
   align-items: center;
@@ -557,24 +556,23 @@
 .promotion-graduation-alert .alert-icon {
   color: #f59e0b;
   font-size: 18px;
-  flex-shrink: 0;
 }
 
 .promotion-graduation-alert .alert-text {
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
   color: #92400e;
   font-weight: 500;
 }
 
-/* Form groups inside modal */
+/* ─── Form Elements in Modal ───────────────── */
 .promotion-form-group {
   margin-bottom: 16px;
 }
 
 .promotion-form-group label {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #334155;
   margin-bottom: 6px;
@@ -590,11 +588,11 @@
   padding: 8px 12px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
   background: white;
   color: #1e293b;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s;
 }
 
 .promotion-select:focus,
@@ -603,13 +601,13 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
-/* Student list inside modal */
+/* ─── Student List in Modal ────────────────── */
 .promotion-student-list {
   margin-top: 16px;
 }
 
 .promotion-student-list h4 {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #1e293b;
   margin: 0 0 10px;
@@ -627,7 +625,7 @@
 .promotion-student-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .promotion-student-table th {
@@ -635,10 +633,9 @@
   text-align: left;
   background: #f8fafc;
   font-weight: 600;
-  font-size: 10px;
+  font-size: 11px;
   color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -652,1286 +649,23 @@
   background: #f8fafc;
 }
 
-/* Loading state */
-.promotion-loading {
-  text-align: center;
-  padding: 40px;
-  color: #64748b;
-}
-
-.promotion-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #3b82f6;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-  margin: 0 auto 12px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Empty state */
-.promotion-empty-state {
-  text-align: center;
-  padding: 40px;
-  color: #94a3b8;
-}
-
-.promotion-empty-icon {
-  font-size: 36px;
-  margin-bottom: 12px;
-  color: #cbd5e1;
-}
-
-.promotion-empty-state p {
-  margin: 0;
-  font-size: 14px;
-}
-
-/* ============================================
-   PROMOTE / GRADUATE MODAL TABLES
-   ============================================ */
-
-.promote-modal-container,
-.graduate-modal-container {
-  width: 100%;
-  max-width: 900px;
-}
-
-.promote-modal-container .modal-table-wrapper,
-.graduate-modal-container .modal-table-wrapper {
-  overflow-x: auto;
-  width: 100%;
-  margin: 16px 0;
-  -webkit-overflow-scrolling: touch;
-}
-
-.promote-modal-table,
-.graduate-modal-table {
-  width: 100%;
-  border-collapse: collapse;
+.promotion-status-select {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
   background: white;
-  font-size: 12px;
-}
-
-.promote-modal-table thead,
-.graduate-modal-table thead {
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-  }
-  
-  .promotion-management-page .bulk-actions button {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  /* Table - horizontal scroll */
-  .promotion-management-page .table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .promotion-management-page .data-table {
-    min-width: 650px;
-  }
-  
-  .promotion-management-page .data-table th,
-  .promotion-management-page .data-table td {
-    padding: 8px;
-    font-size: 11px;
-  }
-  
-  /* Modal - full width on mobile */
-  .promotion-modal-content {
-    max-width: 95%;
-    margin: 0 10px;
-  }
-  
-  .promotion-modal-footer {
-    flex-direction: column-reverse;
-  }
-  
-  .promotion-btn-primary,
-  .promotion-btn-secondary {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-/* Small Mobile */
-@media (max-width: 480px) {
-  .promotion-management-page {
-    padding: 10px;
-  }
-  
-  /* Stats - 1 column on very small */
-  .promotion-stats-grid {
-    grid-template-columns: 1fr !important;
-    gap: 8px;
-  }
-  
-  .promotion-stats-grid .stat-card {
-    padding: 10px 12px;
-  }
-  
-  .promotion-stats-grid .stat-icon {
-    width: 36px;
-    height: 36px;
-    font-size: 16px;
-  }
-  
-  .promotion-stats-grid .stat-info h3 {
-    font-size: 18px;
-  }
-  
-  .promotion-management-page .data-table {
-    min-width: 550px;
-  }
-  
-  .promotion-management-page .data-table th,
-  .promotion-management-page .data-table td {
-    padding: 6px;
-    font-size: 10px;
-  }
-  
-  .qualified-badge,
-  .unqualified-badge {
-    padding: 2px 6px;
-    font-size: 9px;
-  }
-  
-  .promotion-modal-body .promotion-stats-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-}
-
-/* Landscape Mode */
-@media (max-width: 768px) and (orientation: landscape) {
-  .promotion-stats-grid {
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 8px;
-  }
-  
-  .promotion-tabs {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-  
-  .promotion-tabs .tab-btn {
-    width: auto;
-    flex: 1;
-  }
-}
-
-/* ============================================
-   FEES SETTINGS MODAL - CENTERED & SMALL WIDTH
-   ============================================ */
-
-/* Modal Overlay - Centered */
-.modal-overlay,
-.promotion-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-/* Modal Content - SMALL WIDTH, CENTERED */
-.modal-content,
-.promotion-modal-content {
-  background: white;
-  max-width: 450px !important;
-  width: 100%;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  animation: modalSlideUp 0.3s ease;
-  border-radius: 0 !important;
-}
-
-/* For fee settings specifically */
-.fee-settings-modal .modal-content {
-  max-width: 450px !important;
-}
-
-/* Payment Modal - also centered */
-.payment-modal-overlay .payment-card {
-  max-width: 450px !important;
-  width: 100%;
-  margin: 0 auto;
-}
-
-@keyframes modalSlideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Modal Header */
-.modal-header,
-.promotion-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 18px;
-  border-bottom: 1px solid #e9edf2;
-  background: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
-  border-radius: 0 !important;
-}
-
-.modal-header h2,
-.promotion-modal-header h2 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Close Button */
-.modal-close,
-.promotion-modal-close {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  width: 30px;
-  height: 30px;
   cursor: pointer;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: bold;
-  transition: all 0.2s ease;
-  border-radius: 0 !important;
+  min-width: 120px;
 }
 
-.modal-close:hover,
-.promotion-modal-close:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
+.promotion-status-select:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
-/* Modal Body */
-.modal-body,
-.promotion-modal-body {
-  padding: 16px;
-  background: white;
-}
-
-/* Modal Footer */
-.modal-actions,
-.promotion-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 12px 16px;
-  border-top: 1px solid #e9edf2;
-  background: #fafcff;
-  border-radius: 0 !important;
-}
-
-/* Modal Buttons */
-.btn-cancel-modal,
-.promotion-btn-secondary {
-  padding: 6px 14px;
-  border: 1px solid #e2e8f0;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: white;
-  color: #64748b;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-radius: 0 !important;
-}
-
-.btn-cancel-modal:hover,
-.promotion-btn-secondary:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #1e293b;
-  transform: translateY(-1px);
-}
-
-.btn-save-modal,
-.promotion-btn-primary {
-  padding: 6px 16px;
-  border: none;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: #3b82f6;
-  color: white;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-radius: 0 !important;
-}
-
-.btn-save-modal:hover:not(:disabled),
-.promotion-btn-primary:hover:not(:disabled) {
-  background: #2563eb;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
-
-/* ============================================
-   PROMOTION PAGE CARDS - REDUCED SIZE
-   ============================================ */
-
-/* Stats Grid - Smaller cards like Dashboard */
-.promotion-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.promotion-stats-grid .stat-card {
-  background: white;
-  border: 1px solid #eef2f6;
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  cursor: pointer;
-  border-radius: 0 !important;
-}
-
-.promotion-stats-grid .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.promotion-stats-grid .stat-icon {
-  width: 36px;
-  height: 36px;
-  background: #f0f2f8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  color: #3b82f6;
-  border-radius: 0 !important;
-}
-
-.promotion-stats-grid .stat-info {
-  text-align: right;
-}
-
-.promotion-stats-grid .stat-info h3 {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0;
-  color: #1e293b;
-  line-height: 1.2;
-}
-
-.promotion-stats-grid .stat-info p {
-  margin: 2px 0 0;
-  color: #64748b;
-  font-size: 8px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-/* ============================================
-   RESPONSIVE - REDUCED CARD SIZES ON MOBILE
-   ============================================ */
-
-/* Tablet */
-@media (max-width: 1024px) {
-  .promotion-stats-grid {
-    gap: 10px;
-  }
-  
-  .promotion-stats-grid .stat-card {
-    padding: 8px 10px;
-  }
-  
-  .promotion-stats-grid .stat-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
-  }
-  
-  .promotion-stats-grid .stat-info h3 {
-    font-size: 16px;
-  }
-}
-
-/* Mobile */
-@media (max-width: 768px) {
-  .promotion-stats-grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  
-  .promotion-stats-grid .stat-card {
-    padding: 8px 10px;
-  }
-  
-  .promotion-stats-grid .stat-icon {
-    width: 30px;
-    height: 30px;
-    font-size: 13px;
-  }
-  
-  .promotion-stats-grid .stat-info h3 {
-    font-size: 15px;
-  }
-  
-  .promotion-stats-grid .stat-info p {
-    font-size: 7px;
-  }
-  
-  /* Modal full width on mobile */
-  .modal-content,
-  .promotion-modal-content {
-    max-width: 95% !important;
-    margin: 0 10px;
-  }
-  
-  .modal-actions,
-  .promotion-modal-footer {
-    flex-direction: column-reverse;
-  }
-  
-  .btn-cancel-modal,
-  .btn-save-modal,
-  .promotion-btn-primary,
-  .promotion-btn-secondary {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-/* Small Mobile */
-@media (max-width: 480px) {
-  .promotion-stats-grid {
-    grid-template-columns: 1fr !important;
-    gap: 8px;
-  }
-  
-  .promotion-stats-grid .stat-card {
-    padding: 10px 12px;
-  }
-  
-  .promotion-stats-grid .stat-icon {
-    width: 34px;
-    height: 34px;
-    font-size: 15px;
-  }
-  
-  .promotion-stats-grid .stat-info h3 {
-    font-size: 16px;
-  }
-  
-  .modal-content,
-  .promotion-modal-content {
-    max-width: 98% !important;
-  }
-  
-  .modal-header,
-  .promotion-modal-header {
-    padding: 12px 14px;
-  }
-  
-  .modal-header h2,
-  .promotion-modal-header h2 {
-    font-size: 14px;
-  }
-  
-  .modal-body,
-  .promotion-modal-body {
-    padding: 12px;
-  }
-}
-
-/* ============================================
-   PROMOTION MODAL STATS CARDS - SMALLER
-   ============================================ */
-
-.promotion-modal-body .promotion-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.promotion-modal-body .promotion-stat-card {
-  background: #f8fafc;
-  border: 1px solid #eef2f6;
-  padding: 8px;
-  text-align: center;
-}
-
-.promotion-modal-body .promotion-stat-card h4 {
-  margin: 0 0 4px 0;
-  font-size: 8px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-}
-
-.promotion-modal-body .promotion-stat-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-@media (max-width: 480px) {
-  .promotion-modal-body .promotion-stats-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-}
-
-/* ============================================
-   PROMOTE MODAL & GRADUATE MODAL - PROFESSIONAL TABLES
-   Responsive like Subjects page
-   ============================================ */
-
-/* Modal Container - Professional styling */
-.promote-modal-container,
-.graduate-modal-container {
-  width: 100%;
-  max-width: 900px;
-}
-
-/* Modal Table Wrapper */
-.promote-modal-container .modal-table-wrapper,
-.graduate-modal-container .modal-table-wrapper {
-  overflow-x: auto;
-  width: 100%;
-  margin: 16px 0;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Professional Table inside Modal */
-.promote-modal-table,
-.graduate-modal-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-  font-size: 12px;
-}
-
-/* Table Header */
-.promote-modal-table thead,
-.graduate-modal-table thead {
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.promote-modal-table th,
-.graduate-modal-table th {
-  padding: 10px 8px;
-  text-align: left;
-  font-weight: 600;
-  font-size: 10px;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-/* Table Cells - MINIMAL GAPS */
-.promote-modal-table td,
-.graduate-modal-table td {
-  padding: 8px 6px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #1e293b;
-  vertical-align: middle;
-  font-size: 11px;
-}
-
-/* Center align specific columns */
-.promote-modal-table th:last-child,
-.promote-modal-table td:last-child,
-.graduate-modal-table th:last-child,
-.graduate-modal-table td:last-child {
-  text-align: center;
-}
-
-/* Checkbox column styling */
-.promote-modal-table td:first-child,
-.graduate-modal-table td:first-child {
-  text-align: center;
-  width: 40px;
-}
-
-.promote-modal-table input[type="checkbox"],
-.graduate-modal-table input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  accent-color: #3b82f6;
-}
-
-/* Student info styling */
-.student-name {
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.student-admission {
-  font-family: monospace;
-  font-size: 10px;
-  color: #64748b;
-  background: #f8fafc;
-  padding: 2px 6px;
-  border-radius: 4px;
-  display: inline-block;
-}
-
-/* Grade and Attendance Badges inside Modal */
-.modal-grade-pass {
-  color: #10b981;
-  font-weight: 600;
-  background: #d1fae5;
-  padding: 2px 8px;
-  border-radius: 4px;
-  display: inline-block;
-  font-size: 10px;
-}
-
-.modal-grade-fail {
-  color: #ef4444;
-  font-weight: 600;
-  background: #fee2e2;
-  padding: 2px 8px;
-  border-radius: 4px;
-  display: inline-block;
-  font-size: 10px;
-}
-
-.modal-attendance-good {
-  color: #10b981;
-  font-weight: 600;
-  background: #d1fae5;
-  padding: 2px 8px;
-  border-radius: 4px;
-  display: inline-block;
-  font-size: 10px;
-}
-
-.modal-attendance-bad {
-  color: #f59e0b;
-  font-weight: 600;
-  background: #fef3c7;
-  padding: 2px 8px;
-  border-radius: 4px;
-  display: inline-block;
-  font-size: 10px;
-}
-
-/* Qualification Status Badges */
-.modal-qualified {
-  background: #d1fae5;
-  color: #065f46;
-  padding: 3px 10px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  display: inline-block;
-}
-
-.modal-unqualified {
-  background: #fee2e2;
-  color: #991b1b;
-  padding: 3px 10px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  display: inline-block;
-}
-
-/* Row hover effect */
-.promote-modal-table tbody tr:hover,
-.graduate-modal-table tbody tr:hover {
-  background: #fafcff;
-}
-
-/* Unqualified row highlighting */
-.promote-modal-table tr.unqualified-row,
-.graduate-modal-table tr.unqualified-row {
-  background: #fef2f2;
-  opacity: 0.95;
-}
-
-/* Modal Summary Stats */
-.modal-summary-stats {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.modal-summary-card {
-  flex: 1;
-  background: #f8fafc;
-  border: 1px solid #eef2f6;
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.modal-summary-icon {
-  width: 36px;
-  height: 36px;
-  background: white;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  color: #3b82f6;
-}
-
-.modal-summary-info h4 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.modal-summary-info p {
-  margin: 2px 0 0;
-  font-size: 9px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-}
-
-/* ============================================
-   RESPONSIVE BREAKPOINTS
-   ============================================ */
-
-/* Tablet */
-@media (max-width: 768px) {
-  .promote-modal-container .modal-table-wrapper,
-  .graduate-modal-container .modal-table-wrapper {
-    overflow-x: auto;
-  }
-  
-  .promote-modal-table,
-  .graduate-modal-table {
-    min-width: 550px;
-  }
-  
-  .promote-modal-table th,
-  .graduate-modal-table th,
-  .promote-modal-table td,
-  .graduate-modal-table td {
-    padding: 8px 5px;
-    font-size: 10px;
-  }
-  
-  .modal-summary-stats {
-    gap: 10px;
-  }
-  
-  .modal-summary-card {
-    padding: 8px 10px;
-  }
-  
-  .modal-summary-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
-  }
-  
-  .modal-summary-info h4 {
-    font-size: 16px;
-  }
-}
-
-/* Mobile */
-@media (max-width: 640px) {
-  .promote-modal-container,
-  .graduate-modal-container {
-    max-width: 95%;
-  }
-  
-  .promote-modal-table,
-  .graduate-modal-table {
-    min-width: 480px;
-  }
-  
-  /* Hide less important columns on mobile */
-  .promote-modal-table th:nth-child(3),
-  .promote-modal-table td:nth-child(3),
-  .graduate-modal-table th:nth-child(3),
-  .graduate-modal-table td:nth-child(3) {
-    display: none;
-  }
-  
-  /* Adjust remaining column widths */
-  .promote-modal-table th:nth-child(1),
-  .promote-modal-table td:nth-child(1) {
-    width: 50px;
-  }
-  
-  .promote-modal-table th:nth-child(2),
-  .promote-modal-table td:nth-child(2) {
-    min-width: 120px;
-  }
-  
-  .promote-modal-table th:nth-child(4),
-  .promote-modal-table td:nth-child(4),
-  .promote-modal-table th:nth-child(5),
-  .promote-modal-table td:nth-child(5) {
-    min-width: 80px;
-  }
-  
-  .modal-summary-stats {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .modal-summary-card {
-    width: 100%;
-  }
-}
-
-/* Small Mobile */
-@media (max-width: 480px) {
-  .promote-modal-table,
-  .graduate-modal-table {
-    min-width: 400px;
-  }
-  
-  /* Show only essential columns */
-  .promote-modal-table th:nth-child(4),
-  .promote-modal-table td:nth-child(4),
-  .graduate-modal-table th:nth-child(4),
-  .graduate-modal-table td:nth-child(4) {
-    display: none;
-  }
-  
-  .promote-modal-table td,
-  .graduate-modal-table td {
-    padding: 6px 4px;
-    font-size: 9px;
-  }
-  
-  .student-admission {
-    font-size: 8px;
-    padding: 1px 4px;
-  }
-  
-  .modal-grade-pass,
-  .modal-grade-fail,
-  .modal-attendance-good,
-  .modal-attendance-bad,
-  .modal-qualified,
-  .modal-unqualified {
-    padding: 2px 6px;
-    font-size: 8px;
-  }
-}
-
-/* ============================================
-   BUTTON STYLES INSIDE MODAL
-   ============================================ */
-
-/* Promote/Graduate Action Button */
-.modal-action-btn {
-  background: #10b981;
-  color: white;
-  border: none;
-  padding: 6px 16px;
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s;
-}
-
-.modal-action-btn:hover {
-  background: #059669;
-  transform: translateY(-1px);
-}
-
-.modal-action-btn:disabled {
-  background: #94a3b8;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Secondary button */
-.modal-secondary-btn {
-  background: white;
-  border: 1px solid #e2e8f0;
-  color: #64748b;
-  padding: 6px 16px;
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s;
-}
-
-.modal-secondary-btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
-}
-
-/* Make ALL Promote and Graduate buttons in promotion modal look the same */
-.promotion-classes-section .btn-promote,
-.promotion-classes-section .btn-graduate {
-  background: #10b981 !important;
-  color: white !important;
-  border: none !important;
-  padding: 6px 16px !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  border-radius: 6px !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
-}
-
-.promotion-classes-section .btn-promote:hover,
-.promotion-classes-section .btn-graduate:hover {
-  background: #059669 !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
-}
-/* ============================================
-   PROMOTION MANAGEMENT PAGE - MOBILE OPTIMIZATION
-   2 cards per row | 2 tab buttons per row | Reduced size
-   ============================================ */
-
-/* For tablet and mobile - 2 cards per row */
-@media (max-width: 992px) {
-  .promotion-stats-grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 12px !important;
-    margin-bottom: 20px !important;
-  }
-  
-  .promotion-stats-grid .stat-card {
-    padding: 12px !important;
-  }
-  
-  .promotion-stats-grid .stat-icon {
-    width: 40px !important;
-    height: 40px !important;
-    font-size: 18px !important;
-  }
-  
-  .promotion-stats-grid .stat-info h3 {
-    font-size: 18px !important;
-  }
-  
-  .promotion-stats-grid .stat-info p {
-    font-size: 9px !important;
-  }
-}
-
-/* For mobile - 2 cards per row + 2 tab buttons per row */
-@media (max-width: 768px) {
-  /* Stats - 2 cards per row */
-  .promotion-stats-grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px !important;
-    margin-bottom: 16px !important;
-  }
-  
-  .promotion-stats-grid .stat-card {
-    padding: 10px !important;
-  }
-  
-  .promotion-stats-grid .stat-icon {
-    width: 36px !important;
-    height: 36px !important;
-    font-size: 16px !important;
-  }
-  
-  .promotion-stats-grid .stat-info h3 {
-    font-size: 16px !important;
-  }
-  
-  .promotion-stats-grid .stat-info p {
-    font-size: 8px !important;
-  }
-  
-  /* TABS - 2 per row, smaller boxes */
-  .promotion-tabs {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px !important;
-    padding: 0 !important;
-    background: transparent !important;
-    border: none !important;
-    margin-bottom: 16px !important;
-  }
-  
-  .promotion-tabs .tab-btn {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 6px !important;
-    padding: 8px 4px !important;
-    font-size: 11px !important;
-    font-weight: 500 !important;
-    background: white !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 6px !important;
-    color: #64748b !important;
-    cursor: pointer !important;
-    transition: all 0.2s ease !important;
-    white-space: nowrap !important;
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-  
-  .promotion-tabs .tab-btn svg {
-    font-size: 12px !important;
-  }
-  
-  .promotion-tabs .tab-btn.active {
-    background: #3b82f6 !important;
-    border-color: #3b82f6 !important;
-    color: white !important;
-  }
-  
-  .promotion-tabs .tab-btn:hover {
-    background: #f8fafc !important;
-    transform: translateY(-1px) !important;
-  }
-  
-  .promotion-tabs .tab-btn.active:hover {
-    background: #2563eb !important;
-  }
-}
-
-/* For small mobile - even smaller buttons */
-@media (max-width: 480px) {
-  .promotion-stats-grid {
-    gap: 8px !important;
-  }
-  
-  .promotion-stats-grid .stat-card {
-    padding: 8px !important;
-  }
-  
-  .promotion-stats-grid .stat-icon {
-    width: 32px !important;
-    height: 32px !important;
-    font-size: 14px !important;
-  }
-  
-  .promotion-stats-grid .stat-info h3 {
-    font-size: 14px !important;
-  }
-  
-  .promotion-stats-grid .stat-info p {
-    font-size: 7px !important;
-  }
-  
-  /* Tabs - 2 per row, smaller padding */
-  .promotion-tabs {
-    gap: 6px !important;
-  }
-  
-  .promotion-tabs .tab-btn {
-    padding: 6px 2px !important;
-    font-size: 10px !important;
-  }
-  
-  .promotion-tabs .tab-btn svg {
-    font-size: 10px !important;
-  }
-}
-
-/* For extra small screens */
-@media (max-width: 380px) {
-  .promotion-stats-grid {
-    gap: 6px !important;
-  }
-  
-  .promotion-stats-grid .stat-card {
-    padding: 6px !important;
-  }
-  
-  .promotion-stats-grid .stat-icon {
-    width: 28px !important;
-    height: 28px !important;
-    font-size: 12px !important;
-  }
-  
-  .promotion-stats-grid .stat-info h3 {
-    font-size: 12px !important;
-  }
-  
-  .promotion-tabs {
-    gap: 5px !important;
-  }
-  
-  .promotion-tabs .tab-btn {
-    padding: 5px 1px !important;
-    font-size: 9px !important;
-  }
-  
-  .promotion-tabs .tab-btn svg {
-    font-size: 9px !important;
-  }
-}
-
-/* Landscape mode - 4 cards in row, tabs 2 per row */
-@media (max-width: 768px) and (orientation: landscape) {
-  .promotion-stats-grid {
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 8px !important;
-  }
-  
-  .promotion-stats-grid .stat-card {
-    padding: 8px !important;
-  }
-  
-  .promotion-tabs {
-    grid-template-columns: repeat(4, 1fr) !important;
-  }
-  
-  .promotion-tabs .tab-btn {
-    padding: 6px 2px !important;
-    font-size: 10px !important;
-  }
-}
-/* ============================================
-   PROMOTE STUDENTS BY CLASS SECTION
-   Header left, Button right - Single row on mobile
-   ============================================ */
-
-/* Section Header - Desktop */
-.promotion-classes-section .section-header {
-  display: flex !important;
-  flex-direction: row !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  margin-bottom: 20px !important;
-  flex-wrap: wrap !important;
-  gap: 12px !important;
-}
-
-.promotion-classes-section .section-header h2 {
-  margin: 0 !important;
-  font-size: 18px !important;
-  font-weight: 600 !important;
-  color: #1e293b !important;
-}
-
-.promotion-classes-section .section-header .btn-primary {
-  flex-shrink: 0 !important;
-}
-
-/* Mobile - Keep in single row, header left, button right */
-@media (max-width: 768px) {
-  .promotion-classes-section .section-header {
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    margin-bottom: 16px !important;
-    padding: 0 4px !important;
-  }
-  
-  .promotion-classes-section .section-header h2 {
-    font-size: 14px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    flex: 1 !important;
-  }
-  
-  .promotion-classes-section .section-header .btn-primary {
-    padding: 6px 12px !important;
-    font-size: 11px !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-  }
-  
-  .promotion-classes-section .section-header .btn-primary svg {
-    font-size: 10px !important;
-  }
-}
-
-/* For small mobile - even smaller */
-@media (max-width: 480px) {
-  .promotion-classes-section .section-header h2 {
-    font-size: 13px !important;
-  }
-  
-  .promotion-classes-section .section-header .btn-primary {
-    padding: 5px 10px !important;
-    font-size: 10px !important;
-  }
-}
-
-/* For extra small screens */
-@media (max-width: 380px) {
-  .promotion-classes-section .section-header h2 {
-    font-size: 12px !important;
-  }
-  
-  .promotion-classes-section .section-header .btn-primary {
-    padding: 4px 8px !important;
-    font-size: 9px !important;
-  }
-  
-  .promotion-classes-section .section-header .btn-primary svg {
-    display: none !important;
-  }
-}
-
-
-/* Form row */
-.promotion-form-row {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-
-/* Bulk actions */
+/* ─── Bulk Actions ─────────────────────────── */
 .promotion-bulk-actions {
   display: flex;
   align-items: center;
@@ -1948,7 +682,7 @@
   border: none;
   border-radius: 6px;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
   display: inline-flex;
@@ -1974,7 +708,7 @@
 
 .promotion-counts {
   margin-left: auto;
-  font-size: 0.85rem;
+  font-size: 13px;
   display: flex;
   gap: 12px;
 }
@@ -1983,26 +717,143 @@
 .promotion-counts .count.retained { color: #92400e; }
 .promotion-counts .count.graduated { color: #1e40af; }
 
-/* Status select in table */
-.promotion-status-select {
-  padding: 4px 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  background: white;
-  cursor: pointer;
-  min-width: 120px;
+/* ─── Loading & Empty States ───────────────── */
+.promotion-loading {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
 }
 
-.promotion-status-select:focus {
-  outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+.promotion-empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
 }
 
-/* Disabled state */
-.promotion-btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
+.promotion-empty-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+  color: #cbd5e1;
 }
+
+/* ─── Responsive ───────────────────────────── */
+@media (max-width: 1024px) {
+  .promotion-management-page .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .promotion-management-page {
+    padding: 12px;
+  }
+
+  .promotion-management-page .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .promotion-management-page .stat-card {
+    padding: 12px 14px;
+  }
+
+  .promotion-management-page .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .promotion-management-page .stat-info h3 {
+    font-size: 18px;
+  }
+
+  .promotion-management-page .promotion-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .promotion-management-page .promotion-tabs .tab-btn {
+    justify-content: center;
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+
+  .promotion-management-page .data-table {
+    min-width: 600px;
+  }
+
+  .promotion-management-page .data-table th,
+  .promotion-management-page .data-table td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .promotion-modal-content {
+    max-width: 95%;
+  }
+
+  .promotion-modal-header h2 {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .promotion-management-page .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .promotion-management-page .stat-card {
+    padding: 10px 12px;
+  }
+
+  .promotion-management-page .stat-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+  }
+
+  .promotion-management-page .stat-info h3 {
+    font-size: 16px;
+  }
+
+  .promotion-management-page .promotion-filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .promotion-management-page .promotion-filter-row select {
+    min-width: 100%;
+  }
+
+  .promotion-management-page .data-table {
+    min-width: 500px;
+  }
+
+  .promotion-modal-body .promotion-stats-grid--modal-top {
+    grid-template-columns: 1fr;
+  }
+
+  .promotion-modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .promotion-btn-primary,
+  .promotion-btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .promotion-bulk-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .promotion-counts {
+    margin-left: 0;
+    justify-content: center;
+  }
+}
+

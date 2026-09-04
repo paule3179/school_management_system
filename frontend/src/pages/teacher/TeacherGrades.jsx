@@ -6,7 +6,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faSave,
   faChartLine,
-  faSearch,
   faBookOpen,
   faUserGraduate,
   faFilePdf,
@@ -314,8 +313,10 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
       
       setClasses(mappedClasses);
       
-      if (mappedClasses.length > 0 && !selectedClass) {
-        setSelectedClass(mappedClasses[0].id.toString());
+      // Keep the selector empty unless the user explicitly picks a class.
+      // This prevents the dropdown from auto-selecting the first class on load.
+      if (!selectedClass && mappedClasses.length > 0) {
+        setSelectedClass('');
       }
       
       if (mappedClasses.length === 0) {
@@ -1108,9 +1109,9 @@ const studentName = selectedStudent
         </div>
       </div>
 
-      {/* Filters – Academic Year smaller, Load Class in same row */}
+      {/* Filters – aligned with the rest of the teacher pages */}
       <div className="filters-row">
-        <div className="filter-group" style={{ flex: '1 1 150px', minWidth: '120px' }}>
+        <div className="filter-group filter-group-wide">
           <select
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}
@@ -1126,7 +1127,7 @@ const studentName = selectedStudent
           </select>
         </div>
 
-        <div className="filter-group" style={{ flex: '0 1 120px', minWidth: '100px' }}>
+        <div className="filter-group filter-group-medium">
           <select
             value={selectedTerm}
             onChange={(e) => setSelectedTerm(e.target.value)}
@@ -1138,26 +1139,14 @@ const studentName = selectedStudent
           </select>
         </div>
 
-        <div className="filter-group" style={{ flex: '0 1 100px', minWidth: '80px' }}>
+        <div className="filter-group filter-group-small">
           <input
             type="text"
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
             placeholder="e.g., 2024-2025"
             className="filter-input"
-            style={{ width: '100%' }}
           />
-        </div>
-
-        <div className="filter-group" style={{ flex: '0 1 auto', minWidth: '100px' }}>
-          <button
-            className="btn-load"
-            onClick={loadClassData}
-            disabled={loading || !selectedClass}
-          >
-            <FontAwesomeIcon icon={loading ? faSpinner : faSearch} spin={loading} />
-            {loading ? 'Loading...' : 'Load Class'}
-          </button>
         </div>
       </div>
 
@@ -1352,7 +1341,7 @@ const studentName = selectedStudent
         <div className="no-data">
           <FontAwesomeIcon icon={faUserGraduate} size="2x" />
           <p>No students found in this class</p>
-          <p className="no-data-sub">Click "Load Class" to refresh or select a different class</p>
+          <p className="no-data-sub">Select a different class to view another class roster.</p>
         </div>
       )}
 

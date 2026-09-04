@@ -575,14 +575,13 @@ const StudentsPage = ({ API_BASE = 'http://localhost:5000/api' }) => {
                 <th>PARENT NAME</th>
                 <th>PARENT EMAIL</th>
                 <th>PARENT PHONE</th>
-                <th>STATUS</th>
                 <th>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {displayStudents.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="empty-state">
+                  <td colSpan="6" className="empty-state">
 
                     <div className="empty-icon">📚</div>
                     <p>No students found</p>
@@ -615,11 +614,6 @@ const StudentsPage = ({ API_BASE = 'http://localhost:5000/api' }) => {
                     <td>{student.parent_name || '-'}</td>
                     <td>{student.parent_email || '-'}</td>
                     <td>{student.parent_phone || '-'}</td>
-                    <td>
-                      <span className={`status-badge ${student.status?.toLowerCase() || 'active'}`}>
-                        {student.status || 'Active'}
-                      </span>
-                    </td>
                     <td>
                       <div className="action-buttons">
                         <button

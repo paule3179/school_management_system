@@ -386,17 +386,16 @@ function Teachers({ API_BASE = 'http://localhost:5000/api' }) {
             <thead>
               <tr>
                 <th style={{ width: '30%' }}>TEACHER</th>
-                <th style={{ width: '16%' }}>DEPARTMENT</th>
-                <th style={{ width: '16%' }}>SPECIALTY</th>
-                <th style={{ width: '14%' }}>EMAIL</th>
-                <th style={{ width: '10%' }}>PHONE</th>
-                <th style={{ width: '8%' }}>STATUS</th>
+                <th style={{ width: '18%' }}>DEPARTMENT</th>
+                <th style={{ width: '18%' }}>SPECIALTY</th>
+                <th style={{ width: '18%' }}>EMAIL</th>
+                <th style={{ width: '12%' }}>PHONE</th>
                 <th style={{ width: '6%' }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {displayTeachers.length === 0 ? (
-                <tr><td colSpan="7" className="empty-state">
+                <tr><td colSpan="6" className="empty-state">
 
                   <div className="empty-icon"><FontAwesomeIcon icon={faChalkboardUser} /></div>
                   <p>No teachers found</p>
@@ -411,7 +410,6 @@ function Teachers({ API_BASE = 'http://localhost:5000/api' }) {
                     <td>{teacher.subject_specialty || '-'}</td>
                     <td>{teacher.email || '-'}</td>
                     <td>{teacher.phone || '-'}</td>
-                    <td><span className={`status-badge ${teacher.status?.toLowerCase() === 'active' ? 'active' : 'inactive'}`}>{teacher.status || 'Active'}</span></td>
                     <td>
                       <div className="action-buttons">
                         <button className="btn-view" onClick={() => handleView(teacher)}><FontAwesomeIcon icon={faEye} /></button>

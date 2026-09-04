@@ -2337,20 +2337,19 @@ button:disabled,
 .promotion-management-page .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: 20px;
+  margin-bottom: 24px;
 }
 
 .promotion-management-page .stats-grid .stat-card {
   background: white;
-  border-radius: 0;
-  padding: 14px 12px;
+  border-radius: 12px;
+  padding: 20px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  gap: 16px;
+  border: 1px solid #e2e8f0;
   transition: all 0.2s ease;
-  border: 1px solid #e9edf2;
   cursor: pointer;
 }
 
@@ -2360,15 +2359,15 @@ button:disabled,
 }
 
 .promotion-management-page .stats-grid .stat-icon {
-  width: 42px;
-  height: 42px;
-  background: #f0f2f8;
-  border-radius: 0;
+  width: 48px;
+  height: 48px;
+  background: transparent;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #1e293b;
-  font-size: 20px;
+  font-size: 24px;
 }
 
 .promotion-management-page .stats-grid .stat-info {
@@ -2376,7 +2375,7 @@ button:disabled,
 }
 
 .promotion-management-page .stats-grid .stat-info h3 {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   margin: 0;
   color: #1e293b;
@@ -2384,11 +2383,11 @@ button:disabled,
 
 .promotion-management-page .stats-grid .stat-info p {
   margin: 4px 0 0;
-  font-size: 11px;
+  font-size: 12px;
   color: #64748b;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 /* ============================================
@@ -3220,6 +3219,56 @@ button:disabled,
   border-color: #ef4444;
   color: #ef4444;
   transform: translateY(-1px);
+}
+
+/* ============================================ */
+/* PROFILE PICTURE DISPLAY CONTAINER */
+/* ============================================ */
+.user-profile-picture-container {
+  width: 100%;
+  padding: 12px 0;
+  margin-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: center;
+}
+
+.user-profile-picture-display {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-profile-picture-img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #667eea;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+  transition: all 0.2s ease;
+}
+
+.user-profile-picture-display:hover .user-profile-picture-img {
+  transform: scale(1.05);
+  border-color: #764ba2;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.profile-picture-text {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.user-profile-picture-display:hover .profile-picture-text {
+  opacity: 1;
 }
 
 /* ============================================ */

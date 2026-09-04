@@ -163,17 +163,21 @@ const SettingsPage = ({ currentUser, onUpdateUser, onClose }) => {
   return (
     <div className="settings-modal-overlay">
       <div className="settings-modal">
-
-        {/* HEADER */}
         <div className="settings-modal-header">
-          <h2>Settings</h2>
-          <button onClick={onClose}><FontAwesomeIcon icon={faTimes} /></button>
+          <div className="settings-header-title">
+            <FontAwesomeIcon icon={faCog} />
+            <h2>Settings</h2>
+          </div>
+          <button type="button" className="settings-close-btn" onClick={onClose} aria-label="Close settings">
+            <FontAwesomeIcon icon={faTimes} />
+          </button>
         </div>
 
-        {/* TABS */}
         <div className="settings-tabs">
           {tabs.map(tab => (
-            <button key={tab.id}
+            <button
+              key={tab.id}
+              type="button"
               className={activeTab === tab.id ? 'active' : ''}
               onClick={() => setActiveTab(tab.id)}
             >
@@ -182,80 +186,184 @@ const SettingsPage = ({ currentUser, onUpdateUser, onClose }) => {
           ))}
         </div>
 
-        {/* BODY */}
         <div className="settings-modal-body">
-
-          {/* PROFILE */}
           {activeTab === 'profile' && (
-            <>
-              <div>
-                <img src={profilePicPreview || ''} alt="" width="80" />
-                <input type="file" onChange={handleProfilePicUpload} />
+            <div className="settings-profile-section">
+              <div className="settings-profile-header">
+                <div className="settings-avatar-wrapper">
+                  <div className="profile-avatar-circle">
+                    {profilePicPreview ? (
+                      <img className="profile-avatar-image" src={profilePicPreview} alt="Profile" />
+                    ) : (
+                      <span className="profile-avatar-initials">
+                        {(profileForm.first_name || 'U').charAt(0)}{(profileForm.last_name || 'S').charAt(0)}
+                      </span>
+                    )}
+
+                    <label className="profile-upload-overlay" htmlFor="profile-upload-input">
+                      <FontAwesomeIcon icon={faCamera} />
+                      <span>Upload</span>
+                    </label>
+                    <input id="profile-upload-input" className="profile-upload-input" type="file" onChange={handleProfilePicUpload} />
+                  </div>
+                </div>
+
+                <div className="settings-profile-info">
+                  <h3>{profileForm.first_name || 'User'} {profileForm.last_name || ''}</h3>
+                  <p className="profile-role">{profileForm.role || 'Member'}</p>
+                  <p className="profile-id">
+                    <FontAwesomeIcon icon={faIdCard} /> {profileForm.employee_id || 'Employee ID'}
+                  </p>
+                </div>
               </div>
 
-              <input name="first_name" value={profileForm.first_name} onChange={handleProfileChange} placeholder="First Name"/>
-              <input name="last_name" value={profileForm.last_name} onChange={handleProfileChange} placeholder="Last Name"/>
-              <input name="phone" value={profileForm.phone} onChange={handleProfileChange} placeholder="Phone"/>
-              <input name="address" value={profileForm.address} onChange={handleProfileChange} placeholder="Address"/>
+              <div className="settings-form">
+                <div className="settings-form-row">
+                  <div className="settings-form-group">
+                    <label><FontAwesomeIcon icon={faUser} /> First name</label>
+                    <input className="settings-input" name="first_name" value={profileForm.first_name} onChange={handleProfileChange} placeholder="First Name" />
+                  </div>
+                  <div className="settings-form-group">
+                    <label><FontAwesomeIcon icon={faUser} /> Last name</label>
+                    <input className="settings-input" name="last_name" value={profileForm.last_name} onChange={handleProfileChange} placeholder="Last Name" />
+                  </div>
+                </div>
 
-              <button onClick={handleSaveProfile}>
-                <FontAwesomeIcon icon={faSave}/> Save
-              </button>
-            </>
+                <div className="settings-form-row">
+                  <div className="settings-form-group">
+                    <label><FontAwesomeIcon icon={faEnvelope} /> Email</label>
+                    <input className="settings-input" name="email" value={profileForm.email} onChange={handleProfileChange} placeholder="Email address" />
+                  </div>
+                  <div className="settings-form-group">
+                    <label><FontAwesomeIcon icon={faPhone} /> Phone</label>
+                    <input className="settings-input" name="phone" value={profileForm.phone} onChange={handleProfileChange} placeholder="Phone" />
+                  </div>
+                </div>
+
+                <div className="settings-form-group">
+                  <label><FontAwesomeIcon icon={faMapMarkerAlt} /> Address</label>
+                  <input className="settings-input" name="address" value={profileForm.address} onChange={handleProfileChange} placeholder="Address" />
+                </div>
+
+                <div className="settings-form-row">
+                  <div className="settings-form-group">
+                    <label><FontAwesomeIcon icon={faBuilding} /> Department</label>
+                    <input className="settings-input" name="department" value={profileForm.department} onChange={handleProfileChange} placeholder="Department" />
+                  </div>
+                  <div className="settings-form-group">
+                    <label><FontAwesomeIcon icon={faUserTag} /> Role</label>
+                    <input className="settings-input" name="role" value={profileForm.role} onChange={handleProfileChange} placeholder="Role" />
+                  </div>
+                </div>
+
+                <div className="settings-form-actions">
+                  <button type="button" className="settings-save-btn" onClick={handleSaveProfile} disabled={loading}>
+                    <FontAwesomeIcon icon={faSave} /> {loading ? 'Saving...' : 'Save profile'}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
-          {/* SECURITY */}
           {activeTab === 'security' && (
-            <>
-              <input type="password" name="current_password" placeholder="Current Password" onChange={handlePasswordChange}/>
-              <input type="password" name="new_password" placeholder="New Password" onChange={handlePasswordChange}/>
-              <input type="password" name="confirm_password" placeholder="Confirm Password" onChange={handlePasswordChange}/>
+            <div className="settings-security-section">
+              <div className="settings-security-info">
+                <div className="settings-security-icon">
+                  <FontAwesomeIcon icon={faShieldAlt} />
+                </div>
+                <div>
+                  <h3>Account security</h3>
+                  <p>Update your password and manage sign-in security.</p>
+                </div>
+              </div>
 
-              <p>Strength: {passwordStrength}/4</p>
+              <div className="settings-form">
+                <div className="settings-form-group">
+                  <label><FontAwesomeIcon icon={faLock} /> Current password</label>
+                  <div className="settings-password-input">
+                    <input className="settings-input" type={showCurrentPassword ? 'text' : 'password'} name="current_password" placeholder="Current Password" onChange={handlePasswordChange} />
+                    <button type="button" className="password-toggle-btn" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>
+                      <FontAwesomeIcon icon={showCurrentPassword ? faEyeSlash : faEye} />
+                    </button>
+                  </div>
+                </div>
 
-              <button onClick={handleChangePassword}>
-                <FontAwesomeIcon icon={faLock}/> Change Password
-              </button>
+                <div className="settings-form-group">
+                  <label><FontAwesomeIcon icon={faKey} /> New password</label>
+                  <div className="settings-password-input">
+                    <input className="settings-input" type={showNewPassword ? 'text' : 'password'} name="new_password" placeholder="New Password" onChange={handlePasswordChange} />
+                    <button type="button" className="password-toggle-btn" onClick={() => setShowNewPassword(!showNewPassword)}>
+                      <FontAwesomeIcon icon={showNewPassword ? faEyeSlash : faEye} />
+                    </button>
+                  </div>
+                </div>
 
-              <hr />
+                <div className="settings-form-group">
+                  <label><FontAwesomeIcon icon={faKey} /> Confirm password</label>
+                  <div className="settings-password-input">
+                    <input className="settings-input" type={showConfirmPassword ? 'text' : 'password'} name="confirm_password" placeholder="Confirm Password" onChange={handlePasswordChange} />
+                    <button type="button" className="password-toggle-btn" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                      <FontAwesomeIcon icon={showConfirmPassword ? faEyeSlash : faEye} />
+                    </button>
+                  </div>
+                </div>
 
-              <button onClick={handleLogoutAll}>
-                Logout all devices
-              </button>
-            </>
+                <div className="password-strength-container">
+                  <div className="password-strength-bar">
+                    <div className="password-strength-fill" style={{ width: `${(passwordStrength / 4) * 100}%`, background: passwordStrength >= 3 ? '#22c55e' : passwordStrength >= 2 ? '#fbbf24' : '#ef4444' }} />
+                  </div>
+                  <div className="password-strength-label">Strength: {passwordStrength}/4</div>
+                </div>
+
+                <div className="settings-form-actions">
+                  <button type="button" className="settings-save-btn" onClick={handleChangePassword}>
+                    <FontAwesomeIcon icon={faLock} /> Change password
+                  </button>
+                  <button type="button" className="settings-danger-btn" onClick={handleLogoutAll}>
+                    Logout all devices
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
-          {/* PREFERENCES */}
           {activeTab === 'preferences' && (
-            <>
-              <label>
-                Email Notifications
-                <input type="checkbox"
-                  checked={preferences.email_notifications}
-                  onChange={(e)=>setPreferences({...preferences, email_notifications:e.target.checked})}
-                />
-              </label>
+            <div className="settings-preferences-section">
+              <div className="settings-preference-item">
+                <label htmlFor="email_notifications">
+                  <FontAwesomeIcon icon={faEnvelope} /> Email notifications
+                </label>
+                <label className="switch">
+                  <input id="email_notifications" type="checkbox" checked={preferences.email_notifications} onChange={(e) => setPreferences({ ...preferences, email_notifications: e.target.checked })} />
+                  <span className="slider" />
+                </label>
+              </div>
 
-              <label>
-                SMS Notifications
-                <input type="checkbox"
-                  checked={preferences.sms_notifications}
-                  onChange={(e)=>setPreferences({...preferences, sms_notifications:e.target.checked})}
-                />
-              </label>
+              <div className="settings-preference-item">
+                <label htmlFor="sms_notifications">
+                  <FontAwesomeIcon icon={faPhone} /> SMS notifications
+                </label>
+                <label className="switch">
+                  <input id="sms_notifications" type="checkbox" checked={preferences.sms_notifications} onChange={(e) => setPreferences({ ...preferences, sms_notifications: e.target.checked })} />
+                  <span className="slider" />
+                </label>
+              </div>
 
-              <select value={preferences.theme}
-                onChange={(e)=>setPreferences({...preferences, theme:e.target.value})}>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
+              <div className="settings-select-group">
+                <label htmlFor="theme-select">Theme</label>
+                <select id="theme-select" className="settings-select" value={preferences.theme} onChange={(e) => setPreferences({ ...preferences, theme: e.target.value })}>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </div>
 
-              <button>
-                <FontAwesomeIcon icon={faSave}/> Save Preferences
-              </button>
-            </>
+              <div className="settings-form-actions">
+                <button type="button" className="settings-save-btn">
+                  <FontAwesomeIcon icon={faSave} /> Save preferences
+                </button>
+              </div>
+            </div>
           )}
-
         </div>
       </div>
     </div>

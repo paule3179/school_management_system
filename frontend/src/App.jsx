@@ -1319,21 +1319,13 @@ if (authLoading) {
                 className="user-avatar-label"
                 style={{ cursor: 'pointer', display: 'block' }}
               >
-                {profilePicUrl ? (
-                  <img 
-                    src={profilePicUrl} 
-                    alt="Profile" 
-                    className="user-profile-pic"
-                  />
-                ) : (
-                  <div className="user-avatar">
-                    {user?.first_name 
-                      ? user.first_name.charAt(0).toUpperCase() 
-                      : user?.email 
-                        ? user.email.charAt(0).toUpperCase() 
-                        : 'U'}
-                  </div>
-                )}
+                <div className="user-avatar">
+                  {user?.first_name 
+                    ? user.first_name.charAt(0).toUpperCase() 
+                    : user?.email 
+                      ? user.email.charAt(0).toUpperCase() 
+                      : 'U'}
+                </div>
               </label>
             </div>
             <div className="user-details">
@@ -1349,6 +1341,21 @@ if (authLoading) {
               </span>
             </div>
           </div>
+          {profilePicUrl && (
+            <div className="user-profile-picture-container">
+              <label 
+                htmlFor="profile-upload-sidebar"
+                className="user-profile-picture-display"
+              >
+                <img 
+                  src={profilePicUrl} 
+                  alt="Profile" 
+                  className="user-profile-picture-img"
+                />
+                <span className="profile-picture-text">Click to change</span>
+              </label>
+            </div>
+          )}
           
           <button className="logout-btn" onClick={logout}>
             <FontAwesomeIcon icon={faSignOutAlt} /> Logout

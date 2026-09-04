@@ -219,7 +219,7 @@ const PromotionModal = ({ isOpen, onClose, classData, onPromote, API_BASE = 'htt
                             </div>
                             <div className="stat-card-info">
                                 <h4>Current Class</h4>
-                                <div className="promotion-stat-value">{preview.current_class?.name}</div>
+                                <div className="promotion-stat-value">{preview.current_class?.name || preview.current_class?.class_name || 'Class'}</div>
                             </div>
                         </div>
                         <div className="promotion-stat-card">
@@ -307,7 +307,7 @@ const PromotionModal = ({ isOpen, onClose, classData, onPromote, API_BASE = 'htt
                                                 <option value="">Select Target Class</option>
                                                 {availableClasses.map(cls => (
                                                     <option key={cls.id} value={cls.id}>
-                                                        {cls.name} ({cls.level})
+                                                        {cls.class_name || cls.name || `Class ${cls.id}`} ({cls.level})
                                                     </option>
                                                 ))}
                                                 {preview.is_graduation && (

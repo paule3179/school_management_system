@@ -74,8 +74,9 @@ const TeacherPromotion = ({ API_BASE = 'http://localhost:5000/api' }) => {
         academic_year: selectedYear,
         term: selectedTerm,
       });
+      // ✅ FIXED URL – added '/promotion' to match backend mount
       const res = await fetch(
-        `${API_BASE}/teacher/promotion/students?${params}`,
+        `${API_BASE}/promotion/teacher/promotion/students?${params}`,
         { headers: getAuthHeaders() }
       );
       const data = await res.json();
