@@ -1,181 +1,163 @@
-const mockData = require('../data/mockData');
+const pool = require('../config/database');
 const settingsModel = require('./settingsModel');
 
 class LibraryModel {
-  // Get all books
   async getAllBooks(filters = {}) {
-    let books = [...mockData.books];
-    
-    if (filters.category) {
-      books = books.filter(b => b.category === filters.category);
-    }
-    if (filters.author) {
-      books = books.filter(b => b.author.toLowerCase().includes(filters.author.toLowerCase()));
-    }
-    if (filters.status) {
-      books = books.filter(b => b.status === filters.status);
-    }
-    
-    return books;
+    const values = [];
+    const conditions = ["status <> 'removed'"];
+    if (filters.category) { values.push(filters.category); conditions.push(`category = $${values.length}`); }
+    if (filters.author) { values.push(`%${filters.author}%`); conditions.push(`author ILIKE $${values.length}`); }
+    if (filters.status) { values.push(filters.status); conditions.push(`status = $${values.length}`); }
+    const result = await pool.query(`SELECT * FROM books WHERE ${conditions.join(' AND ')} ORDER BY title`, values);
+    return result.rows;
   }
-  
-  // Get book by ID
+
   async getBookById(id) {
-    const book = mockData.books.find(b => b.id === parseInt(id));
-    if (!book) return null;
-    
-    const borrowHistory = mockData.borrow_records.filter(br => br.book_id === book.id);
-    return {
-      ...book,
-      borrow_history: borrowHistory
-    };
+    const book = await pool.query("SELECT * FROM books WHERE id = $1 AND status <> 'removed'", [id]);
+    if (!book.rows[0]) return null;
+    const history = await pool.query(`
+      SELECT * FROM borrow_records WHERE book_id = $1 ORDER BY borrow_date DESC, id DESC
+    `, [id]);
+    return { ...book.rows[0], borrow_history: history.rows };
   }
-  
-  // Create new book
-  async createBook(bookData) {
-    const newBook = {
-      id: mockData.getNextId('books'),
-      ...bookData,
-      available: bookData.quantity,
-      status: 'available',
-      added_date: new Date().toISOString().split('T')[0]
-    };
-    mockData.books.push(newBook);
-    return newBook;
+
+  async createBook(data) {
+    const quantity = Number(data.quantity);
+    if (typeof data.title !== 'string' || !data.title.trim() || !Number.isInteger(quantity) || quantity < 0) {
+      throw new Error('Book title and a non-negative whole-number quantity are required');
+    }
+    const result = await pool.query(`
+      INSERT INTO books (isbn, title, author, publisher, publication_year, category, quantity, available, location, status)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$7,$8,'available') RETURNING *
+    `, [data.isbn || null, data.title.trim(), data.author || null, data.publisher || null,
+      data.publication_year || null, data.category || null, quantity, data.location || null]);
+    return result.rows[0];
   }
-  
-  // Update book
-  async updateBook(id, updateData) {
-    const index = mockData.books.findIndex(b => b.id === parseInt(id));
-    if (index === -1) return null;
-    
-    mockData.books[index] = {
-      ...mockData.books[index],
-      ...updateData,
-      updated_at: new Date().toISOString().split('T')[0]
-    };
-    return mockData.books[index];
+
+  async updateBook(id, data) {
+    const fields = ['isbn', 'title', 'author', 'publisher', 'publication_year', 'category', 'quantity', 'location', 'status'];
+    const updates = fields.filter(field => data[field] !== undefined);
+    if (updates.length === 0) return this.getBookById(id);
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const current = await client.query('SELECT quantity, available FROM books WHERE id = $1 FOR UPDATE', [id]);
+      if (!current.rows[0]) { await client.query('ROLLBACK'); return null; }
+      const values = updates.map(field => data[field]);
+      const quantityIndex = updates.indexOf('quantity');
+      if (quantityIndex >= 0) {
+        const quantity = Number(data.quantity);
+        if (!Number.isInteger(quantity) || quantity < 0 || quantity < current.rows[0].quantity - current.rows[0].available) {
+          throw new Error('Quantity cannot be lower than the number of borrowed copies');
+        }
+        values[quantityIndex] = quantity;
+      }
+      const setSql = updates.map((field, index) => `${field} = $${index + 1}`);
+      if (quantityIndex >= 0) setSql.push(`available = available + ($${quantityIndex + 1} - quantity)`);
+      values.push(id);
+      const result = await client.query(`UPDATE books SET ${setSql.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${values.length} RETURNING *`, values);
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally { client.release(); }
   }
-  
-  // Delete book
+
   async deleteBook(id) {
-    const index = mockData.books.findIndex(b => b.id === parseInt(id));
-    if (index === -1) return false;
-    
-    const hasActiveBorrow = mockData.borrow_records.some(br => 
-      br.book_id === parseInt(id) && br.status === 'borrowed'
-    );
-    if (hasActiveBorrow) {
-      throw new Error('Cannot delete book with active borrow records');
-    }
-    
-    mockData.books.splice(index, 1);
-    return true;
+    const activeLoans = await pool.query("SELECT 1 FROM borrow_records WHERE book_id = $1 AND status = 'borrowed' LIMIT 1", [id]);
+    if (activeLoans.rows.length) throw new Error('Cannot delete a book with active borrow records');
+    const result = await pool.query("UPDATE books SET status = 'removed', updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id", [id]);
+    return result.rowCount > 0;
   }
-  
-  // Borrow book
-  async borrowBook(borrowData) {
-    const book = await this.getBookById(borrowData.book_id);
-    if (!book) throw new Error('Book not found');
-    if (book.available <= 0) throw new Error('No copies available');
-    
-    const newBorrow = {
-      id: mockData.getNextId('borrow_records'),
-      ...borrowData,
-      borrow_date: new Date().toISOString().split('T')[0],
-      status: 'borrowed',
-      fine: 0
-    };
-    
-    mockData.borrow_records.push(newBorrow);
-    
-    // Update book availability
-    const bookIndex = mockData.books.findIndex(b => b.id === borrowData.book_id);
-    mockData.books[bookIndex].available--;
-    
-    return newBorrow;
+
+  async borrowBook(data) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const book = await client.query("SELECT id, available FROM books WHERE id = $1 AND status <> 'removed' FOR UPDATE", [data.book_id]);
+      if (!book.rows[0]) throw new Error('Book not found');
+      if (book.rows[0].available < 1) throw new Error('No copies available');
+      const student = await client.query('SELECT id FROM students WHERE id = $1', [data.student_id]);
+      if (!student.rows[0]) throw new Error('Student not found');
+      const result = await client.query(`
+        INSERT INTO borrow_records (book_id, student_id, borrow_date, due_date, status, fine, remarks)
+        VALUES ($1, $2, CURRENT_DATE, $3, 'borrowed', 0, $4) RETURNING *
+      `, [data.book_id, data.student_id, data.due_date, data.remarks || null]);
+      await client.query('UPDATE books SET available = available - 1, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [data.book_id]);
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally { client.release(); }
   }
-  
-  // Return book
-  async returnBook(borrowId, returnData) {
-    const index = mockData.borrow_records.findIndex(br => br.id === parseInt(borrowId));
-    if (index === -1) throw new Error('Borrow record not found');
-    
-    const borrow = mockData.borrow_records[index];
-    const returnDate = new Date();
-    const dueDate = new Date(borrow.due_date);
-    
-    let fine = 0;
-    if (returnDate > dueDate) {
-      const daysLate = Math.ceil((returnDate - dueDate) / (1000 * 60 * 60 * 24));
-      const dailyFineRate = await settingsModel.getDailyFineRate();
-      fine = daysLate * dailyFineRate;
-    }
-    
-    borrow.return_date = returnData.return_date || new Date().toISOString().split('T')[0];
-    borrow.status = fine > 0 ? 'returned_late' : 'returned';
-    borrow.fine = fine;
-    borrow.remarks = returnData.remarks || '';
-    
-    // Update book availability
-    const bookIndex = mockData.books.findIndex(b => b.id === borrow.book_id);
-    if (bookIndex !== -1) {
-      mockData.books[bookIndex].available++;
-    }
-    
-    return borrow;
+
+  async returnBook(borrowId, returnData = {}) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await client.query(`
+        SELECT br.*, b.id AS locked_book_id FROM borrow_records br
+        JOIN books b ON b.id = br.book_id
+        WHERE br.id = $1 AND br.status = 'borrowed' FOR UPDATE OF br, b
+      `, [borrowId]);
+      const loan = result.rows[0];
+      if (!loan) throw new Error('Active borrow record not found');
+      const returnDate = returnData.return_date ? new Date(returnData.return_date) : new Date();
+      const dueDate = new Date(loan.due_date);
+      const daysLate = Math.max(0, Math.ceil((returnDate - dueDate) / 86400000));
+      const fine = daysLate * await settingsModel.getDailyFineRate();
+      const updated = await client.query(`
+        UPDATE borrow_records
+        SET return_date = $1, status = $2, fine = $3, remarks = COALESCE($4, remarks)
+        WHERE id = $5 RETURNING *
+      `, [returnDate.toISOString().slice(0, 10), fine > 0 ? 'returned_late' : 'returned', fine, returnData.remarks || null, borrowId]);
+      await client.query('UPDATE books SET available = available + 1, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [loan.book_id]);
+      await client.query('COMMIT');
+      return updated.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally { client.release(); }
   }
-  
-  // Get student borrow history
+
   async getStudentBorrowHistory(studentId) {
-    const borrows = mockData.borrow_records.filter(br => br.student_id === parseInt(studentId));
-    
-    const borrowsWithDetails = borrows.map(borrow => {
-      const book = mockData.books.find(b => b.id === borrow.book_id);
-      return {
-        ...borrow,
-        book_title: book ? book.title : 'Unknown',
-        book_author: book ? book.author : 'Unknown'
-      };
-    });
-    
-    return borrowsWithDetails;
+    const result = await pool.query(`
+      SELECT br.*, b.title AS book_title, b.author AS book_author
+      FROM borrow_records br JOIN books b ON b.id = br.book_id
+      WHERE br.student_id = $1 ORDER BY br.borrow_date DESC, br.id DESC
+    `, [studentId]);
+    return result.rows;
   }
-  
-  // Get book categories
+
   async getBookCategories() {
-    return mockData.book_categories;
+    const result = await pool.query("SELECT DISTINCT category FROM books WHERE category IS NOT NULL AND category <> '' ORDER BY category");
+    return result.rows.map(row => row.category);
   }
-  
-  // Search books
+
   async searchBooks(keyword) {
-    const keywordLower = keyword.toLowerCase();
-    return mockData.books.filter(b => 
-      b.title.toLowerCase().includes(keywordLower) ||
-      b.author.toLowerCase().includes(keywordLower) ||
-      b.isbn.includes(keyword)
-    );
+    const term = `%${keyword}%`;
+    const result = await pool.query(`
+      SELECT * FROM books WHERE status <> 'removed'
+        AND (title ILIKE $1 OR author ILIKE $1 OR isbn ILIKE $1)
+      ORDER BY title
+    `, [term]);
+    return result.rows;
   }
-  
-  // Get overdue books
+
   async getOverdueBooks() {
-    const today = new Date().toISOString().split('T')[0];
-    const overdueBorrows = mockData.borrow_records.filter(br => 
-      br.status === 'borrowed' && br.due_date < today
-    );
-    
-    const overdueWithDetails = overdueBorrows.map(borrow => {
-      const book = mockData.books.find(b => b.id === borrow.book_id);
-      const student = mockData.students.find(s => s.id === borrow.student_id);
-      return {
-        ...borrow,
-        book_title: book ? book.title : 'Unknown',
-        student_name: student ? `${student.first_name} ${student.last_name}` : 'Unknown',
-        days_overdue: Math.ceil((new Date(today) - new Date(borrow.due_date)) / (1000 * 60 * 60 * 24))
-      };
-    });
-    
-    return overdueWithDetails;
+    const result = await pool.query(`
+      SELECT br.*, b.title AS book_title,
+             CONCAT_WS(' ', s.first_name, s.last_name) AS student_name,
+             CURRENT_DATE - br.due_date AS days_overdue
+      FROM borrow_records br
+      JOIN books b ON b.id = br.book_id
+      JOIN students s ON s.id = br.student_id
+      WHERE br.status = 'borrowed' AND br.due_date < CURRENT_DATE
+      ORDER BY br.due_date
+    `);
+    return result.rows;
   }
 }
 

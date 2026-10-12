@@ -238,10 +238,10 @@ const studentController = {
                 // 4. Link to class (if provided)
                 if (class_id) {
                     await client.query(`
-                        INSERT INTO class_students (class_id, student_id, academic_year)
-                        VALUES ($1, $2, $3)
-                        ON CONFLICT DO NOTHING
-                    `, [class_id, student.id, '2024-2025']);
+                    INSERT INTO student_classes (class_id, student_id, academic_year, term, is_active, enrolled_date)
+                    VALUES ($1, $2, $3, '1', true, CURRENT_DATE)
+                    ON CONFLICT (student_id, class_id, academic_year, term) DO NOTHING
+                    `, [class_id, student.id, process.env.ACADEMIC_YEAR || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`]);
                 }
 
                 await client.query('COMMIT');
@@ -283,6 +283,7 @@ const studentController = {
 
     // Update student
     async updateStudent(req, res) {
+        let client;
         try {
             const { id } = req.params;
             const {
@@ -292,7 +293,9 @@ const studentController = {
                 blood_group, allergies, medical_conditions, status
             } = req.body;
             
-            const result = await pool.query(`
+            client = await pool.connect();
+            await client.query('BEGIN');
+            const result = await client.query(`
                 UPDATE students 
                 SET first_name = COALESCE($1, first_name),
                     last_name = COALESCE($2, last_name),
@@ -321,11 +324,42 @@ const studentController = {
             ]);
             
             if (result.rows.length === 0) {
+                await client.query('ROLLBACK');
+                client.release();
+                client = null;
                 return res.status(404).json({ success: false, error: 'Student not found' });
             }
+
+            if (class_id !== undefined) {
+                await client.query(`
+                    UPDATE student_classes
+                    SET is_active = false, left_date = CURRENT_DATE, updated_at = CURRENT_TIMESTAMP
+                    WHERE student_id = $1 AND is_active = true
+                `, [id]);
+                if (class_id) {
+                    const classResult = await client.query('SELECT academic_year FROM classes WHERE id = $1', [class_id]);
+                    if (!classResult.rows[0]) throw new Error('Class not found');
+                    const academicYear = classResult.rows[0].academic_year ||
+                        process.env.ACADEMIC_YEAR || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
+                    await client.query(`
+                        INSERT INTO student_classes (student_id, class_id, academic_year, term, is_active, enrolled_date)
+                        VALUES ($1, $2, $3, '1', true, CURRENT_DATE)
+                        ON CONFLICT (student_id, class_id, academic_year, term)
+                        DO UPDATE SET is_active = true, left_date = NULL, updated_at = CURRENT_TIMESTAMP
+                    `, [id, class_id, academicYear]);
+                }
+            }
+
+            await client.query('COMMIT');
+            client.release();
+            client = null;
             
             res.json({ success: true, data: result.rows[0], message: 'Student updated successfully' });
         } catch (error) {
+            if (client) {
+                try { await client.query('ROLLBACK'); } catch (rollbackError) { console.error('Student update rollback failed:', rollbackError); }
+                client.release();
+            }
             console.error('Error updating student:', error);
             res.status(500).json({ success: false, error: error.message });
         }
@@ -352,7 +386,7 @@ const studentController = {
                 
                 const studentName = `${studentCheck.rows[0].first_name} ${studentCheck.rows[0].last_name}`;
                 
-                await client.query('DELETE FROM class_students WHERE student_id = $1', [id]);
+                await client.query('DELETE FROM student_classes WHERE student_id = $1', [id]);
                 await client.query('DELETE FROM attendance WHERE student_id = $1', [id]);
                 await client.query('DELETE FROM marks WHERE student_id = $1', [id]);
                 await client.query('DELETE FROM grades WHERE student_id = $1', [id]);

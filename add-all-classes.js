@@ -1,8 +1,12 @@
-const { Pool } = require('pg');
 const pool = require('./backend/config/database');
+if (process.env.NODE_ENV === 'production') {
+  throw new Error('add-all-classes.js is a development data helper and cannot run in production.');
+}
 if (!process.env.DATABASE_URL) {
   console.log('No DATABASE_URL - using default connection');
 }
+const currentYear = new Date().getFullYear();
+const academicYear = process.env.ACADEMIC_YEAR || `${currentYear}-${currentYear + 1}`;
 
 const classesToAdd = [
   // KG
@@ -26,21 +30,19 @@ async function addClasses() {
   console.log(`Adding ${classesToAdd.length} classes...`);
   
   for (const cls of classesToAdd) {
-    try {
-      const result = await pool.query(
-        `INSERT INTO classes (name, level, capacity, academic_year) 
-         VALUES ($1, $2, $3, $4) 
-         ON CONFLICT (name) DO NOTHING 
-         RETURNING id`,
-        [cls.name, cls.level, cls.capacity, '2024-2025']
-      );
-      if (result.rows.length > 0) {
-        console.log(`Added ${cls.name} (${cls.level})`);
-      } else {
-        console.log(`${cls.name} already exists`);
-      }
-    } catch (error) {
-      console.error(`Error adding ${cls.name}:`, error.message);
+    const result = await pool.query(
+      `INSERT INTO classes (class_name, level, capacity, academic_year)
+       SELECT $1, $2, $3, $4
+       WHERE NOT EXISTS (
+         SELECT 1 FROM classes WHERE class_name = $1 AND academic_year = $4
+       )
+       RETURNING id`,
+      [cls.name, cls.level, cls.capacity, academicYear]
+    );
+    if (result.rows.length > 0) {
+      console.log(`Added ${cls.name} (${cls.level})`);
+    } else {
+      console.log(`${cls.name} already exists`);
     }
   }
   
@@ -48,7 +50,11 @@ async function addClasses() {
   const countResult = await pool.query('SELECT COUNT(*) as total FROM classes');
   console.log(`\n Total classes in DB: ${countResult.rows[0].total}`);
   console.log('Test API: http://localhost:5000/api/classes');
-  process.exit(0);
 }
 
-addClasses().catch(console.error);
+addClasses()
+  .catch((error) => {
+    console.error('Failed to add classes:', error);
+    process.exitCode = 1;
+  })
+  .finally(() => pool.end());

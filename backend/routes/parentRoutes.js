@@ -28,7 +28,6 @@ router.get('/child/:childId/fees', verifyToken, parentController.getChildFees);
 router.get('/child/:childId/subjects', verifyToken, parentController.getChildSubjects);
 router.get('/child/:childId/teachers', verifyToken, parentController.getChildTeachers);
 router.get('/child/:childId/overview', verifyToken, parentController.getChildOverview);
-router.post('/child/:childId/pay', verifyToken, parentController.payChildFee);
 
 // ============================================
 // ADMIN ONLY ROUTES (Require Admin Role)

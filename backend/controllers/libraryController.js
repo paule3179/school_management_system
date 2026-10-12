@@ -1,4 +1,5 @@
 const libraryModel = require('../models/libraryModel');
+const pool = require('../config/database');
 
 const libraryController = {
   // GET /api/library/books - Get all books
@@ -116,6 +117,12 @@ const libraryController = {
   // GET /api/library/student/:studentId/history - Get student borrow history
   async getStudentBorrowHistory(req, res) {
     try {
+      if (req.user.role === 'teacher') {
+        const student = await pool.query('SELECT class_id FROM students WHERE id = $1', [req.params.studentId]);
+        if (!student.rows[0] || !req.user.allowedClassIds?.includes(student.rows[0].class_id)) {
+          return res.status(403).json({ success: false, error: 'Access denied to this student' });
+        }
+      }
       const history = await libraryModel.getStudentBorrowHistory(req.params.studentId);
       res.json({ success: true, count: history.length, data: history });
     } catch (error) {

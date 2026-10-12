@@ -104,10 +104,11 @@ router.get('/level/:level', async (req, res) => {
 });
 
 // GET single subject
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await pool.query('SELECT * FROM subjects WHERE id = $1', [id]);
+router.get('/:id', async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        if (!/^\d+$/.test(id)) return next();
+        const result = await pool.query('SELECT * FROM subjects WHERE id = $1', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Subject not found' });
     }

@@ -1,139 +1,110 @@
-const mockData = require('../data/mockData');
+const pool = require('../config/database');
+
+const fields = ['name', 'term', 'term_name', 'academic_year', 'start_date', 'end_date', 'status', 'classes_involved'];
 
 class ExamModel {
-  // Get all exams
   async getAllExams(filters = {}) {
-    let exams = [...mockData.exams];
-    
-    if (filters.term) {
-      exams = exams.filter(e => e.term === parseInt(filters.term));
+    const values = [];
+    const where = [];
+    for (const field of ['term', 'status', 'academic_year']) {
+      if (filters[field] !== undefined && filters[field] !== '') {
+        values.push(filters[field]);
+        where.push(`${field} = $${values.length}`);
+      }
     }
-    if (filters.status) {
-      exams = exams.filter(e => e.status === filters.status);
-    }
-    if (filters.academic_year) {
-      exams = exams.filter(e => e.academic_year === filters.academic_year);
-    }
-    
-    return exams;
-  }
-  
-  // Get exam by ID
-  async getExamById(id) {
-    const exam = mockData.exams.find(e => e.id === parseInt(id));
-    if (!exam) return null;
-    
-    const examTimetable = mockData.exam_timetables.filter(et => et.exam_id === exam.id);
-    return {
-      ...exam,
-      timetable: examTimetable
-    };
-  }
-  
-  // Create new exam
-  async createExam(examData) {
-    const newExam = {
-      id: mockData.getNextId('exams'),
-      ...examData,
-      created_at: new Date().toISOString()
-    };
-    mockData.exams.push(newExam);
-    return newExam;
-  }
-  
-  // Update exam
-  async updateExam(id, updateData) {
-    const index = mockData.exams.findIndex(e => e.id === parseInt(id));
-    if (index === -1) return null;
-    
-    mockData.exams[index] = {
-      ...mockData.exams[index],
-      ...updateData,
-      updated_at: new Date().toISOString()
-    };
-    return mockData.exams[index];
-  }
-  
-  // Delete exam
-  async deleteExam(id) {
-    const index = mockData.exams.findIndex(e => e.id === parseInt(id));
-    if (index === -1) return false;
-    
-    mockData.exams.splice(index, 1);
-    mockData.exam_timetables = mockData.exam_timetables.filter(et => et.exam_id !== parseInt(id));
-    return true;
-  }
-  
-  // Get exam timetable
-  async getExamTimetable(examId) {
-    const exam = await this.getExamById(examId);
-    if (!exam) return null;
-    
-    const timetable = mockData.exam_timetables.filter(et => et.exam_id === parseInt(examId));
-    
-    const timetableWithDetails = timetable.map(entry => {
-      const classData = mockData.classes.find(c => c.id === entry.class_id);
-      return {
-        ...entry,
-        class_name: classData ? classData.name : 'Unknown'
-      };
-    });
-    
-    return {
-      exam: {
-        id: exam.id,
-        name: exam.name,
-        start_date: exam.start_date,
-        end_date: exam.end_date
-      },
-      timetable: timetableWithDetails
-    };
-  }
-  
-  // Add exam timetable entry
-  async addExamTimetableEntry(entryData) {
-    const newEntry = {
-      id: mockData.getNextId('exam_timetables'),
-      ...entryData,
-      created_at: new Date().toISOString()
-    };
-    mockData.exam_timetables.push(newEntry);
-    return newEntry;
-  }
-  
-  // Get student exam results
-  async getStudentExamResults(studentId, examId) {
-    const student = mockData.students.find(s => s.id === parseInt(studentId));
-    if (!student) return null;
-    
-    const exam = await this.getExamById(examId);
-    if (!exam) return null;
-    
-    const grades = mockData.grades.filter(g => 
-      g.student_id === parseInt(studentId) && 
-      g.term === exam.term &&
-      g.academic_year === exam.academic_year
+    const result = await pool.query(
+      `SELECT * FROM exams ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY start_date DESC, id DESC`,
+      values
     );
-    
-    const totalScore = grades.reduce((sum, g) => sum + g.total_score, 0);
-    const average = grades.length > 0 ? totalScore / grades.length : 0;
-    
+    return result.rows;
+  }
+
+  async getExamById(id) {
+    const result = await pool.query(`
+      SELECT e.*,
+        COALESCE((SELECT json_agg(json_build_object(
+          'id', et.id, 'exam_id', et.exam_id, 'class_id', et.class_id,
+          'class_name', c.class_name, 'subject', et.subject, 'date', et.date,
+          'time', et.time, 'venue', et.venue
+        ) ORDER BY et.date, et.time) FROM exam_timetables et
+          LEFT JOIN classes c ON c.id = et.class_id WHERE et.exam_id = e.id), '[]'::json) AS timetable
+      FROM exams e WHERE e.id = $1
+    `, [id]);
+    return result.rows[0] || null;
+  }
+
+  async createExam(data) {
+    const result = await pool.query(`
+      INSERT INTO exams (name, term, term_name, academic_year, start_date, end_date, status, classes_involved)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `, [data.name, data.term, data.term_name || null, data.academic_year,
+      data.start_date, data.end_date, data.status || 'upcoming',
+      Array.isArray(data.classes_involved) ? data.classes_involved.map(Number) : []]);
+    return result.rows[0];
+  }
+
+  async updateExam(id, data) {
+    const updateFields = fields.filter(field => data[field] !== undefined);
+    if (updateFields.length === 0) return this.getExamById(id);
+    const values = updateFields.map(field => field === 'classes_involved' && Array.isArray(data[field])
+      ? data[field].map(Number) : data[field]);
+    const assignments = updateFields.map((field, index) => `${field} = $${index + 1}`);
+    values.push(id);
+    const result = await pool.query(`
+      UPDATE exams SET ${assignments.join(', ')}, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $${values.length} RETURNING *
+    `, values);
+    return result.rows[0] || null;
+  }
+
+  async deleteExam(id) {
+    const result = await pool.query('DELETE FROM exams WHERE id = $1 RETURNING id', [id]);
+    return result.rowCount > 0;
+  }
+
+  async getExamTimetable(examId) {
+    const exam = await pool.query('SELECT id, name, start_date, end_date FROM exams WHERE id = $1', [examId]);
+    if (!exam.rows[0]) return null;
+    const entries = await pool.query(`
+      SELECT et.*, c.class_name
+      FROM exam_timetables et LEFT JOIN classes c ON c.id = et.class_id
+      WHERE et.exam_id = $1 ORDER BY et.date, et.time
+    `, [examId]);
+    return { exam: exam.rows[0], timetable: entries.rows };
+  }
+
+  async addExamTimetableEntry(data) {
+    const result = await pool.query(`
+      INSERT INTO exam_timetables (exam_id, class_id, subject, date, time, venue)
+      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
+    `, [data.exam_id, data.class_id, data.subject, data.date, data.time, data.venue || null]);
+    return result.rows[0];
+  }
+
+  async getStudentExamResults(studentId, examId) {
+    const result = await pool.query(`
+      SELECT s.id AS student_id, s.first_name, s.last_name, s.admission_number,
+             s.class_id, e.id AS exam_id, e.name AS exam_name, e.term,
+             e.academic_year, g.*
+      FROM students s CROSS JOIN exams e
+      LEFT JOIN grades g ON g.student_id = s.id
+        AND g.term = e.term AND g.academic_year = e.academic_year
+      WHERE s.id = $1 AND e.id = $2
+      ORDER BY g.subject
+    `, [studentId, examId]);
+    if (result.rows.length === 0) return null;
+    const first = result.rows[0];
+    const grades = result.rows.filter(row => row.id !== null);
+    const totalScore = grades.reduce((sum, grade) => sum + Number(grade.total_score || grade.score || 0), 0);
     return {
-      student: {
-        name: `${student.first_name} ${student.last_name}`,
-        admission_number: student.admission_number,
-        class: student.class_id
-      },
-      exam: {
-        name: exam.name,
-        term: exam.term,
-        academic_year: exam.academic_year
-      },
+      student: { name: `${first.first_name} ${first.last_name}`, admission_number: first.admission_number, class: first.class_id },
+      exam: { name: first.exam_name, term: first.term, academic_year: first.academic_year },
       results: grades,
       summary: {
         total_subjects: grades.length,
         total_score: totalScore.toFixed(2),
-        average_score: average.toFixed(2)
+        average_score: (grades.length ? totalScore / grades.length : 0).toFixed(2)
       }
     };
   }

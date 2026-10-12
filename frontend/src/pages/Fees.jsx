@@ -1,3 +1,4 @@
+import { apiFetch } from '../services/api.js';
 // src/pages/Fees.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -17,7 +18,7 @@ import './Fees.css';
 // Import school logo from correct path
 import schoolLogo from '/src/assets/logo.png';
 
-const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
+const Fees = ({ API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) => {
   // State
   const [classes, setClasses] = useState([]);
   const [toast, setToast] = useState(null);
@@ -52,10 +53,6 @@ const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-
-  // Note: Filter (btn-filter) removed per UI request; keep state for filter panel usage.
-
 
   const categories = [
     { id: 'academic', name: 'Academic Fees' },
@@ -69,7 +66,7 @@ const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
     const token = localStorage.getItem('token');
     return {
       'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : ''
+      'Authorization': `Bearer ${token}`
     };
   };
 
@@ -93,7 +90,7 @@ const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
         return;
       }
 
-      const response = await fetch(`${API_BASE}/classes`, {
+      const response = await apiFetch(`${API_BASE}/classes`, {
         headers: headers
       });
       
@@ -124,7 +121,7 @@ const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const loadSchoolFeeSummary = useCallback(async () => {
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/fees/school-summary?academic_year=${selectedFeeYear}`, {
+      const response = await apiFetch(`${API_BASE}/fees/school-summary?academic_year=${selectedFeeYear}`, {
         headers: headers
       });
       const result = await response.json();
@@ -140,7 +137,7 @@ const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const loadFeeTypes = useCallback(async () => {
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/fees/types`, {
+      const response = await apiFetch(`${API_BASE}/fees/types`, {
         headers: headers
       });
       const result = await response.json();
@@ -169,7 +166,7 @@ const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const loadFeeSettings = useCallback(async () => {
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/fees/settings`, {
+      const response = await apiFetch(`${API_BASE}/fees/settings`, {
         headers: headers
       });
       const result = await response.json();
@@ -212,7 +209,7 @@ const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
     try {
       const headers = getAuthHeaders();
       
-      const studentsResponse = await fetch(`${API_BASE}/classes/${selectedFeeClass}/students`, {
+      const studentsResponse = await apiFetch(`${API_BASE}/classes/${selectedFeeClass}/students`, {
         headers: headers
       });
       const studentsResult = await studentsResponse.json();
@@ -228,7 +225,7 @@ const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
       const feeData = await Promise.all(
         students.map(async (student) => {
           try {
-            const feeResponse = await fetch(
+            const feeResponse = await apiFetch(
               `${API_BASE}/fees/student/${student.id}?academic_year=${selectedFeeYear}`,
               { headers: headers }
             );
@@ -314,7 +311,6 @@ const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const clearFilters = () => {
     setSearchTerm('');
     setFilteredStudents(feeStudents);
-    setShowFilters(false);
   };
 
 
@@ -326,7 +322,7 @@ const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
     setLoading(true);
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/fees/settings/${feeId}`, {
+      const response = await apiFetch(`${API_BASE}/fees/settings/${feeId}`, {
         method: 'PUT',
         headers: headers,
         body: JSON.stringify({ amount: parseFloat(newAmount) })
@@ -356,7 +352,7 @@ const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
     setLoading(true);
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/fees/settings`, {
+      const response = await apiFetch(`${API_BASE}/fees/settings`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
@@ -389,7 +385,7 @@ const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
     setLoading(true);
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/fees/settings/${feeId}`, {
+      const response = await apiFetch(`${API_BASE}/fees/settings/${feeId}`, {
         method: 'DELETE',
         headers: headers
       });
@@ -434,7 +430,7 @@ const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
     setLoading(true);
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/fees/payment`, {
+      const response = await apiFetch(`${API_BASE}/fees/payment`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
@@ -486,7 +482,7 @@ const Fees = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const viewStudentFeeSummary = async (studentId) => {
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/fees/student/${studentId}?academic_year=${selectedFeeYear}`, {
+      const response = await apiFetch(`${API_BASE}/fees/student/${studentId}?academic_year=${selectedFeeYear}`, {
         headers: headers
       });
       const result = await response.json();

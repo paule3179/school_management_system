@@ -1345,9 +1345,6 @@
   }
 }
 
-
-}
-
 @media (max-width: 768px) {
   .mobile-menu-toggle {
     display: flex;
@@ -1387,4 +1384,3 @@
     width: 30px;
     height: 30px;
   }
-}

@@ -24,6 +24,7 @@ const libraryRoutes = require('./routes/libraryRoutes');
 const transportRoutes = require('./routes/transportRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 const subjectRoutes = require('./routes/subjectRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const exportRoutes = require('./routes/exportRoutes'); 
@@ -32,8 +33,10 @@ const adminRoutes = require('./routes/adminRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 
 // Import auth middleware
-const { verifyToken, enrichUserContext, logUser } = require('./middleware/auth');
+const { verifyToken, isAdmin, isTeacher, enrichUserContext, logUser } = require('./middleware/auth');
 const dashboardController = require('./controllers/dashboardController');
+const messageController = require('./controllers/messageController');
+const pool = require('./config/database');
 
 // Initialize app
 const app = express();
@@ -80,6 +83,7 @@ app.get('/', (req, res) => {
 
 // Public routes (no auth required)
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // ============================================
 // PROTECTED ROUTES (require authentication)
@@ -88,7 +92,7 @@ app.use('/api/auth', authRoutes);
 // Apply auth middleware to all protected routes
 app.use('/api/students', verifyToken, enrichUserContext, studentRoutes);
 app.use('/api/classes', verifyToken, enrichUserContext, classRoutes);
-app.use('/api/admin/classes', verifyToken, enrichUserContext, classRoutes);
+app.use('/api/admin/classes', verifyToken, isAdmin, enrichUserContext, classRoutes);
 app.use('/api/teachers', verifyToken, enrichUserContext, teacherRoutes);
 app.use('/api/parents', verifyToken, enrichUserContext, parentRoutes);
 app.use('/api/grades', verifyToken, enrichUserContext, gradeRoutes);
@@ -113,29 +117,34 @@ app.use('/api/dashboard', verifyToken, enrichUserContext, dashboardRoutes);
 // TEACHER DASHBOARD ROUTES
 // ============================================
 
-app.get('/api/teacher/stats', verifyToken, enrichUserContext, dashboardController.getTeacherStats);
-app.get('/api/teacher/classes', verifyToken, enrichUserContext, dashboardController.getTeacherClasses);
-app.get('/api/teacher/schedule', verifyToken, enrichUserContext, dashboardController.getTodaySchedule);
-app.get('/api/teacher/notifications', verifyToken, enrichUserContext, dashboardController.getNotifications);
-app.get('/api/teacher/activities', verifyToken, enrichUserContext, dashboardController.getRecentActivities);
-app.get('/api/teacher/profile', verifyToken, enrichUserContext, dashboardController.getTeacherProfile);
-app.get('/api/teacher/classes/:classId/students', verifyToken, enrichUserContext, dashboardController.getClassStudents);
-app.post('/api/teacher/attendance', verifyToken, enrichUserContext, dashboardController.saveAttendance);
-app.get('/api/teacher/attendance/:classId/:date', verifyToken, enrichUserContext, dashboardController.getAttendanceByClass);
-app.post('/api/teacher/marks', verifyToken, enrichUserContext, dashboardController.saveMarks);
-app.get('/api/teacher/marks/:classId', verifyToken, enrichUserContext, dashboardController.getMarksByClass);
+app.use('/api/teacher', verifyToken, isTeacher, enrichUserContext);
+app.get('/api/teacher/stats', dashboardController.getTeacherStats);
+app.get('/api/teacher/classes', dashboardController.getTeacherClasses);
+app.get('/api/teacher/schedule', dashboardController.getTodaySchedule);
+app.get('/api/teacher/notifications', dashboardController.getNotifications);
+app.get('/api/teacher/activities', dashboardController.getRecentActivities);
+app.get('/api/teacher/profile', dashboardController.getTeacherProfile);
+app.get('/api/teacher/classes/:classId/students', dashboardController.getClassStudents);
+app.post('/api/teacher/attendance', dashboardController.saveAttendance);
+app.get('/api/teacher/attendance/:classId/:date', dashboardController.getAttendanceByClass);
+app.post('/api/teacher/marks', dashboardController.saveMarks);
+app.get('/api/teacher/marks/:classId', dashboardController.getMarksByClass);
 // Report cards generation endpoint (used by TeacherGrades page)
-app.post('/api/teacher/marks/report-cards', verifyToken, enrichUserContext, dashboardController.generateTeacherReportCards);
-app.get('/api/teacher/subjects', verifyToken, enrichUserContext, dashboardController.getTeacherSubjects);
+app.post('/api/teacher/marks/report-cards', dashboardController.generateTeacherReportCards);
+app.get('/api/teacher/subjects', dashboardController.getTeacherSubjects);
+app.get('/api/teacher/announcements', messageController.getAllAnnouncements);
+app.post('/api/teacher/announcements', messageController.createAnnouncement);
+app.put('/api/teacher/announcements/:id', messageController.updateAnnouncement);
+app.delete('/api/teacher/announcements/:id', messageController.deleteAnnouncement);
 
 
 // ============================================
 // ADMIN DASHBOARD ROUTES
 // ============================================
 
-app.get('/api/admin/stats', verifyToken, enrichUserContext, dashboardController.getAdminStats);
-app.get('/api/admin/recent-activities', verifyToken, enrichUserContext, dashboardController.getRecentActivities);
-app.get('/api/admin/system-health', verifyToken, enrichUserContext, dashboardController.getSystemHealth);
+app.get('/api/admin/stats', verifyToken, isAdmin, enrichUserContext, dashboardController.getAdminStats);
+app.get('/api/admin/recent-activities', verifyToken, isAdmin, enrichUserContext, dashboardController.getRecentActivities);
+app.get('/api/admin/system-health', verifyToken, isAdmin, enrichUserContext, dashboardController.getSystemHealth);
 
 // ============================================
 // PARENT DASHBOARD ROUTES
@@ -159,12 +168,24 @@ app.get('/api/parent/child/:childId/subjects', verifyToken, enrichUserContext, d
 // HEALTH CHECK
 // ============================================
 
-app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'healthy', 
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime()
-    });
+app.get('/api/health', async (_req, res) => {
+    try {
+        await pool.query('SELECT 1');
+        res.json({
+            status: 'healthy',
+            database: 'connected',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime()
+        });
+    } catch (error) {
+        console.error('Health check database query failed:', error.message);
+        res.status(503).json({
+            status: 'unhealthy',
+            database: 'disconnected',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime()
+        });
+    }
 });
 
 // ============================================
@@ -190,12 +211,14 @@ app.use((err, req, res, next) => {
 // START SERVER
 // ============================================
 
-app.listen(PORT, () => {
-    console.log(` Server running on port ${PORT}`);
-    console.log(` API URL: http://localhost:${PORT}`);
-    console.log('\n Teacher Dashboard routes loaded');
-    console.log(' Admin Dashboard routes loaded');
-    console.log(' Parent Dashboard routes loaded');
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(` Server running on port ${PORT}`);
+        console.log(` API URL: http://localhost:${PORT}`);
+        console.log('\n Teacher Dashboard routes loaded');
+        console.log(' Admin Dashboard routes loaded');
+        console.log(' Parent Dashboard routes loaded');
+    });
+}
 
 module.exports = app;

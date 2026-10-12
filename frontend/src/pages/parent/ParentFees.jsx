@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/api.js';
 // src/pages/parent/ParentFees.jsx
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -18,7 +19,7 @@ const ParentFees = ({ API_BASE }) => {
       const fetchChildren = async () => {
         try {
           const token = localStorage.getItem('token');
-          const res = await fetch(`${API_BASE}/parent/children`, {
+          const res = await apiFetch(`${API_BASE}/parent/children`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           const json = await res.json();
@@ -42,7 +43,7 @@ const ParentFees = ({ API_BASE }) => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/parent/child/${childId}/fees`, {
+        const res = await apiFetch(`${API_BASE}/parent/child/${childId}/fees`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const json = await res.json();
@@ -51,7 +52,7 @@ const ParentFees = ({ API_BASE }) => {
         } else {
           setError(json.error || 'Failed to load fees');
         }
-      } catch (err) {
+      } catch {
         setError('Network error');
       } finally {
         setLoading(false);

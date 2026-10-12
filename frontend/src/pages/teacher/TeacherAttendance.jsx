@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/api.js';
 // src/pages/teacher/TeacherAttendance.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -19,7 +20,7 @@ import {
 import ToastNotification from '../../components/ToastNotification';
 import './TeacherAttendance.css';
 
-const TeacherAttendance = ({ API_BASE = 'http://localhost:5000/api' }) => {
+const TeacherAttendance = ({ API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) => {
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState('');
   const [students, setStudents] = useState([]);
@@ -40,7 +41,7 @@ const TeacherAttendance = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return {
-      'Authorization': token ? `Bearer ${token}` : '',
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
   };
@@ -49,7 +50,7 @@ const TeacherAttendance = ({ API_BASE = 'http://localhost:5000/api' }) => {
     setLoading(true);
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/teacher/classes`, {
+      const response = await apiFetch(`${API_BASE}/teacher/classes`, {
         headers: headers
       });
       const data = await response.json();
@@ -86,7 +87,7 @@ const loadStudents = async (classId, date = attendanceDate) => {
     setLoading(true);
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/teacher/classes/${classId}/students`, {
+      const response = await apiFetch(`${API_BASE}/teacher/classes/${classId}/students`, {
         headers: headers
       });
       const data = await response.json();
@@ -95,7 +96,7 @@ const loadStudents = async (classId, date = attendanceDate) => {
         // Fetch existing attendance for this class/date so saved statuses are preserved
         let attendanceMap = {};
         try {
-          const attRes = await fetch(`${API_BASE}/teacher/attendance/${classId}/${date}`, {
+          const attRes = await apiFetch(`${API_BASE}/teacher/attendance/${classId}/${date}`, {
             headers: headers
           });
           const attData = await attRes.json();
@@ -168,7 +169,7 @@ const loadStudents = async (classId, date = attendanceDate) => {
         records: students.map((s) => ({ student_id: s.id, status: s.status })),
       };
 
-      const response = await fetch(`${API_BASE}/teacher/attendance`, {
+      const response = await apiFetch(`${API_BASE}/teacher/attendance`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(attendanceData),

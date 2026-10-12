@@ -1,4 +1,5 @@
 const documentModel = require('../models/documentModel');
+const pool = require('../config/database');
 
 const documentController = {
   // GET /api/documents - Get all documents
@@ -30,7 +31,14 @@ const documentController = {
   // GET /api/documents/student/:studentId - Get student documents
   async getStudentDocuments(req, res) {
     try {
+      if (req.user.role === 'teacher') {
+        const student = await pool.query('SELECT class_id FROM students WHERE id = $1', [req.params.studentId]);
+        if (!student.rows[0] || !req.user.allowedClassIds?.includes(student.rows[0].class_id)) {
+          return res.status(403).json({ success: false, error: 'Access denied to this student' });
+        }
+      }
       const documents = await documentModel.getStudentDocuments(req.params.studentId);
+      if (!documents) return res.status(404).json({ success: false, error: 'Student not found' });
       res.json({ success: true, data: documents });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
@@ -40,7 +48,7 @@ const documentController = {
   // POST /api/documents - Upload document
   async uploadDocument(req, res) {
     try {
-      const newDocument = await documentModel.uploadDocument(req.body);
+      const newDocument = await documentModel.uploadDocument(req.body, req.user.id);
       res.status(201).json({ success: true, data: newDocument });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
@@ -86,7 +94,7 @@ const documentController = {
   // PUT /api/documents/:id/approve - Approve document
   async approveDocument(req, res) {
     try {
-      const approved = await documentModel.approveDocument(req.params.id, req.body.approved_by);
+      const approved = await documentModel.approveDocument(req.params.id, req.user.id);
       if (!approved) {
         return res.status(404).json({ success: false, error: 'Document not found' });
       }

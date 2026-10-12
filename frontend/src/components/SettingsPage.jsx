@@ -1,11 +1,12 @@
+import { apiFetch } from '../services/api.js';
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faCog, faTimes, faUserCircle, faSave, faLock, 
   faUser, faEnvelope, faPhone, faMapMarkerAlt,
-  faCheckCircle, faEye, faEyeSlash, faIdCard,
+  faEye, faEyeSlash, faIdCard,
   faShieldAlt, faKey, faUserTag, faBuilding,
-  faExclamationTriangle, faSpinner, faCamera
+  faCamera
 } from '@fortawesome/free-solid-svg-icons';
 import './SettingsPage.css';
 
@@ -115,16 +116,20 @@ const SettingsPage = ({ currentUser, onUpdateUser, onClose }) => {
   const handleSaveProfile = async () => {
     setLoading(true);
     try {
-      await fetch('/api/users/profile', {
+      const response = await apiFetch('/api/users/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profileForm)
       });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Unable to save profile');
+      }
 
-      onUpdateUser(profileForm);
+      onUpdateUser(result.data);
       setSaveSuccess(true);
-    } catch {
-      setSaveError('Error saving profile');
+    } catch (error) {
+      setSaveError(error.message || 'Error saving profile');
     } finally {
       setLoading(false);
     }
@@ -136,20 +141,27 @@ const SettingsPage = ({ currentUser, onUpdateUser, onClose }) => {
     }
 
     try {
-      await fetch('/api/auth/change-password', {
+      const response = await apiFetch('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(passwordForm)
+        body: JSON.stringify({
+          oldPassword: passwordForm.current_password,
+          newPassword: passwordForm.new_password
+        })
       });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Unable to change password');
+      }
 
       setSaveSuccess(true);
-    } catch {
-      setSaveError('Error changing password');
+    } catch (error) {
+      setSaveError(error.message || 'Error changing password');
     }
   };
 
   const handleLogoutAll = async () => {
-    await fetch('/api/auth/logout-all', { method: 'POST' });
+    await apiFetch('/api/auth/logout-all', { method: 'POST' });
     alert("Logged out everywhere");
   };
 
@@ -187,6 +199,8 @@ const SettingsPage = ({ currentUser, onUpdateUser, onClose }) => {
         </div>
 
         <div className="settings-modal-body">
+          {saveSuccess && <p className="settings-success-message" role="status">Changes saved successfully.</p>}
+          {saveError && <p className="settings-error-message" role="alert">{saveError}</p>}
           {activeTab === 'profile' && (
             <div className="settings-profile-section">
               <div className="settings-profile-header">
@@ -313,6 +327,7 @@ const SettingsPage = ({ currentUser, onUpdateUser, onClose }) => {
                     <div className="password-strength-fill" style={{ width: `${(passwordStrength / 4) * 100}%`, background: passwordStrength >= 3 ? '#22c55e' : passwordStrength >= 2 ? '#fbbf24' : '#ef4444' }} />
                   </div>
                   <div className="password-strength-label">Strength: {passwordStrength}/4</div>
+                  {passwordErrors.length > 0 && <small>{passwordErrors.join(' · ')}</small>}
                 </div>
 
                 <div className="settings-form-actions">

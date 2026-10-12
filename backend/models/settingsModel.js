@@ -4,7 +4,7 @@ class SettingsModel {
   // Get current school settings (single row)
   async getSettings() {
     try {
-      // Ensure settings table exists (handled by Prisma migration)
+      // The settings table is managed through PostgreSQL SQL migrations.
       const result = await pool.query(`
         SELECT * FROM settings 
         ORDER BY id LIMIT 1

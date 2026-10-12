@@ -1,4 +1,5 @@
 const transportModel = require('../models/transportModel');
+const pool = require('../config/database');
 
 const transportController = {
   // Vehicle routes
@@ -168,8 +169,19 @@ const transportController = {
       if (!term || !academic_year) {
         return res.status(400).json({ success: false, error: 'Term and academic year required' });
       }
+
+      const studentId = Number(req.params.studentId);
+      if (req.user.role === 'parent' && !req.user.allowedStudentIds?.includes(studentId)) {
+        return res.status(403).json({ success: false, error: 'Access denied to this student' });
+      }
+      if (req.user.role === 'teacher') {
+        const student = await pool.query('SELECT class_id FROM students WHERE id = $1', [studentId]);
+        if (!student.rows[0] || !req.user.allowedClassIds?.includes(student.rows[0].class_id)) {
+          return res.status(403).json({ success: false, error: 'Access denied to this student' });
+        }
+      }
       
-      const info = await transportModel.getStudentTransport(req.params.studentId, parseInt(term), academic_year);
+      const info = await transportModel.getStudentTransport(studentId, parseInt(term), academic_year);
       if (!info) {
         return res.status(404).json({ success: false, error: 'Transport info not found for this student' });
       }

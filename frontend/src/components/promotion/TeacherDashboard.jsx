@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/api.js';
 // src/components/TeacherDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
@@ -17,7 +18,7 @@ import {
   faSchool,
 } from '@fortawesome/free-solid-svg-icons';
 
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import '../styles/TeacherDashboard.css';
 import geebzLogo from '../assets/logo.png';
 
@@ -29,7 +30,7 @@ import TeacherStudents from '../pages/teacher/TeacherStudents';
 import TeacherAnnouncements from '../pages/teacher/TeacherAnnouncements'; // NEW
 import TeacherAssignments from '../pages/teacher/TeacherAssignments'; // NEW
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api');
 
 const TeacherDashboard = () => {
   const { user, logout } = useAuth();
@@ -83,27 +84,27 @@ const TeacherDashboard = () => {
       const headers = { Authorization: `Bearer ${token}` };
 
       // Get teacher stats
-      const statsRes = await fetch(`${API_BASE}/teacher/stats`, { headers });
+      const statsRes = await apiFetch(`${API_BASE}/teacher/stats`, { headers });
       const statsData = await statsRes.json();
       if (statsData.success) setStats(statsData.data);
 
       // Get schedule
-      const scheduleRes = await fetch(`${API_BASE}/teacher/schedule`, { headers });
+      const scheduleRes = await apiFetch(`${API_BASE}/teacher/schedule`, { headers });
       const scheduleData = await scheduleRes.json();
       if (scheduleData.success) setTodaySchedule(scheduleData.data);
 
       // Get notifications
-      const notifRes = await fetch(`${API_BASE}/teacher/notifications`, { headers });
+      const notifRes = await apiFetch(`${API_BASE}/teacher/notifications`, { headers });
       const notifData = await notifRes.json();
       if (notifData.success) setNotifications(notifData.data);
 
       // Get activities
-      const activityRes = await fetch(`${API_BASE}/teacher/activities`, { headers });
+      const activityRes = await apiFetch(`${API_BASE}/teacher/activities`, { headers });
       const activityData = await activityRes.json();
       if (activityData.success) setRecentActivities(activityData.data);
 
       // Get assigned classes
-      const classesRes = await fetch(`${API_BASE}/teacher/classes`, { headers });
+      const classesRes = await apiFetch(`${API_BASE}/teacher/classes`, { headers });
       const classesData = await classesRes.json();
       if (classesData.success) setAssignedClasses(classesData.data);
       

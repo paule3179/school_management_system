@@ -106,7 +106,7 @@ const inventoryController = {
   // POST /api/inventory/transaction - Record transaction
   async recordTransaction(req, res) {
     try {
-      const transaction = await inventoryModel.recordTransaction(req.body);
+      const transaction = await inventoryModel.recordTransaction(req.body, req.user.id);
       res.status(201).json({ success: true, data: transaction });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
@@ -116,7 +116,7 @@ const inventoryController = {
   // PUT /api/inventory/transaction/:transactionId/approve - Approve transaction
   async approveTransaction(req, res) {
     try {
-      const approved = await inventoryModel.approveTransaction(req.params.transactionId, req.body.approved_by);
+      const approved = await inventoryModel.approveTransaction(req.params.transactionId, req.user.id);
       if (!approved) {
         return res.status(404).json({ success: false, error: 'Transaction not found' });
       }

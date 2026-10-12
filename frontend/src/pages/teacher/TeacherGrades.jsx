@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/api.js';
 // src/pages/teacher/TeacherGrades.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
@@ -8,7 +9,6 @@ import {
   faChartLine,
   faBookOpen,
   faUserGraduate,
-  faFilePdf,
   faSpinner,
   faCheckCircle,
   faAward,
@@ -21,7 +21,7 @@ faExclamationTriangle,
 import ToastNotification from '../../components/ToastNotification';
 import './TeacherGrades.css';
 
-const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
+const TeacherGrades = ({ API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) => {
   // ============================================================
   // STATE DECLARATIONS
   // ============================================================
@@ -74,7 +74,7 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
       try {
         const userData = JSON.parse(user);
         return userData.id || userData.teacher_id || null;
-      } catch (e) {
+      } catch {
         return null;
       }
     }
@@ -84,7 +84,7 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return {
-      'Authorization': token ? `Bearer ${token}` : '',
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
   };
@@ -282,18 +282,18 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
       let classesData = [];
       
       try {
-        const response = await fetch(`${API_BASE}/teacher/classes`, { headers });
+        const response = await apiFetch(`${API_BASE}/teacher/classes`, { headers });
         const data = await response.json();
         
         if (data.success && data.data && data.data.length > 0) {
           classesData = data.data;
         } else {
-          const dashboardResponse = await fetch(`${API_BASE}/teacher/dashboard/classes`, { headers });
+          const dashboardResponse = await apiFetch(`${API_BASE}/teacher/dashboard/classes`, { headers });
           const dashboardData = await dashboardResponse.json();
           if (dashboardData.success && dashboardData.data && dashboardData.data.length > 0) {
             classesData = dashboardData.data;
           } else {
-            const publicResponse = await fetch(`${API_BASE}/classes`, { headers });
+            const publicResponse = await apiFetch(`${API_BASE}/classes`, { headers });
             const publicData = await publicResponse.json();
             if (publicData.success && publicData.data) {
               classesData = publicData.data;
@@ -348,7 +348,7 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
       // Load students
       let students = [];
       try {
-        let response = await fetch(
+        let response = await apiFetch(
           `${API_BASE}/teacher/classes/${classId}/students`,
           { headers }
         );
@@ -357,7 +357,7 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
         if (data.success && data.data) {
           students = data.data;
         } else {
-          response = await fetch(
+          response = await apiFetch(
             `${API_BASE}/teacher/dashboard/class/${classId}/students`,
             { headers }
           );
@@ -365,7 +365,7 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
           if (data.success && data.data) {
             students = data.data;
           } else {
-            response = await fetch(`${API_BASE}/classes/${classId}/students`, { headers });
+            response = await apiFetch(`${API_BASE}/classes/${classId}/students`, { headers });
             data = await response.json();
             if (data.success && data.data) {
               students = data.data;
@@ -384,7 +384,7 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
       
       if (className) {
         try {
-          const response = await fetch(
+          const response = await apiFetch(
             `${API_BASE}/subjects/class/${encodeURIComponent(className)}`,
             { headers }
           );
@@ -392,12 +392,12 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
           if (data.success) {
             subjectsData = data.data || [];
           }
-        } catch (e) {}
+        } catch (error) { console.warn('Subject lookup failed', error); }
       }
       
       if (subjectsData.length === 0) {
         try {
-          const response = await fetch(
+          const response = await apiFetch(
             `${API_BASE}/subjects/class-subjects/${classId}`,
             { headers }
           );
@@ -405,12 +405,12 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
           if (data.success) {
             subjectsData = data.data || [];
           }
-        } catch (e) {}
+        } catch (error) { console.warn('Class subject lookup failed', error); }
       }
       
       if (subjectsData.length === 0 && selectedClassData?.level) {
         try {
-          const response = await fetch(
+          const response = await apiFetch(
             `${API_BASE}/subjects/level/${selectedClassData.level}`,
             { headers }
           );
@@ -418,17 +418,17 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
           if (data.success) {
             subjectsData = data.data || [];
           }
-        } catch (e) {}
+        } catch (error) { console.warn('Level subject lookup failed', error); }
       }
       
       if (subjectsData.length === 0) {
         try {
-          const response = await fetch(`${API_BASE}/subjects`, { headers });
+          const response = await apiFetch(`${API_BASE}/subjects`, { headers });
           const data = await response.json();
           if (data.success) {
             subjectsData = data.data || [];
           }
-        } catch (e) {}
+        } catch (error) { console.warn('Subject list lookup failed', error); }
       }
       
       // Deduplicate subjects
@@ -454,7 +454,7 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
       // Load existing marks
       let existingMarks = [];
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `${API_BASE}/teacher/marks/${classId}?term=${selectedTerm}&academic_year=${selectedYear}`,
           { headers }
         );
@@ -462,7 +462,7 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
         if (data.success) {
           existingMarks = data.data || [];
         }
-      } catch (e) {
+      } catch {
         console.log('No existing marks found');
       }
       
@@ -606,7 +606,7 @@ const TeacherGrades = ({ API_BASE = 'http://localhost:5000/api' }) => {
 
     console.log('📤 Sending marks payload:', JSON.stringify(marksData, null, 2));
 
-    const response = await fetch(`${API_BASE}/teacher/marks`, {
+    const response = await apiFetch(`${API_BASE}/teacher/marks`, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({ marks: marksData })

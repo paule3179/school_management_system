@@ -1,142 +1,77 @@
-const mockData = require('../data/mockData');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
+const pool = require('../config/database');
+
+const safeColumns = 'id, email, first_name, last_name, phone, role, status, last_login, created_at, updated_at';
 
 class UserModel {
-  // Get all users
   async getAllUsers(filters = {}) {
-    let users = [...(mockData.users || [])];
-    
-    if (filters.role) {
-      users = users.filter(u => u.role === filters.role);
+    const values = [];
+    const conditions = [];
+    for (const field of ['role', 'status']) {
+      if (filters[field]) { values.push(filters[field]); conditions.push(`${field} = $${values.length}`); }
     }
-    if (filters.status) {
-      users = users.filter(u => u.status === filters.status);
-    }
-    
-    // Remove sensitive data
-    return users.map(user => {
-      const { password, mfa_secret, ...safeUser } = user;
-      return safeUser;
-    });
+    const result = await pool.query(`SELECT ${safeColumns} FROM users ${conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''} ORDER BY created_at DESC`, values);
+    return result.rows;
   }
-  
-  // Get user by ID
+
   async getUserById(id) {
-    const user = mockData.users.find(u => u.id === parseInt(id));
-    if (!user) return null;
-    
-    const { password, mfa_secret, ...safeUser } = user;
-    return safeUser;
+    const result = await pool.query(`SELECT ${safeColumns} FROM users WHERE id = $1`, [id]);
+    return result.rows[0] || null;
   }
-  
-  // Get user by email
+
   async getUserByEmail(email) {
-    return mockData.users.find(u => u.email === email);
+    const result = await pool.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+    return result.rows[0] || null;
   }
-  
-  // Create new user
-  async createUser(userData) {
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(userData.password, salt);
-    
-    const newUser = {
-      id: mockData.getNextId('users'),
-      ...userData,
-      password: hashedPassword,
-      mfa_enabled: false,
-      mfa_secret: null,
-      status: 'active',
-      last_login: null,
-      created_at: new Date().toISOString()
-    };
-    
-    if (!mockData.users) mockData.users = [];
-    mockData.users.push(newUser);
-    
-    const { password, mfa_secret, ...safeUser } = newUser;
-    return safeUser;
+
+  async createUser(data) {
+    if (!data.email || !data.password || !data.role) throw new Error('Email, password, and role are required');
+    const password = await bcrypt.hash(data.password, 10);
+    const result = await pool.query(`
+      INSERT INTO users (email, password, first_name, last_name, phone, role, status)
+      VALUES ($1,$2,$3,$4,$5,$6,'active')
+      RETURNING ${safeColumns}
+    `, [data.email.trim().toLowerCase(), password, data.first_name || null,
+      data.last_name || null, data.phone || null, data.role]);
+    return result.rows[0];
   }
-  
-  // Update user
-  async updateUser(id, updateData) {
-    const index = mockData.users.findIndex(u => u.id === parseInt(id));
-    if (index === -1) return null;
-    
-    // If updating password, hash it
-    if (updateData.password) {
-      const salt = await bcrypt.genSalt(10);
-      updateData.password = await bcrypt.hash(updateData.password, salt);
+
+  async updateUser(id, data) {
+    const fields = ['email', 'first_name', 'last_name', 'phone', 'role', 'status'];
+    const updates = fields.filter(field => data[field] !== undefined);
+    const values = updates.map(field => field === 'email' ? String(data[field]).trim().toLowerCase() : data[field]);
+    if (data.password) {
+      updates.push('password');
+      values.push(await bcrypt.hash(data.password, 10));
     }
-    
-    mockData.users[index] = {
-      ...mockData.users[index],
-      ...updateData,
-      updated_at: new Date().toISOString()
-    };
-    
-    const { password, mfa_secret, ...safeUser } = mockData.users[index];
-    return safeUser;
+    if (!updates.length) return this.getUserById(id);
+    const assignments = updates.map((field, index) => `${field} = $${index + 1}`);
+    assignments.push('updated_at = CURRENT_TIMESTAMP');
+    values.push(id);
+    const result = await pool.query(`UPDATE users SET ${assignments.join(', ')} WHERE id = $${values.length} RETURNING ${safeColumns}`, values);
+    return result.rows[0] || null;
   }
-  
-  // Delete user
+
   async deleteUser(id) {
-    const index = mockData.users.findIndex(u => u.id === parseInt(id));
-    if (index === -1) return false;
-    
-    mockData.users.splice(index, 1);
-    return true;
+    const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+    return result.rowCount > 0;
   }
-  
-  // Verify password
+
   async verifyPassword(email, password) {
     const user = await this.getUserByEmail(email);
-    if (!user) return null;
-    
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) return null;
-    
-    return user;
+    if (!user || !(await bcrypt.compare(password, user.password))) return null;
+    const { password: _password, ...safeUser } = user;
+    return safeUser;
   }
-  
-  // Enable MFA for user
-  async enableMFA(userId, secret) {
-    const index = mockData.users.findIndex(u => u.id === parseInt(userId));
-    if (index === -1) return null;
-    
-    mockData.users[index].mfa_enabled = true;
-    mockData.users[index].mfa_secret = secret;
-    
-    return { mfa_enabled: true };
+
+  async updateLastLogin(id) {
+    const result = await pool.query(`UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1 RETURNING ${safeColumns}`, [id]);
+    return result.rows[0] || null;
   }
-  
-  // Disable MFA for user
-  async disableMFA(userId) {
-    const index = mockData.users.findIndex(u => u.id === parseInt(userId));
-    if (index === -1) return null;
-    
-    mockData.users[index].mfa_enabled = false;
-    mockData.users[index].mfa_secret = null;
-    
-    return { mfa_enabled: false };
-  }
-  
-  // Update last login
-  async updateLastLogin(userId) {
-    const index = mockData.users.findIndex(u => u.id === parseInt(userId));
-    if (index === -1) return null;
-    
-    mockData.users[index].last_login = new Date().toISOString();
-    return mockData.users[index];
-  }
-  
-  // Get user by role
+
   async getUsersByRole(role) {
-    const users = mockData.users.filter(u => u.role === role);
-    return users.map(user => {
-      const { password, mfa_secret, ...safeUser } = user;
-      return safeUser;
-    });
+    const result = await pool.query(`SELECT ${safeColumns} FROM users WHERE role = $1 ORDER BY last_name, first_name`, [role]);
+    return result.rows;
   }
 }
 

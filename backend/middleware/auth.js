@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const pool = require('../config/database');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_this';
+const { jwtSecret: JWT_SECRET } = require('../config/secrets');
 
 // ============================================
 // VERIFY TOKEN - Check if user is authenticated
@@ -20,7 +19,10 @@ const verifyToken = (req, res, next) => {
   
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+    // Some routers verify the token again after the app-level middleware has
+    // already attached teacher/parent access context. Preserve that trusted
+    // server-side context while refreshing identity fields from the signed token.
+    req.user = { ...(req.user || {}), ...decoded };
     
     // Log user for debugging
     console.log('🔐 User authenticated:', {
@@ -53,7 +55,8 @@ const optionalAuth = (req, res, next) => {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     try {
       const token = authHeader.split(' ')[1];
-      req.user = jwt.verify(token, JWT_SECRET);
+      const decoded = jwt.verify(token, JWT_SECRET);
+      req.user = { ...(req.user || {}), ...decoded };
     } catch (err) {
       req.user = null;
     }
@@ -190,10 +193,13 @@ const enrichUserContext = async (req, res, next) => {
         
         // Get assigned class IDs
         const classesResult = await pool.query(
-          'SELECT class_id FROM teacher_classes WHERE teacher_id = $1',
+          `SELECT class_id FROM teacher_classes
+           WHERE teacher_id = $1 AND COALESCE(is_active, true) = true
+           UNION
+           SELECT id AS class_id FROM classes WHERE teacher_id = $1`,
           [teacher.id]
         );
-        req.user.allowedClassIds = classesResult.rows.map(r => r.class_id);
+        req.user.allowedClassIds = classesResult.rows.map(r => Number(r.class_id));
         console.log(`📚 Teacher has ${req.user.allowedClassIds.length} assigned classes`);
       } else {
         console.log(`⚠️ No teacher found for user ${req.user.id} (${req.user.email})`);
@@ -232,9 +238,11 @@ const enrichUserContext = async (req, res, next) => {
         
         // Get children students
         const studentsResult = await pool.query(`
-          SELECT s.* 
+          SELECT DISTINCT s.*
           FROM students s
-          WHERE s.parent_id = $1 AND s.status = 'Active'
+          LEFT JOIN parent_students ps ON ps.student_id = s.id AND ps.parent_id = $1
+          WHERE (s.parent_id = $1 OR ps.parent_id = $1)
+            AND LOWER(COALESCE(s.status, 'active')) = 'active'
         `, [parent.id]);
         
         // Also try by parent_email if parent_id didn't work
@@ -242,7 +250,8 @@ const enrichUserContext = async (req, res, next) => {
           const emailResult = await pool.query(`
             SELECT s.* 
             FROM students s
-            WHERE s.parent_email = $1 AND s.status = 'Active'
+            WHERE LOWER(s.parent_email) = LOWER($1)
+              AND LOWER(COALESCE(s.status, 'active')) = 'active'
           `, [req.user.email]);
           
           if (emailResult.rows.length > 0) {
@@ -251,7 +260,7 @@ const enrichUserContext = async (req, res, next) => {
         }
         
         req.user.children = studentsResult.rows;
-        req.user.allowedStudentIds = studentsResult.rows.map(r => r.id);
+          req.user.allowedStudentIds = studentsResult.rows.map(r => Number(r.id));
         
         console.log(`👶 Parent has ${req.user.children.length} children`);
         
@@ -260,10 +269,13 @@ const enrichUserContext = async (req, res, next) => {
           const classesResult = await pool.query(`
             SELECT DISTINCT c.id, c.class_name, c.level
             FROM classes c
-            JOIN student_classes sc ON c.id = sc.class_id
-            WHERE sc.student_id = ANY($1::int[])
+            WHERE c.id IN (
+              SELECT s.class_id FROM students s WHERE s.id = ANY($1::int[]) AND s.class_id IS NOT NULL
+              UNION
+              SELECT sc.class_id FROM student_classes sc WHERE sc.student_id = ANY($1::int[])
+            )
           `, [req.user.allowedStudentIds]);
-          req.user.allowedClassIds = classesResult.rows.map(r => r.id);
+          req.user.allowedClassIds = classesResult.rows.map(r => Number(r.id));
           console.log(`📚 Parent has ${req.user.allowedClassIds.length} associated classes`);
         } else {
           req.user.allowedClassIds = [];

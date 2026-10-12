@@ -220,8 +220,8 @@ class StudentModel {
         const result = await pool.query(`
             SELECT 
                 COUNT(*) as total_students,
-                COUNT(CASE WHEN status = 'active' THEN 1 END) as active_students,
-                COUNT(CASE WHEN status = 'anactive' THEN 1 END) as inactive_students,
+                COUNT(CASE WHEN LOWER(status) = 'active' THEN 1 END) as active_students,
+                COUNT(CASE WHEN LOWER(status) = 'inactive' THEN 1 END) as inactive_students,
                 COUNT(DISTINCT class_id) as total_classes,
                 COUNT(CASE WHEN gender = 'Male' THEN 1 END) as male_students,
                 COUNT(CASE WHEN gender = 'Female' THEN 1 END) as female_students

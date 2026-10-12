@@ -1,8 +1,9 @@
+import { apiFetch } from '../../services/api.js';
 // src/pages/parent/ParentPerformance.jsx
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChartLine, faSpinner, faTrophy, faCalendarAlt, faStar, faUserGraduate } from '@fortawesome/free-solid-svg-icons';
+import { faChartLine, faSpinner, faTrophy, faCalendarAlt, faStar } from '@fortawesome/free-solid-svg-icons';
 
 const ParentPerformance = ({ API_BASE }) => {
   const [searchParams] = useSearchParams();
@@ -11,7 +12,6 @@ const ParentPerformance = ({ API_BASE }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
-  const [children, setChildren] = useState([]);
 
   // Auto-fetch children if no childId in URL
   useEffect(() => {
@@ -19,19 +19,18 @@ const ParentPerformance = ({ API_BASE }) => {
       const fetchChildren = async () => {
         try {
           const token = localStorage.getItem('token');
-          const res = await fetch(`${API_BASE}/parent/children`, {
+          const res = await apiFetch(`${API_BASE}/parent/children`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           const json = await res.json();
           if (json.success && json.data && json.data.length > 0) {
-            setChildren(json.data);
             // Auto-select first child
             navigate(`/parent/performance?child=${json.data[0].id}`, { replace: true });
           } else {
             setError('No children found. Contact school administrator.');
             setLoading(false);
           }
-        } catch (err) {
+        } catch {
           setError('Failed to load children');
           setLoading(false);
         }
@@ -47,7 +46,7 @@ const ParentPerformance = ({ API_BASE }) => {
       setError(null);
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/parent/child/${childId}/performance`, {
+        const res = await apiFetch(`${API_BASE}/parent/child/${childId}/performance`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const json = await res.json();
@@ -56,7 +55,7 @@ const ParentPerformance = ({ API_BASE }) => {
         } else {
           setError(json.error || 'Failed to load performance');
         }
-      } catch (err) {
+      } catch {
         setError('Network error');
       } finally {
         setLoading(false);

@@ -5,9 +5,11 @@ const bcrypt = require('bcrypt');
 class ParentModel {
   async getAllParents() {
     const result = await pool.query(`
-      SELECT p.*, COUNT(s.id) as children_count
+      SELECT p.*, COUNT(DISTINCT s.id) as children_count
       FROM parents p
-      LEFT JOIN students s ON s.parent_id = p.id
+      LEFT JOIN parent_students ps ON ps.parent_id = p.id
+      LEFT JOIN students s ON (s.parent_id = p.id OR s.id = ps.student_id)
+        AND LOWER(COALESCE(s.status, 'active')) = 'active'
       GROUP BY p.id
       ORDER BY p.id DESC
     `);
@@ -17,7 +19,7 @@ class ParentModel {
       const childrenResult = await pool.query(`
         SELECT id, admission_number, first_name, last_name, class_id
         FROM students 
-        WHERE parent_id = $1 AND LOWER(status) = 'active'
+        WHERE parent_id = $1 AND LOWER(COALESCE(status, 'active')) = 'active'
       `, [parent.id]);
       
       parentsWithChildren.push({
@@ -35,9 +37,11 @@ class ParentModel {
 
   async getParentById(id) {
     const result = await pool.query(`
-      SELECT p.*, COUNT(s.id) as children_count
+      SELECT p.*, COUNT(DISTINCT s.id) as children_count
       FROM parents p
-      LEFT JOIN students s ON s.parent_id = p.id
+      LEFT JOIN parent_students ps ON ps.parent_id = p.id
+      LEFT JOIN students s ON (s.parent_id = p.id OR s.id = ps.student_id)
+        AND LOWER(COALESCE(s.status, 'active')) = 'active'
       WHERE p.id = $1
       GROUP BY p.id
     `, [id]);
@@ -49,7 +53,8 @@ class ParentModel {
       SELECT id, admission_number, first_name, last_name, class_id,
              (SELECT class_name FROM classes WHERE id = students.class_id) as class_name
       FROM students 
-      WHERE parent_id = $1 AND LOWER(status) = 'active'
+      WHERE (parent_id = $1 OR id IN (SELECT student_id FROM parent_students WHERE parent_id = $1))
+        AND LOWER(COALESCE(status, 'active')) = 'active'
     `, [id]);
     
     return {
@@ -101,17 +106,19 @@ class ParentModel {
         c.level
       FROM students s
       LEFT JOIN classes c ON s.class_id = c.id
-      WHERE
+      WHERE (
         s.parent_id = $1
         OR EXISTS (
           SELECT 1 FROM parent_students ps
           WHERE ps.student_id = s.id AND ps.parent_id = $1
         )
-        ${parentEmail ? `OR s.parent_email = $2` : ''}
+        OR (s.parent_email IS NOT NULL AND LOWER(BTRIM(s.parent_email)) = LOWER(BTRIM($2)))
+      )
+        AND LOWER(COALESCE(s.status, 'active')) = 'active'
       ORDER BY s.first_name, s.last_name
     `;
     
-    const params = parentEmail ? [parentId, parentEmail] : [parentId];
+    const params = [parentId, parentEmail];
     const result = await pool.query(query, params);
     return result.rows;
   }
@@ -131,7 +138,8 @@ class ParentModel {
         c.level
       FROM students s
       LEFT JOIN classes c ON s.class_id = c.id
-      WHERE s.parent_email = $1
+      WHERE LOWER(BTRIM(s.parent_email)) = LOWER(BTRIM($1))
+        AND LOWER(COALESCE(s.status, 'active')) = 'active'
       ORDER BY s.first_name, s.last_name
     `, [email]);
     return result.rows;
@@ -144,7 +152,7 @@ class ParentModel {
         COUNT(DISTINCT g.id) as total_grades,
         COUNT(DISTINCT a.id) as total_attendance,
         COUNT(DISTINCT f.id) as total_fees,
-        ROUND(COALESCE(AVG(g.continuous_assessment + g.exam_score), 0), 2) as avg_performance,
+        ROUND(COALESCE(AVG(COALESCE(g.continuous_assessment, 0) + COALESCE(g.project_score, 0) + COALESCE(g.exam_score, 0)), 0), 2) as avg_performance,
         ROUND(
           COALESCE(
             (SUM(CASE WHEN LOWER(a.status) = 'present' THEN 1 ELSE 0 END)::DECIMAL / NULLIF(COUNT(a.id), 0)) * 100, 
@@ -155,10 +163,12 @@ class ParentModel {
       LEFT JOIN grades g ON s.id = g.student_id
       LEFT JOIN attendance a ON s.id = a.student_id
       LEFT JOIN fees f ON s.id = f.student_id
-      WHERE
+      WHERE (
         s.parent_id = $1
         OR EXISTS (SELECT 1 FROM parent_students ps WHERE ps.student_id = s.id AND ps.parent_id = $1)
-        OR s.parent_email = (SELECT u.email FROM parents p JOIN users u ON p.user_id = u.id WHERE p.id = $1)
+        OR LOWER(BTRIM(s.parent_email)) = LOWER(BTRIM((SELECT u.email FROM parents p JOIN users u ON p.user_id = u.id WHERE p.id = $1)))
+      )
+        AND LOWER(COALESCE(s.status, 'active')) = 'active'
     `, [parentId]);
     
     return result.rows[0] || {
@@ -190,7 +200,7 @@ class ParentModel {
 
     const gradeResult = await pool.query(`
       SELECT 
-        COALESCE(AVG(continuous_assessment + exam_score), 0) as average,
+        COALESCE(AVG(COALESCE(continuous_assessment, 0) + COALESCE(project_score, 0) + COALESCE(exam_score, 0)), 0) as average,
         COUNT(*) as subject_count
       FROM grades
       WHERE student_id = $1
@@ -227,14 +237,15 @@ class ParentModel {
       SELECT
         subject,
         continuous_assessment,
+        project_score,
         exam_score,
-        continuous_assessment + exam_score as total,
+        COALESCE(continuous_assessment, 0) + COALESCE(project_score, 0) + COALESCE(exam_score, 0) as total,
         grade,
         term,
         academic_year
       FROM grades
       WHERE student_id = $1
-      ORDER BY term DESC, created_at DESC
+      ORDER BY term DESC, recorded_at DESC
       LIMIT 5
     `, [studentId]);
 
@@ -264,12 +275,13 @@ class ParentModel {
         g.id,
         g.subject,
         g.continuous_assessment,
+        g.project_score,
         g.exam_score,
-        g.continuous_assessment + g.exam_score as total,
+        COALESCE(g.continuous_assessment, 0) + COALESCE(g.project_score, 0) + COALESCE(g.exam_score, 0) as total,
         g.grade,
         g.term,
         g.academic_year,
-        g.created_at
+        g.recorded_at AS created_at
       FROM grades g
       WHERE g.student_id = $1
       ORDER BY g.term, g.subject
@@ -285,8 +297,7 @@ class ParentModel {
         status,
         term,
         term_name,
-        remarks,
-        created_at
+        remarks
       FROM attendance
       WHERE student_id = $1
       ORDER BY date DESC

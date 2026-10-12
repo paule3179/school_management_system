@@ -7,7 +7,7 @@ const messageController = {
       const { receiver_id, status } = req.query;
       const filters = { receiver_id, status };
       
-      const messages = await messageModel.getAllMessages(filters);
+      const messages = await messageModel.getAllMessages(filters, req.user);
       res.json({ success: true, count: messages.length, data: messages });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
@@ -17,7 +17,7 @@ const messageController = {
   // GET /api/messages/:id - Get single message
   async getMessageById(req, res) {
     try {
-      const message = await messageModel.getMessageById(req.params.id);
+      const message = await messageModel.getMessageById(req.params.id, req.user);
       if (!message) {
         return res.status(404).json({ success: false, error: 'Message not found' });
       }
@@ -30,7 +30,7 @@ const messageController = {
   // POST /api/messages - Send message
   async sendMessage(req, res) {
     try {
-      const newMessage = await messageModel.sendMessage(req.body);
+      const newMessage = await messageModel.sendMessage(req.body, req.user);
       res.status(201).json({ success: true, data: newMessage });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
@@ -40,7 +40,7 @@ const messageController = {
   // PUT /api/messages/:id/read - Mark as read
   async markAsRead(req, res) {
     try {
-      const message = await messageModel.markAsRead(req.params.id);
+      const message = await messageModel.markAsRead(req.params.id, req.user);
       if (!message) {
         return res.status(404).json({ success: false, error: 'Message not found' });
       }
@@ -53,7 +53,10 @@ const messageController = {
   // GET /api/messages/unread/:receiverId/:receiverType - Get unread count
   async getUnreadCount(req, res) {
     try {
-      const count = await messageModel.getUnreadCount(req.params.receiverId, req.params.receiverType);
+      if (Number(req.params.receiverId) !== Number(req.user.id)) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+      const count = await messageModel.getUnreadCount(req.user);
       res.json({ success: true, data: { unread_count: count } });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
@@ -63,7 +66,7 @@ const messageController = {
   // GET /api/announcements/all - Get all announcements
   async getAllAnnouncements(req, res) {
     try {
-      const announcements = await messageModel.getAllAnnouncements();
+      const announcements = await messageModel.getAllAnnouncements(req.user);
       res.json({ success: true, count: announcements.length, data: announcements });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
@@ -73,8 +76,18 @@ const messageController = {
   // POST /api/announcements - Create announcement
   async createAnnouncement(req, res) {
     try {
-      const announcement = await messageModel.createAnnouncement(req.body);
+      const announcement = await messageModel.createAnnouncement(req.body, req.user);
       res.status(201).json({ success: true, data: announcement });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+
+  async updateAnnouncement(req, res) {
+    try {
+      const announcement = await messageModel.updateAnnouncement(req.params.id, req.body, req.user);
+      if (!announcement) return res.status(404).json({ success: false, error: 'Announcement not found' });
+      res.json({ success: true, data: announcement });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
     }
@@ -83,7 +96,7 @@ const messageController = {
   // DELETE /api/announcements/:id - Delete announcement
   async deleteAnnouncement(req, res) {
     try {
-      const deleted = await messageModel.deleteAnnouncement(req.params.id);
+      const deleted = await messageModel.deleteAnnouncement(req.params.id, req.user);
       if (!deleted) {
         return res.status(404).json({ success: false, error: 'Announcement not found' });
       }

@@ -1,42 +1,28 @@
-const bcrypt = require('bcryptjs');
+require('dotenv').config({ path: require('node:path').resolve(__dirname, '../.env') });
+
+const bcrypt = require('bcrypt');
 const pool = require('../config/database');
 
-async function setupTeacherPassword() {
-  // Hash the password
-  const teacherPassword = await bcrypt.hash('teacher123', 10);
-  
-  // Update TCH001 with the password and set is_active = true
-  const result = await pool.query(
-    'UPDATE teachers SET password = $1, is_active = true WHERE teacher_id = $2 RETURNING id, teacher_id, first_name',
-    [teacherPassword, 'TCH001']
-  );
-  
-  console.log('Updated teachers:', result.rows.length);
-  result.rows.forEach(t => console.log(`  ${t.first_name} (${t.teacher_id})`));
-  
-  // Also update any other teachers that need passwords
-  const allTeachers = await pool.query(
-    'SELECT teacher_id, first_name FROM teachers WHERE password IS NULL OR is_active IS NULL OR is_active = false'
-  );
-  
-  console.log('\nTeachers needing password:', allTeachers.rows.length);
-  for (const teacher of allTeachers.rows) {
-    const hash = await bcrypt.hash('teacher123', 10);
-    await pool.query(
-      'UPDATE teachers SET password = $1, is_active = true WHERE teacher_id = $2',
-      [hash, teacher.teacher_id]
-    );
-    console.log(`  Updated: ${teacher.first_name} (${teacher.teacher_id})`);
+async function updateTeacherPassword() {
+  const email = process.env.TEACHER_EMAIL?.trim().toLowerCase();
+  const password = process.env.TEACHER_PASSWORD;
+  if (!email || !password || password.length < 8) {
+    throw new Error('Set TEACHER_EMAIL and TEACHER_PASSWORD (at least 8 characters) in backend/.env.');
   }
-  
-  console.log('\n=== DEMO CREDENTIALS ===');
-  console.log('Admin:    admin@school.edu / Admin123');
-  console.log('Teacher: TCH001 / teacher123');
-  
-  await pool.end();
+  const hash = await bcrypt.hash(password, 10);
+  const result = await pool.query(`
+    UPDATE users u SET password = $1, status = 'active', updated_at = CURRENT_TIMESTAMP
+    FROM teachers t
+    WHERE t.user_id = u.id AND LOWER(u.email) = $2 AND u.role = 'teacher'
+    RETURNING u.id, u.email
+  `, [hash, email]);
+  if (!result.rows[0]) throw new Error('No linked teacher account found for that email.');
+  console.log(`Updated development password for ${result.rows[0].email}.`);
 }
 
-setupTeacherPassword().catch(err => {
-  console.error('Error:', err);
-  process.exit(1);
-});
+updateTeacherPassword()
+  .catch((error) => {
+    console.error('Could not update teacher password:', error.message);
+    process.exitCode = 1;
+  })
+  .finally(() => pool.end());

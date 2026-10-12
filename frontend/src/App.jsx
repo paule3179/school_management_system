@@ -1,7 +1,9 @@
+import { apiFetch } from './services/api.js';
 // src/App.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './context/useAuth';
 import Login from './components/Login';
 import AdminDashboard from './components/AdminDashboard';
 import TeacherDashboard from './components/TeacherDashboard';
@@ -207,7 +209,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
   const [profilePicUrl, setProfilePicUrl] = useState('');
   const [toast, setToast] = useState(null);
 
-  const API_BASE = 'http://localhost:5000/api';
+  const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api');
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -234,18 +236,6 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
     setToast(null);
   };
 
-  // API fetch helper that includes auth token
-  const apiFetch = async (url, options = {}) => {
-    const token = localStorage.getItem('token');
-    const headers = {
-      ...(options.headers || {}),
-      'Content-Type': 'application/json'
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    return fetch(url, { ...options, headers });
-  };
 
   // Role-based menu items
   const getMenuItems = (role) => {
@@ -339,7 +329,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
   
   const loadTeachers = async () => {
     try {
-      const response = await fetch(`${API_BASE}/teachers`);
+      const response = await apiFetch(`${API_BASE}/teachers`);
       const result = await response.json();
     } catch (error) {
       console.error('Error loading teachers:', error);
@@ -348,7 +338,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
 
   const loadClassTeachers = async () => {
     try {
-      const response = await fetch(`${API_BASE}/teachers`);
+      const response = await apiFetch(`${API_BASE}/teachers`);
       const result = await response.json();
       setClassTeachers(result.data || []);
     } catch (error) {
@@ -359,14 +349,14 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
   const loadClasses = async () => {
     setLoading(true);
     try {
-      const classesResponse = await fetch(`${API_BASE}/classes`);
+      const classesResponse = await apiFetch(`${API_BASE}/classes`);
       const classesResult = await classesResponse.json();
       const classesData = classesResult.data || [];
       
       const classesWithCounts = await Promise.all(
         classesData.map(async (cls) => {
           try {
-            const studentsResponse = await fetch(`${API_BASE}/students/class/${cls.id}`);
+            const studentsResponse = await apiFetch(`${API_BASE}/students/class/${cls.id}`);
             const studentsResult = await studentsResponse.json();
             return {
               ...cls,
@@ -389,10 +379,10 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
   const loadDashboardData = async () => {
     try {
       const [studentsRes, teachersRes, classesRes, feesRes] = await Promise.all([
-        fetch(`${API_BASE}/students`).then(r => r.json()),
-        fetch(`${API_BASE}/teachers`).then(r => r.json()),
-        fetch(`${API_BASE}/classes`).then(r => r.json()),
-        fetch(`${API_BASE}/fees/school-summary?academic_year=2024-2025`).then(r => r.json())
+        apiFetch(`${API_BASE}/students`).then(r => r.json()),
+        apiFetch(`${API_BASE}/teachers`).then(r => r.json()),
+        apiFetch(`${API_BASE}/classes`).then(r => r.json()),
+        apiFetch(`${API_BASE}/fees/school-summary?academic_year=2024-2025`).then(r => r.json())
       ]);
 
       setDashboardStats({
@@ -409,7 +399,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
 
   const loadTermSettings = async () => {
     try {
-      const response = await fetch(`${API_BASE}/settings/term`);
+      const response = await apiFetch(`${API_BASE}/settings/term`);
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data) {
@@ -424,7 +414,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
   const loadFeeTypes = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/fees/types`, {
+      const response = await apiFetch(`${API_BASE}/fees/types`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const result = await response.json();
@@ -453,7 +443,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
   const loadSchoolFeeSummary = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE}/fees/school-summary?academic_year=${selectedFeeYear}`,
         {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
@@ -471,12 +461,12 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
   const loadStudents = async () => {
     setLoading(true);
     try {
-      const classesResponse = await fetch(`${API_BASE}/classes`);
+      const classesResponse = await apiFetch(`${API_BASE}/classes`);
       const classesResult = await classesResponse.json();
       const classesData = classesResult.data || [];
       setClasses(classesData);
       
-      const studentsResponse = await fetch(`${API_BASE}/students`);
+      const studentsResponse = await apiFetch(`${API_BASE}/students`);
       const studentsResult = await studentsResponse.json();
       const studentsData = studentsResult.data || [];
       
@@ -514,7 +504,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
         : `${API_BASE}/students`;
       const method = editingStudent ? 'PUT' : 'POST';
       
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submissionData)
@@ -528,7 +518,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
             const token = localStorage.getItem('token');
             const studentId = result.data?.id || result.id;
             
-            await fetch(`${API_BASE}/auth/notify-parent/${studentId}`, {
+            await apiFetch(`${API_BASE}/auth/notify-parent/${studentId}`, {
               method: 'POST',
               headers: { 
                 'Content-Type': 'application/json',
@@ -564,7 +554,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
   const handleStudentDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this student?')) {
       try {
-        const response = await fetch(`${API_BASE}/students/${id}`, { method: 'DELETE' });
+        const response = await apiFetch(`${API_BASE}/students/${id}`, { method: 'DELETE' });
         if (response.ok) {
           showToast('Student deleted successfully!', 'success');
           loadStudents();
@@ -633,7 +623,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
         : `${API_BASE}/classes`;
       const method = editingClass ? 'PUT' : 'POST';
       
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submitData)
@@ -674,7 +664,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
     if (window.confirm('Are you sure you want to delete this class?')) {
       setLoading(true);
       try {
-        const response = await fetch(`${API_BASE}/classes/${id}`, { method: 'DELETE' });
+        const response = await apiFetch(`${API_BASE}/classes/${id}`, { method: 'DELETE' });
         
         if (response.ok) {
           showToast('Class deleted successfully!', 'success');
@@ -725,7 +715,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
 
   const loadPromotionHistory = async () => {
     try {
-      const response = await fetch(`${API_BASE}/promotion-history`);
+      const response = await apiFetch(`${API_BASE}/promotion-history`);
       const result = await response.json();
       if (result.success) {
         setPromotionHistory(result.data || []);
@@ -742,7 +732,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
         class_id: promotionFilterClass || '',
         status: promotionFilterStatus
       });
-      const response = await fetch(`${API_BASE}/promotion-history?${params}`);
+      const response = await apiFetch(`${API_BASE}/promotion-history?${params}`);
       const result = await response.json();
       if (result.success) {
         setAllStudentsForPromotion(result.data || []);
@@ -768,7 +758,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
         if (nextClassName !== 'GRADUATED') {
           const targetClass = classes.find(c => c.name === nextClassName);
           if (targetClass) {
-            const response = await fetch(`${API_BASE}/classes/${cls.id}/promote`, {
+            const response = await apiFetch(`${API_BASE}/classes/${cls.id}/promote`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -804,7 +794,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
     
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/students/promote-bulk`, {
+      const response = await apiFetch(`${API_BASE}/students/promote-bulk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -890,7 +880,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
     try {
       const token = localStorage.getItem('token');
       
-      const studentsResponse = await fetch(`${API_BASE}/students/class/${selectedGradeClass}`, {
+      const studentsResponse = await apiFetch(`${API_BASE}/students/class/${selectedGradeClass}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const studentsResult = await studentsResponse.json();
@@ -904,7 +894,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
       }
       
       try {
-        const subjectsResponse = await fetch(`${API_BASE}/class-subjects/class/${selectedGradeClass}`, {
+        const subjectsResponse = await apiFetch(`${API_BASE}/class-subjects/class/${selectedGradeClass}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const subjectsResult = await subjectsResponse.json();
@@ -931,7 +921,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
       }
       
       try {
-        const gradesResponse = await fetch(`${API_BASE}/grades/class/${selectedGradeClass}?term=${selectedTerm}&academic_year=${selectedYear}`, {
+        const gradesResponse = await apiFetch(`${API_BASE}/grades/class/${selectedGradeClass}?term=${selectedTerm}&academic_year=${selectedYear}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const gradesResult = await gradesResponse.json();
@@ -1009,7 +999,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
               return;
             }
             
-            const response = await fetch(`${API_BASE}/grades`, {
+            const response = await apiFetch(`${API_BASE}/grades`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -1045,7 +1035,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
   const viewReportCard = async (studentId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/grades/report-card/${studentId}?term=${selectedTerm}&academic_year=${selectedYear}`, {
+      const response = await apiFetch(`${API_BASE}/grades/report-card/${studentId}?term=${selectedTerm}&academic_year=${selectedYear}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const result = await response.json();
@@ -1074,7 +1064,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE}/fees/class/${selectedFeeClass}?term=${selectedFeeTerm}&academic_year=${selectedFeeYear}`,
         {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
@@ -1111,7 +1101,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
     setLoading(true);
     
     try {
-      const response = await fetch(`${API_BASE}/fees/payment`, {
+      const response = await apiFetch(`${API_BASE}/fees/payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1137,7 +1127,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
         
         if (result.data) {
           const token = localStorage.getItem('token');
-          const receiptResponse = await fetch(`${API_BASE}/fees/receipt/${result.data.id}`, {
+          const receiptResponse = await apiFetch(`${API_BASE}/fees/receipt/${result.data.id}`, {
             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
           });
           const receiptResult = await receiptResponse.json();
@@ -1160,7 +1150,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
   const viewStudentFeeSummary = async (studentId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE}/fees/student/${studentId}?academic_year=${selectedFeeYear}`,
         {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
@@ -1185,7 +1175,7 @@ const { user, userRole, loading: authLoading, logout } = useAuth();
 
   const saveTermSettings = async () => {
     try {
-      const response = await fetch(`${API_BASE}/settings/term`, {
+      const response = await apiFetch(`${API_BASE}/settings/term`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(termSettings)
@@ -1235,18 +1225,6 @@ if (authLoading) {
   if (!user) {
     return <Login />;
   }
-
-// IMPORTANT: Always keep /admin/* to the AdminDashboard router.
-  // The legacy UI in this file can otherwise interfere with admin route rendering and
-  // make enrol buttons appear to not work.
-  const path = window.location.pathname || '';
-  // IMPORTANT: do not short-circuit routing by role here.
-  // Let <AppRouter /> decide what to render for /teacher/*, /admin/*, /parent/*.
-  // Legacy role-based early returns prevented correct matching of /teacher/classes.
-  if (false) {
-    return <AdminDashboard />;
-  }
-
 
   // FALLBACK: Original App Layout (for backward compatibility)
   return (
@@ -1589,21 +1567,34 @@ const LegacyApp = () => {
 // NOTE: main.jsx already wraps with AuthProvider + BrowserRouter.
 // src/App.jsx - Updated routing section
 
+const RequireRole = ({ role, children }) => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role === role) return children;
+
+  const homeByRole = {
+    admin: '/admin',
+    teacher: '/teacher',
+    parent: '/parent',
+  };
+  return <Navigate to={homeByRole[user.role] || '/login'} replace />;
+};
+
 const AppRouter = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
 
       {/* Admin routes - all admin pages go here */}
-      <Route path="/admin/*" element={<AdminDashboard />} />
+      <Route path="/admin/*" element={<RequireRole role="admin"><AdminDashboard /></RequireRole>} />
 
       {/* Teacher routes (keep all teacher pages inside TeacherDashboard layout to preserve sidebar) */}
-      <Route path="/teacher/*" element={<TeacherDashboard />} />
+      <Route path="/teacher/*" element={<RequireRole role="teacher"><TeacherDashboard /></RequireRole>} />
 
 
       {/* Parent routes */}
 
-      <Route path="/parent/*" element={<ParentDashboard />} />
+      <Route path="/parent/*" element={<RequireRole role="parent"><ParentDashboard /></RequireRole>} />
 
       {/* Default landing */}
       <Route path="/" element={<Login />} />

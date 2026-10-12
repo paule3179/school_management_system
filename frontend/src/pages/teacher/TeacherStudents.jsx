@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/api.js';
 // src/pages/teacher/TeacherStudents.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -22,7 +23,7 @@ import {
 import ToastNotification from '../../components/ToastNotification';
 import './TeacherStudents.css';
 
-const TeacherStudents = ({ API_BASE = 'http://localhost:5000/api' }) => {
+const TeacherStudents = ({ API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) => {
   const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
@@ -59,7 +60,7 @@ const TeacherStudents = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return {
-      'Authorization': token ? `Bearer ${token}` : '',
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
   };
@@ -69,7 +70,7 @@ const TeacherStudents = ({ API_BASE = 'http://localhost:5000/api' }) => {
       try {
         setLoading(true);
         const headers = getAuthHeaders();
-        const clsRes = await fetch(`${API_BASE}/teacher/classes`, {
+        const clsRes = await apiFetch(`${API_BASE}/teacher/classes`, {
           headers: headers,
         });
         const clsJson = await clsRes.json();
@@ -108,7 +109,7 @@ const TeacherStudents = ({ API_BASE = 'http://localhost:5000/api' }) => {
       try {
         setLoadingStudents(true);
         const headers = getAuthHeaders();
-        const res = await fetch(
+        const res = await apiFetch(
           `${API_BASE}/teacher/classes/${selectedClassId}/students`,
           { headers }
         );
@@ -145,7 +146,7 @@ const TeacherStudents = ({ API_BASE = 'http://localhost:5000/api' }) => {
     try {
       setLoading(true);
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/students/${student.id}`, { headers });
+      const response = await apiFetch(`${API_BASE}/students/${student.id}`, { headers });
       const data = await response.json();
       if (data.success) {
         setSelectedStudent(data.data);
@@ -181,7 +182,7 @@ const TeacherStudents = ({ API_BASE = 'http://localhost:5000/api' }) => {
     setSaving(true);
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/students/${selectedStudent.id}`, {
+      const response = await apiFetch(`${API_BASE}/students/${selectedStudent.id}`, {
         method: 'PUT',
         headers,
         body: JSON.stringify(editFormData),
@@ -191,7 +192,7 @@ const TeacherStudents = ({ API_BASE = 'http://localhost:5000/api' }) => {
         showToast('Student updated successfully!', 'success');
         setShowEditModal(false);
         // Refresh student list
-        const res = await fetch(
+        const res = await apiFetch(
           `${API_BASE}/teacher/classes/${selectedClassId}/students`,
           { headers: getAuthHeaders() }
         );
@@ -216,7 +217,7 @@ const TeacherStudents = ({ API_BASE = 'http://localhost:5000/api' }) => {
     try {
       setLoading(true);
       const headers = getAuthHeaders();
-      const clsRes = await fetch(`${API_BASE}/teacher/classes`, {
+      const clsRes = await apiFetch(`${API_BASE}/teacher/classes`, {
         headers: headers,
       });
       const clsJson = await clsRes.json();

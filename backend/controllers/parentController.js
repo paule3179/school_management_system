@@ -14,9 +14,9 @@ async function hasAccessToChild(parentId, childId) {
       AND (
         s.parent_id = $1
         OR EXISTS (SELECT 1 FROM parent_students ps WHERE ps.student_id = s.id AND ps.parent_id = $1)
-        OR (s.parent_email IS NOT NULL AND s.parent_email = (
+        OR (s.parent_email IS NOT NULL AND LOWER(BTRIM(s.parent_email)) = LOWER(BTRIM((
           SELECT u.email FROM parents p JOIN users u ON p.user_id = u.id WHERE p.id = $1
-        ))
+        ))))
       )
   `, [parentId, childId]);
   return result.rows.length > 0;

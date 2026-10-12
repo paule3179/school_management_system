@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/api.js';
 import React, { useState, useEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -12,7 +13,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import './TeacherPromotion.css';
 
-const TeacherPromotion = ({ API_BASE = 'http://localhost:5000/api' }) => {
+const TeacherPromotion = ({ API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) => {
   // Filter state
   const [academicYears] = useState(['2024-2025', '2025-2026']);
   const [terms] = useState([1, 2, 3]);
@@ -29,7 +30,7 @@ const TeacherPromotion = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return {
-      'Authorization': token ? `Bearer ${token}` : '',
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
   };
@@ -43,7 +44,7 @@ const TeacherPromotion = ({ API_BASE = 'http://localhost:5000/api' }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/teacher/classes`, {
+      const res = await apiFetch(`${API_BASE}/teacher/classes`, {
         headers: getAuthHeaders(),
       });
       const data = await res.json();
@@ -75,7 +76,7 @@ const TeacherPromotion = ({ API_BASE = 'http://localhost:5000/api' }) => {
         term: selectedTerm,
       });
       // ✅ FIXED URL – added '/promotion' to match backend mount
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE}/promotion/teacher/promotion/students?${params}`,
         { headers: getAuthHeaders() }
       );

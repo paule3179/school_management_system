@@ -1,3 +1,4 @@
+import { apiFetch } from '../services/api.js';
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -9,7 +10,7 @@ import {
 
 import './Classes.css';
 
-const Classes = ({ API_BASE = 'http://localhost:5000/api' }) => {
+const Classes = ({ API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) => {
   const [classes, setClasses] = useState([]);
   const [filteredClasses, setFilteredClasses] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -75,7 +76,7 @@ const Classes = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const loadTeachers = async () => {
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/admin/teachers`, {
+      const response = await apiFetch(`${API_BASE}/admin/teachers`, {
         method: 'GET',
         headers: headers
       });
@@ -93,7 +94,7 @@ const Classes = ({ API_BASE = 'http://localhost:5000/api' }) => {
     setLoading(true);
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/admin/classes`, {
+      const response = await apiFetch(`${API_BASE}/admin/classes`, {
         method: 'GET',
         headers: headers
       });
@@ -193,7 +194,7 @@ const Classes = ({ API_BASE = 'http://localhost:5000/api' }) => {
       console.log(`📤 ${method} request to:`, url);
       console.log('📤 Data:', submitData);
       
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
         headers: headers,
         body: JSON.stringify(submitData)
@@ -240,7 +241,7 @@ const Classes = ({ API_BASE = 'http://localhost:5000/api' }) => {
     
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/admin/classes/${id}`, {
+      const response = await apiFetch(`${API_BASE}/admin/classes/${id}`, {
         method: 'DELETE',
         headers: headers
       });
@@ -252,7 +253,7 @@ const Classes = ({ API_BASE = 'http://localhost:5000/api' }) => {
         const result = await response.json();
         showToastMessage(result.error || 'Failed to delete class', 'error');
       }
-    } catch (error) {
+    } catch {
       showToastMessage('Network error', 'error');
     }
   };

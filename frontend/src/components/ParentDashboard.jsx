@@ -1,3 +1,4 @@
+import { apiFetch } from '../services/api.js';
 // src/components/ParentDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
@@ -18,7 +19,7 @@ import {
   faExclamationTriangle
 } from '@fortawesome/free-solid-svg-icons';
 
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import ParentPerformance from '../pages/parent/ParentPerformance';
 import ParentAttendance from '../pages/parent/ParentAttendance';
 import ParentSubjects from '../pages/parent/ParentSubjects';
@@ -26,7 +27,7 @@ import ParentFees from '../pages/parent/ParentFees';
 import geebzLogo from '../assets/logo.png';
 import '../styles/ParentDashboard.css';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api');
 
 const ParentDashboard = () => {
   const { user, logout } = useAuth();
@@ -77,7 +78,7 @@ const ParentDashboard = () => {
 
         // 1. Fetch children (primary)
         console.log('📡 Fetching children...');
-        const childrenRes = await fetch(`${API_BASE}/parent/children`, { headers });
+        const childrenRes = await apiFetch(`${API_BASE}/parent/children`, { headers });
         let childrenData = [];
         if (childrenRes.ok) {
           const childrenJson = await childrenRes.json();
@@ -89,12 +90,12 @@ const ParentDashboard = () => {
 
         // 2. Fetch notifications (optional)
         try {
-          const notifRes = await fetch(`${API_BASE}/parent/notifications`, { headers });
+          const notifRes = await apiFetch(`${API_BASE}/parent/notifications`, { headers });
           if (notifRes.ok) {
             const notifJson = await notifRes.json();
             setNotifications(notifJson.success ? (notifJson.data || []) : []);
           }
-        } catch (_) {
+        } catch {
           setNotifications([]);
         }
 
@@ -103,7 +104,7 @@ const ParentDashboard = () => {
           let totalPerf = 0, totalAtt = 0, count = 0;
           for (const child of childrenData) {
             try {
-              const perfRes = await fetch(`${API_BASE}/parent/child/${child.id}/performance`, { headers });
+              const perfRes = await apiFetch(`${API_BASE}/parent/child/${child.id}/performance`, { headers });
               if (perfRes.ok) {
                 const perfJson = await perfRes.json();
                 if (perfJson.success && perfJson.data?.performance) {
@@ -112,7 +113,7 @@ const ParentDashboard = () => {
                   count++;
                 }
               }
-            } catch (_) {
+            } catch {
               // skip if performance fails
             }
           }

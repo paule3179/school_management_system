@@ -3,7 +3,18 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
 const promotionController = require('../controllers/promotionController');
-const { verifyToken, isAdmin } = require('../middleware/auth');
+const { verifyToken, isAdmin, isTeacher } = require('../middleware/auth');
+
+const requireAssignedClass = (req, res, next) => {
+  const classId = Number(req.params.classId || req.query.class_id);
+  if (!Number.isInteger(classId) || classId <= 0) {
+    return res.status(400).json({ success: false, error: 'A valid class_id is required' });
+  }
+  if (req.user.role !== 'admin' && !(req.user.allowedClassIds || []).some((id) => Number(id) === classId)) {
+    return res.status(403).json({ success: false, error: 'Access denied to this class' });
+  }
+  next();
+};
 
 // ============================================================
 // DEBUG ROUTES
@@ -16,7 +27,7 @@ router.get('/ping', (req, res) => {
 // CLASS ROUTES (for admin page)
 // ============================================================
 
-router.get('/classes', verifyToken, async (req, res) => {
+router.get('/classes', verifyToken, isAdmin, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
@@ -38,7 +49,7 @@ router.get('/classes', verifyToken, async (req, res) => {
 });
 
 // Get students by class ID (for student count)
-router.get('/students/class/:classId', verifyToken, async (req, res) => {
+router.get('/students/class/:classId', verifyToken, isAdmin, async (req, res) => {
   try {
     const { classId } = req.params;
     const result = await pool.query(`
@@ -66,19 +77,19 @@ router.get('/students/class/:classId', verifyToken, async (req, res) => {
 
 // Get teacher's assigned classes (for the dropdown)
 // ✅ Uses the same logic as the dashboard – returns classes for this teacher
-router.get('/teacher/classes', verifyToken, async (req, res) => {
+router.get('/teacher/classes', verifyToken, isTeacher, async (req, res) => {
   try {
-    const teacherId = req.user.id;
+    const teacherId = req.user.role === 'admin' ? null : req.user.teacher_id;
     const result = await pool.query(`
       SELECT 
         c.id,
         c.class_name,
         c.level,
         COUNT(DISTINCT sc.student_id) AS student_count
-      FROM teacher_classes tc
-      JOIN classes c ON tc.class_id = c.id
+      FROM classes c
+      LEFT JOIN teacher_classes tc ON tc.class_id = c.id
       LEFT JOIN student_classes sc ON c.id = sc.class_id AND sc.is_active = true
-      WHERE tc.teacher_id = $1
+      WHERE ($1::int IS NULL OR tc.teacher_id = $1 OR c.teacher_id = $1)
       GROUP BY c.id, c.class_name, c.level
       ORDER BY c.level, c.class_name
     `, [teacherId]);
@@ -94,7 +105,7 @@ router.get('/teacher/classes', verifyToken, async (req, res) => {
 // Removed the teacher check because the dropdown already enforces
 // that the teacher is assigned to the selected class.
 // ============================================================
-router.get('/teacher/promotion/students', verifyToken, async (req, res) => {
+router.get('/teacher/promotion/students', verifyToken, isTeacher, requireAssignedClass, async (req, res) => {
   try {
     const { class_id, academic_year, term } = req.query;
 
@@ -199,6 +210,8 @@ router.get('/teacher/promotion/students', verifyToken, async (req, res) => {
 router.get(
   '/classes/:classId/next-class',
   verifyToken,
+  isTeacher,
+  requireAssignedClass,
   promotionController.getNextClass
 );
 
@@ -227,6 +240,7 @@ router.post(
 router.get(
   '/promotion-history',
   verifyToken,
+  isAdmin,
   promotionController.getPromotionHistory
 );
 

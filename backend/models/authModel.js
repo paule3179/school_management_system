@@ -1,5 +1,5 @@
 const pool = require('../config/database');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 
 class AuthModel {
   // Find user by email

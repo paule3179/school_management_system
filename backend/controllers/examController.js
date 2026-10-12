@@ -1,4 +1,5 @@
 const examModel = require('../models/examModel');
+const pool = require('../config/database');
 
 const examController = {
   // GET /api/exams - Get all exams
@@ -43,7 +44,22 @@ const examController = {
   // GET /api/exams/student/:studentId/:examId - Get student exam results
   async getStudentExamResults(req, res) {
     try {
-      const results = await examModel.getStudentExamResults(req.params.studentId, req.params.examId);
+      const studentId = Number(req.params.studentId);
+      if (req.user.role === 'parent' && !req.user.allowedStudentIds?.includes(studentId)) {
+        return res.status(403).json({ success: false, error: 'Access denied to this student' });
+      }
+      if (req.user.role === 'teacher') {
+        const student = await pool.query(
+          'SELECT class_id FROM students WHERE id = $1', [studentId]
+        );
+        if (!student.rows[0] || !req.user.allowedClassIds?.includes(student.rows[0].class_id)) {
+          return res.status(403).json({ success: false, error: 'Access denied to this student' });
+        }
+      }
+      if (!['admin', 'parent', 'teacher'].includes(req.user.role)) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+      const results = await examModel.getStudentExamResults(studentId, req.params.examId);
       if (!results) {
         return res.status(404).json({ success: false, error: 'Student or exam not found' });
       }

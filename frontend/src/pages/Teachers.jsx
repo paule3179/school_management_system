@@ -1,3 +1,4 @@
+import { apiFetch } from '../services/api.js';
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -9,7 +10,7 @@ import {
 import ToastNotification from "../components/ToastNotification";
 import './Teachers.css';
 
-function Teachers({ API_BASE = 'http://localhost:5000/api' }) {
+function Teachers({ API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) {
   const [teachers, setTeachers] = useState([]);
   const [toast, setToast] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -63,7 +64,7 @@ function Teachers({ API_BASE = 'http://localhost:5000/api' }) {
     const token = localStorage.getItem('token');
     return {
       'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : ''
+      'Authorization': `Bearer ${token}`
     };
   };
 
@@ -78,7 +79,7 @@ function Teachers({ API_BASE = 'http://localhost:5000/api' }) {
   const loadTeachers = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/admin/teachers`, {
+      const response = await apiFetch(`${API_BASE}/admin/teachers`, {
         headers: getAuthHeaders()
       });
       const result = await response.json();
@@ -165,7 +166,7 @@ function Teachers({ API_BASE = 'http://localhost:5000/api' }) {
     const method = editingTeacher ? 'PUT' : 'POST';
     
     try {
-        const response = await fetch(url, {
+        const response = await apiFetch(url, {
             method,
             headers: getAuthHeaders(),
             body: JSON.stringify(formData)
@@ -197,7 +198,7 @@ function Teachers({ API_BASE = 'http://localhost:5000/api' }) {
     
     if (window.confirm('Are you sure you want to delete this teacher?')) {
       try {
-        const response = await fetch(`${API_BASE}/admin/teachers/${id}`, {
+        const response = await apiFetch(`${API_BASE}/admin/teachers/${id}`, {
           method: 'DELETE',
           headers: getAuthHeaders(),
         });

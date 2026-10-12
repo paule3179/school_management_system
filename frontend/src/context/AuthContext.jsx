@@ -1,37 +1,29 @@
 // src/context/AuthContext.jsx
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { useState } from 'react';
+import { AuthContext } from './AuthContextCore';
 
-const AuthContext = createContext();
+const getStoredAuth = () => {
+  const token = localStorage.getItem('token');
+  const storedUser = localStorage.getItem('user');
+  if (!token || !storedUser) return { user: null, userRole: null };
 
-export const useAuth = () => useContext(AuthContext);
+  try {
+    const user = JSON.parse(storedUser);
+    return { user, userRole: localStorage.getItem('userRole') || user.role };
+  } catch (error) {
+    console.error('Error restoring saved user:', error);
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('userRole');
+    return { user: null, userRole: null };
+  }
+};
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [userRole, setUserRole] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    const storedRole = localStorage.getItem('userRole');
-    
-    console.log('AuthProvider init - token:', !!token, 'storedUser:', !!storedUser);
-    
-    if (token && storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setUserRole(storedRole || parsedUser.role);
-        console.log('User restored from localStorage:', parsedUser);
-      } catch (error) {
-        console.error('Error parsing user:', error);
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-        localStorage.removeItem('userRole');
-      }
-    }
-    setLoading(false);
-  }, []);
+  const [storedAuth] = useState(getStoredAuth);
+  const [user, setUser] = useState(storedAuth.user);
+  const [userRole, setUserRole] = useState(storedAuth.userRole);
+  const [loading] = useState(false);
 
   const login = (userData, token) => {
     console.log('🔐 AuthContext.login called with:', { userData, token: token?.substring(0, 50) + '...' });

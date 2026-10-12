@@ -101,6 +101,7 @@ teacherController.getTeacherById = async (req, res) => {
 // CREATE TEACHER (Admin)
 // ============================================
 teacherController.createTeacher = async (req, res) => {
+    let client;
     try {
         const {
             first_name,
@@ -145,9 +146,10 @@ teacherController.createTeacher = async (req, res) => {
         const tempPassword = generateTempPassword();
         const hashedPassword = await bcrypt.hash(tempPassword, 10);
         
-        await pool.query('BEGIN');
+        client = await pool.connect();
+        await client.query('BEGIN');
         
-        const userResult = await pool.query(`
+        const userResult = await client.query(`
             INSERT INTO users (email, password, first_name, last_name, role, status, created_at)
             VALUES ($1, $2, $3, $4, 'teacher', $5, NOW())
             RETURNING id
@@ -155,7 +157,7 @@ teacherController.createTeacher = async (req, res) => {
         
         const userId = userResult.rows[0].id;
         
-        const result = await pool.query(`
+        const result = await client.query(`
             INSERT INTO teachers (
                 user_id,
                 teacher_code,
@@ -202,7 +204,9 @@ teacherController.createTeacher = async (req, res) => {
             status || 'Active'
         ]);
         
-        await pool.query('COMMIT');
+        await client.query('COMMIT');
+        client.release();
+        client = null;
         
         res.status(201).json({
             success: true,
@@ -212,7 +216,14 @@ teacherController.createTeacher = async (req, res) => {
             teacherCode: teacherCode
         });
     } catch (error) {
-        await pool.query('ROLLBACK');
+        if (client) {
+            try {
+                await client.query('ROLLBACK');
+            } catch (rollbackError) {
+                console.error('Teacher transaction rollback failed:', rollbackError);
+            }
+            client.release();
+        }
         console.error('Error creating teacher:', error);
         res.status(500).json({
             success: false,
@@ -473,24 +484,7 @@ teacherController.getMyClasses = async (req, res) => {
         }
         
         if (teacherResult.rows.length === 0) {
-            console.log('⚠️ No teacher found, returning all classes as fallback');
-            const fallbackResult = await pool.query(`
-                SELECT 
-                    id,
-                    class_name,
-                    level,
-                    teacher_id,
-                    0 as student_count
-                FROM classes
-                ORDER BY class_name
-            `);
-            
-            return res.json({
-                success: true,
-                data: fallbackResult.rows,
-                count: fallbackResult.rows.length,
-                isFallback: true
-            });
+            return res.status(404).json({ success: false, error: "Teacher profile not found" });
         }
         
         const teacherId = teacherResult.rows[0].id;
@@ -503,8 +497,13 @@ teacherController.getMyClasses = async (req, res) => {
                 c.teacher_id,
                 COUNT(DISTINCT s.id) as student_count
             FROM classes c
-            LEFT JOIN students s ON s.class_id = c.id AND s.status = 'Active'
+            LEFT JOIN students s ON s.class_id = c.id AND LOWER(COALESCE(s.status, 'active')) = 'active'
             WHERE c.teacher_id = $1
+               OR EXISTS (
+                    SELECT 1 FROM teacher_classes tc
+                    WHERE tc.teacher_id = $1 AND tc.class_id = c.id
+                      AND COALESCE(tc.is_active, true) = true
+               )
             GROUP BY c.id, c.class_name, c.level, c.teacher_id
             ORDER BY c.class_name
         `, [teacherId]);
@@ -529,187 +528,58 @@ teacherController.getMyClasses = async (req, res) => {
 teacherController.getClassStudents = async (req, res) => {
     try {
         const { classId } = req.params;
-        const userId = req.user?.id;
-        const userEmail = req.user?.email;
-        
-        console.log(`📚 Getting students for class: ${classId}`);
-        
-        if (!userId && !userEmail) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'User not authenticated' 
-            });
+        if (req.user?.role === "teacher" && !req.user.allowedClassIds?.includes(Number(classId))) {
+            return res.status(403).json({ success: false, error: "Access denied to this class" });
         }
-        
-        const classCheck = await pool.query(
-            'SELECT id, class_name FROM classes WHERE id = $1',
-            [classId]
-        );
-        
-        if (classCheck.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                error: 'Class not found'
-            });
+        const classResult = await pool.query("SELECT id, class_name FROM classes WHERE id = $1", [classId]);
+        if (classResult.rows.length === 0) {
+            return res.status(404).json({ success: false, error: "Class not found" });
         }
-        
         const result = await pool.query(`
-            SELECT 
-                s.id,
-                s.admission_number,
-                s.first_name,
-                s.last_name,
-                s.gender,
-                s.date_of_birth,
-                s.parent_name,
-                s.parent_phone,
-                s.parent_email,
-                s.status,
-                s.enrollment_date,
-                c.class_name
+            SELECT s.id, s.admission_number, s.first_name, s.last_name, s.gender,
+                   s.date_of_birth, s.parent_name, s.parent_phone, s.parent_email,
+                   s.status, s.enrollment_date, c.class_name
             FROM students s
-            INNER JOIN classes c ON c.id = s.class_id
-            WHERE s.class_id = $1 
-              AND (s.status = 'Active' OR s.status IS NULL)
+            JOIN classes c ON c.id = s.class_id
+            WHERE s.class_id = $1 AND LOWER(COALESCE(s.status, 'active')) = 'active'
             ORDER BY s.last_name, s.first_name
         `, [classId]);
-        
-        if (result.rows.length === 0) {
-            console.log(`⚠️ No students found for class ${classId}, returning sample data`);
-            const sampleStudents = [
-                { id: 1, first_name: 'Emmanuel', last_name: 'Wumpini Paul', admission_number: 'STU001', gender: 'Male', status: 'Active', class_name: classCheck.rows[0].class_name },
-                { id: 2, first_name: 'Abena', last_name: 'Mensah', admission_number: 'STU002', gender: 'Female', status: 'Active', class_name: classCheck.rows[0].class_name },
-                { id: 3, first_name: 'Kwame', last_name: 'Asante', admission_number: 'STU003', gender: 'Male', status: 'Active', class_name: classCheck.rows[0].class_name },
-                { id: 4, first_name: 'Ama', last_name: 'Serwaa', admission_number: 'STU004', gender: 'Female', status: 'Active', class_name: classCheck.rows[0].class_name },
-                { id: 5, first_name: 'Yaw', last_name: 'Boateng', admission_number: 'STU005', gender: 'Male', status: 'Active', class_name: classCheck.rows[0].class_name }
-            ];
-            
-            return res.json({
-                success: true,
-                data: sampleStudents,
-                count: sampleStudents.length,
-                class_name: classCheck.rows[0].class_name,
-                isFallback: true
-            });
-        }
-        
-        console.log(`✅ Found ${result.rows.length} students for class ${classCheck.rows[0].class_name}`);
-        
-        res.json({
-            success: true,
-            data: result.rows,
-            count: result.rows.length,
-            class_name: classCheck.rows[0].class_name
-        });
+        res.json({ success: true, data: result.rows, count: result.rows.length, class_name: classResult.rows[0].class_name });
     } catch (error) {
-        console.error('❌ Error getting class students:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        console.error("Error getting class students:", error);
+        res.status(500).json({ success: false, error: error.message });
     }
 };
-
 // GET TEACHER'S SUBJECTS
 teacherController.getMySubjects = async (req, res) => {
     try {
-        const userId = req.user?.id;
-        const userEmail = req.user?.email;
-        
-        console.log(`📚 Getting subjects for teacher: ${userId || userEmail}`);
-        
-        if (!userId && !userEmail) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'User not authenticated' 
-            });
+        const teacherId = req.user?.teacher_id;
+        if (!teacherId) {
+            return res.status(404).json({ success: false, error: "Teacher profile not found" });
         }
-        
-        let teacherResult;
-        if (userId) {
-            teacherResult = await pool.query(
-                'SELECT id, subject_specialty FROM teachers WHERE user_id = $1',
-                [userId]
-            );
-        }
-        
-        if (!teacherResult || teacherResult.rows.length === 0) {
-            teacherResult = await pool.query(
-                'SELECT id, subject_specialty FROM teachers WHERE email = $1',
-                [userEmail]
-            );
-        }
-        
-        if (teacherResult.rows.length === 0) {
-            console.log('⚠️ No teacher found, returning all subjects as fallback');
-            const fallbackResult = await pool.query(`
-                SELECT 
-                    id,
-                    name,
-                    code,
-                    level,
-                    description
-                FROM subjects
-                ORDER BY name
-            `);
-            
-            return res.json({
-                success: true,
-                data: fallbackResult.rows,
-                count: fallbackResult.rows.length,
-                isFallback: true
-            });
-        }
-        
-        const teacher = teacherResult.rows[0];
-        const subjectSpecialty = teacher.subject_specialty;
-        
-        if (subjectSpecialty) {
-            const subjectNames = subjectSpecialty.split(',').map(s => s.trim());
-            const result = await pool.query(`
-                SELECT 
-                    id,
-                    name,
-                    code,
-                    level,
-                    description
-                FROM subjects
-                WHERE name = ANY($1)
-                ORDER BY name
-            `, [subjectNames]);
-            
-            return res.json({
-                success: true,
-                data: result.rows,
-                count: result.rows.length
-            });
-        }
-        
         const result = await pool.query(`
-            SELECT 
-                id,
-                name,
-                code,
-                level,
-                description
-            FROM subjects
-            ORDER BY name
-        `);
-        
-        res.json({
-            success: true,
-            data: result.rows,
-            count: result.rows.length
-        });
+            SELECT DISTINCT s.id, s.name, s.code, s.level, s.description
+            FROM subjects s
+            WHERE EXISTS (
+                SELECT 1 FROM teacher_subjects ts
+                WHERE ts.teacher_id = $1 AND ts.subject_id = s.id
+            ) OR EXISTS (
+                SELECT 1 FROM class_subjects cs
+                LEFT JOIN teacher_classes tc
+                  ON tc.class_id = cs.class_id AND tc.teacher_id = $1
+                 AND COALESCE(tc.is_active, true) = true
+                LEFT JOIN classes c ON c.id = cs.class_id
+                WHERE cs.subject_id = s.id
+                  AND (tc.id IS NOT NULL OR c.teacher_id = $1 OR cs.teacher_id = $1)
+            )
+            ORDER BY s.name
+        `, [teacherId]);
+        res.json({ success: true, data: result.rows, count: result.rows.length });
     } catch (error) {
-        console.error('❌ Error getting teacher subjects:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        console.error("Error getting teacher subjects:", error);
+        res.status(500).json({ success: false, error: error.message });
     }
 };
-
 // GET TEACHER STATS
 teacherController.getTeacherStats = async (req, res) => {
     try {
@@ -842,13 +712,9 @@ teacherController.saveMarks = async (req, res) => {
         }
         
         if (teacherResult.rows.length === 0) {
-            console.log('⚠️ No teacher found, returning simulated success');
-            return res.json({ 
-                success: true, 
-                message: `${marks.length} marks would be saved (simulated)`,
-                saved: marks.length,
-                updated: 0,
-                isSimulated: true
+            return res.status(403).json({
+                success: false,
+                error: 'Teacher profile not found; marks were not saved'
             });
         }
         

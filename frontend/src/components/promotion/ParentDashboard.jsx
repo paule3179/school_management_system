@@ -1,17 +1,18 @@
+import { apiFetch } from '../../services/api.js';
 // src/components/ParentDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faGauge as faDashboard, faChildren, faChartLine, faCalendarAlt,
-  faSignOutAlt, faClock, faBars, faMoneyBillWave, faSchool,
-  faEye, faSpinner, faBell, faReceipt, faUserGraduate, faUser
+  faSignOutAlt, faClock, faBars, faMoneyBillWave,
+  faEye, faSpinner, faBell, faReceipt
 } from '@fortawesome/free-solid-svg-icons';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import geebzLogo from '../assets/logo.png';
 import '../styles/ParentDashboard.css';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api');
 
 // Placeholder components (will be replaced later)
 const ParentPerformance = ({ children }) => (
@@ -50,10 +51,10 @@ const ParentDashboard = () => {
         const headers = { Authorization: `Bearer ${token}` };
 
         // 1. Children
-        const childrenRes = await fetch(`${API_BASE}/parent/children`, { headers });
+        const childrenRes = await apiFetch(`${API_BASE}/parent/children`, { headers });
         const childrenJson = await childrenRes.json();
+        const childrenList = childrenJson.data || [];
         if (childrenJson.success) {
-          const childrenList = childrenJson.data || [];
           setChildren(childrenList);
           setStats(prev => ({ ...prev, totalChildren: childrenList.length }));
         } else {
@@ -62,27 +63,31 @@ const ParentDashboard = () => {
 
         // 2. Notifications
         try {
-          const notifRes = await fetch(`${API_BASE}/parent/notifications`, { headers });
+          const notifRes = await apiFetch(`${API_BASE}/parent/notifications`, { headers });
           const notifJson = await notifRes.json();
           if (notifJson.success) {
             const unread = notifJson.data?.filter(n => !n.is_read).length || 0;
             setStats(prev => ({ ...prev, notifications: unread }));
           }
-        } catch (_) {}
+        } catch (notificationError) {
+          console.error('Failed to load parent notifications:', notificationError);
+        }
 
         // 3. Performance / attendance (compute from child endpoints)
         if (childrenList.length > 0) {
           let totalPerf = 0, totalAtt = 0, count = 0;
           for (const child of childrenList) {
             try {
-              const perfRes = await fetch(`${API_BASE}/parent/child/${child.id}/performance`, { headers });
+              const perfRes = await apiFetch(`${API_BASE}/parent/child/${child.id}/performance`, { headers });
               const perfJson = await perfRes.json();
               if (perfJson.success && perfJson.data?.performance) {
                 totalPerf += perfJson.data.performance.average_score || 0;
                 totalAtt += perfJson.data.performance.attendance_rate || 0;
                 count++;
               }
-            } catch (_) {}
+            } catch (performanceError) {
+              console.error(`Failed to load performance for child ${child.id}:`, performanceError);
+            }
           }
           if (count > 0) {
             setStats(prev => ({

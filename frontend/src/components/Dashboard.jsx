@@ -1,3 +1,4 @@
+import { apiFetch } from '../services/api.js';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -15,6 +16,7 @@ import {
   faClock,
   faTimes,
   faUserCircle,
+  faSave,
   faSignOutAlt,
   faCalendarDay,
   faTrophy,
@@ -25,13 +27,8 @@ import './Dashboard.css';
 const Dashboard = ({ API_BASE, currentUser, onUpdateUser, onNavigate }) => {
   const navigate = useNavigate();
   
-  // Mobile sidebar state
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  
   // Settings modal state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   
   // Dashboard data states
@@ -40,7 +37,7 @@ const Dashboard = ({ API_BASE, currentUser, onUpdateUser, onNavigate }) => {
     weekly: { present: 0, absent: 0, percentage: 0 }
   });
   
-  const [performanceRate, setPerformanceRate] = useState({
+  const [performanceRate] = useState({
     average: 76.5,
     topSubject: 'Mathematics',
     improvement: 5.2,
@@ -59,22 +56,6 @@ const Dashboard = ({ API_BASE, currentUser, onUpdateUser, onNavigate }) => {
     role: ''
   });
   
-  // Password change form
-  const [passwordForm, setPasswordForm] = useState({
-    current_password: '',
-    new_password: '',
-    confirm_password: ''
-  });
-  
-  // Preferences state
-  const [preferences, setPreferences] = useState({
-    notifications: true,
-    emailAlerts: true,
-    darkMode: false,
-    language: 'english',
-    dateFormat: 'DD/MM/YYYY'
-  });
-
   // Stats state - role-based
   const [stats, setStats] = useState({
     totalStudents: 0,
@@ -86,15 +67,6 @@ const Dashboard = ({ API_BASE, currentUser, onUpdateUser, onNavigate }) => {
   // Recent activity state
   const [recentActivities, setRecentActivities] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // Load user data when modal opens
   useEffect(() => {
@@ -128,7 +100,7 @@ const Dashboard = ({ API_BASE, currentUser, onUpdateUser, onNavigate }) => {
         const userRole = currentUser?.role;
         console.log(`Fetching stats for role: ${userRole} from: ${API_BASE}/admin/stats`);
         
-        const statsRes = await fetch(`${API_BASE}/admin/stats`, {
+        const statsRes = await apiFetch(`${API_BASE}/admin/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         
@@ -201,7 +173,7 @@ const Dashboard = ({ API_BASE, currentUser, onUpdateUser, onNavigate }) => {
         // Only fetch for admin
         if (currentUser?.role !== 'admin') return;
         
-        const res = await fetch(`${API_BASE}/admin/user-activity?limit=10`, {
+        const res = await apiFetch(`${API_BASE}/admin/user-activity?limit=10`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         
@@ -271,57 +243,17 @@ const Dashboard = ({ API_BASE, currentUser, onUpdateUser, onNavigate }) => {
     setSaveSuccess(false);
   };
 
-  const closeSettings = () => {
-    setIsSettingsOpen(false);
-    setPasswordForm({
-      current_password: '',
-      new_password: '',
-      confirm_password: ''
-    });
-    setShowPassword(false);
-    setShowConfirmPassword(false);
-  };
+  const closeSettings = () => setIsSettingsOpen(false);
 
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
     setProfileForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const handlePasswordChange = (e) => {
-    const { name, value } = e.target;
-    setPasswordForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handlePreferenceChange = (key, value) => {
-    setPreferences(prev => ({ ...prev, [key]: value }));
-  };
-
   const handleSaveProfile = () => {
     if (onUpdateUser) {
       onUpdateUser(profileForm);
     }
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
-  };
-
-  const handleChangePassword = () => {
-    if (passwordForm.new_password !== passwordForm.confirm_password) {
-      alert("New passwords don't match!");
-      return;
-    }
-    if (passwordForm.new_password.length < 6) {
-      alert("Password must be at least 6 characters!");
-      return;
-    }
-    alert("Password changed successfully!");
-    setPasswordForm({
-      current_password: '',
-      new_password: '',
-      confirm_password: ''
-    });
-  };
-
-  const handleSavePreferences = () => {
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
@@ -497,6 +429,9 @@ const Dashboard = ({ API_BASE, currentUser, onUpdateUser, onNavigate }) => {
           <h1>Dashboard</h1>
           <p>Welcome back, {currentUser?.first_name || currentUser?.username || 'Admin'}!</p>
         </div>
+        <button type="button" className="settings-save-btn" onClick={openSettings}>
+          <FontAwesomeIcon icon={faUserCircle} /> Profile settings
+        </button>
       </div>
 
       {/* Stats Cards */}

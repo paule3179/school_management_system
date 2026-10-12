@@ -1,3 +1,4 @@
+import { apiFetch } from '../services/api.js';
 // src/pages/Fees.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -58,7 +59,7 @@ const Fees = ({ API_BASE }) => {
   const loadClasses = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/classes`, {
+      const response = await apiFetch(`${API_BASE}/classes`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const result = await response.json();
@@ -71,7 +72,7 @@ const Fees = ({ API_BASE }) => {
   const loadSchoolFeeSummary = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/fees/school-summary?academic_year=${selectedFeeYear}`, {
+      const response = await apiFetch(`${API_BASE}/fees/school-summary?academic_year=${selectedFeeYear}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const result = await response.json();
@@ -84,7 +85,7 @@ const Fees = ({ API_BASE }) => {
   const loadFeeTypes = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/fees/types`, {
+      const response = await apiFetch(`${API_BASE}/fees/types`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const result = await response.json();
@@ -112,7 +113,7 @@ const Fees = ({ API_BASE }) => {
   const loadFeeSettings = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/fees/settings`, {
+      const response = await apiFetch(`${API_BASE}/fees/settings`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const result = await response.json();
@@ -146,7 +147,7 @@ const Fees = ({ API_BASE }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/fees/class/${selectedFeeClass}?term=${selectedFeeTerm}&academic_year=${selectedFeeYear}`, {
+      const response = await apiFetch(`${API_BASE}/fees/class/${selectedFeeClass}?term=${selectedFeeTerm}&academic_year=${selectedFeeYear}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const result = await response.json();
@@ -171,7 +172,7 @@ const Fees = ({ API_BASE }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/fees/settings/${feeId}`, {
+      const response = await apiFetch(`${API_BASE}/fees/settings/${feeId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +205,7 @@ const Fees = ({ API_BASE }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/fees/settings`, {
+      const response = await apiFetch(`${API_BASE}/fees/settings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -240,7 +241,7 @@ const Fees = ({ API_BASE }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/fees/settings/${feeId}`, {
+      const response = await apiFetch(`${API_BASE}/fees/settings/${feeId}`, {
         method: 'DELETE',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -287,7 +288,7 @@ const Fees = ({ API_BASE }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/fees/payment`, {
+      const response = await apiFetch(`${API_BASE}/fees/payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -342,7 +343,7 @@ const Fees = ({ API_BASE }) => {
   const viewStudentFeeSummary = async (studentId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/fees/student/${studentId}?academic_year=${selectedFeeYear}`, {
+      const response = await apiFetch(`${API_BASE}/fees/student/${studentId}?academic_year=${selectedFeeYear}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const result = await response.json();

@@ -1,6 +1,7 @@
+import { API_BASE, apiFetch } from '../services/api.js';
 // src/components/Login.jsx
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import geebzLogo from '../assets/geebz.png';
 import './Login.css';
 
@@ -89,7 +90,7 @@ const handleSubmit = async (e) => {
 
 
   try {
-    const response = await fetch('http://localhost:5000/api/auth/login', {
+    const response = await apiFetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include', // Important for cookies

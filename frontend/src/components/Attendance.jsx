@@ -1,3 +1,4 @@
+import { apiFetch } from '../services/api.js';
 // src/components/Attendance.jsx
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -31,13 +32,13 @@ const Attendance = ({ API_BASE, classes, termSettings }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const studentsResponse = await fetch(`${API_BASE}/students/class/${attendanceClass}`, {
+      const studentsResponse = await apiFetch(`${API_BASE}/students/class/${attendanceClass}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const studentsResult = await studentsResponse.json();
       const students = studentsResult.data || [];
       
-      const existingAttendanceResponse = await fetch(
+      const existingAttendanceResponse = await apiFetch(
         `${API_BASE}/attendance/class/${attendanceClass}?date=${attendanceDate}&term=${attendanceTerm}&academic_year=2024-2025`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
@@ -87,7 +88,7 @@ const Attendance = ({ API_BASE, classes, termSettings }) => {
         academic_year: '2024-2025'
       };
       
-      const response = await fetch(`${API_BASE}/attendance/class`, {
+      const response = await apiFetch(`${API_BASE}/attendance/class`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -114,7 +115,7 @@ const Attendance = ({ API_BASE, classes, termSettings }) => {
   const viewStudentAttendanceSummary = async (studentId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE}/attendance/student-summary/${studentId}?term=${attendanceTerm}&academic_year=2024-2025`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );

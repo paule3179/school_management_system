@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/api.js';
 // src/pages/teacher/TeacherAssignments.jsx
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -11,19 +12,16 @@ import {
   faSpinner,
   faFileAlt,
   faCalendarAlt,
-  faUser,
   faSchool,
   faRefresh,
   faCheckCircle,
-  faExclamationTriangle,
   faDownload,
-  faEye,
   faClock
 } from '@fortawesome/free-solid-svg-icons';
 import ToastNotification from '../../components/ToastNotification';
 import './TeacherAssignments.css';
 
-const TeacherAssignments = ({ API_BASE = 'http://localhost:5000/api' }) => {
+const TeacherAssignments = ({ API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) => {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -54,7 +52,7 @@ const TeacherAssignments = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return {
-      'Authorization': token ? `Bearer ${token}` : '',
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
   };
@@ -68,7 +66,7 @@ const TeacherAssignments = ({ API_BASE = 'http://localhost:5000/api' }) => {
     setLoading(true);
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/teacher/assignments`, {
+      const response = await apiFetch(`${API_BASE}/teacher/assignments`, {
         headers: headers
       });
       const data = await response.json();
@@ -135,7 +133,7 @@ const TeacherAssignments = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const loadClasses = async () => {
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/teacher/classes`, {
+      const response = await apiFetch(`${API_BASE}/teacher/classes`, {
         headers: headers
       });
       const data = await response.json();
@@ -157,7 +155,7 @@ const TeacherAssignments = ({ API_BASE = 'http://localhost:5000/api' }) => {
         : `${API_BASE}/teacher/assignments`;
       const method = editingAssignment ? 'PUT' : 'POST';
       
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: method,
         headers: headers,
         body: JSON.stringify(formData)
@@ -185,7 +183,7 @@ const TeacherAssignments = ({ API_BASE = 'http://localhost:5000/api' }) => {
     
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/teacher/assignments/${id}`, {
+      const response = await apiFetch(`${API_BASE}/teacher/assignments/${id}`, {
         method: 'DELETE',
         headers: headers
       });
@@ -227,10 +225,6 @@ const TeacherAssignments = ({ API_BASE = 'http://localhost:5000/api' }) => {
       type: 'assignment',
       status: 'active',
     });
-  };
-
-  const getStatusBadgeClass = (status) => {
-    return status === 'active' ? 'status-active' : 'status-completed';
   };
 
   const getTypeBadgeClass = (type) => {

@@ -1,10 +1,11 @@
+import { apiFetch } from '../services/api.js';
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faUsers, faUserCheck, faChartLine, faExclamationTriangle, 
   faSync, faSearch, faTimes, faUndo, faEye, faLock, 
   faUnlockAlt, faHistory, faEnvelope, faClock, 
-  faUser, faFilter, faEdit, faTrash, faUserTag,
+  faFilter, faEdit, faTrash, faUserTag,
   faClipboardList, faSignInAlt, faList
 } from '@fortawesome/free-solid-svg-icons';
 import './UsersPage.fixed.css';
@@ -12,9 +13,8 @@ import './UsersPage.fixed.css';
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [activities, setActivities] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [, setError] = useState(null);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [filteredActivities, setFilteredActivities] = useState([]);
   const [activeTab, setActiveTab] = useState('users');
@@ -24,7 +24,7 @@ const UsersPage = () => {
   const [selectedUserForActivity, setSelectedUserForActivity] = useState(null);
   const [userActivities, setUserActivities] = useState([]);
 
-  const API_BASE = 'http://localhost:5000/api';
+  const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api');
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
@@ -45,7 +45,7 @@ const UsersPage = () => {
         return;
       }
       
-      const response = await fetch(`${API_BASE}/admin/users`, {
+      const response = await apiFetch(`${API_BASE}/admin/users`, {
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -66,7 +66,7 @@ const UsersPage = () => {
 
   const loadAllActivities = async () => {
     try {
-      const response = await fetch(`${API_BASE}/admin/user-activity?limit=200`, {
+      const response = await apiFetch(`${API_BASE}/admin/user-activity?limit=200`, {
         headers: getAuthHeaders()
       });
       const result = await response.json();
@@ -81,7 +81,7 @@ const UsersPage = () => {
   const loadUserActivities = async (userId) => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/admin/user-activity?userId=${userId}&limit=100`, {
+      const response = await apiFetch(`${API_BASE}/admin/user-activity?userId=${userId}&limit=100`, {
         headers: getAuthHeaders()
       });
       const result = await response.json();
@@ -106,7 +106,7 @@ const UsersPage = () => {
     if (!window.confirm(`Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this user?`)) return;
     
     try {
-      const response = await fetch(`${API_BASE}/admin/users/${userId}/${userRole}/toggle`, {
+      const response = await apiFetch(`${API_BASE}/admin/users/${userId}/${userRole}/toggle`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ is_active: !currentStatus })

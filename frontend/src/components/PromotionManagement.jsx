@@ -1,3 +1,4 @@
+import { apiFetch } from '../services/api.js';
 // src/components/PromotionManagement.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -19,7 +20,7 @@ const PromotionManagement = ({ API_BASE, setShowPromotionModal, setSelectedClass
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/classes`, {
+      const response = await apiFetch(`${API_BASE}/classes`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const result = await response.json();
@@ -28,7 +29,7 @@ const PromotionManagement = ({ API_BASE, setShowPromotionModal, setSelectedClass
       const classesWithCounts = await Promise.all(
         classesData.map(async (cls) => {
           try {
-            const studentsResponse = await fetch(`${API_BASE}/students/class/${cls.id}`, {
+            const studentsResponse = await apiFetch(`${API_BASE}/students/class/${cls.id}`, {
               headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             const studentsResult = await studentsResponse.json();
@@ -56,7 +57,7 @@ const PromotionManagement = ({ API_BASE, setShowPromotionModal, setSelectedClass
   const loadPromotionHistory = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/promotion-history`, {
+      const response = await apiFetch(`${API_BASE}/promotion-history`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const result = await response.json();
@@ -80,9 +81,9 @@ const PromotionManagement = ({ API_BASE, setShowPromotionModal, setSelectedClass
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
       const [studentsResponse, marksResponse, subjectsResponse] = await Promise.all([
-        fetch(`${API_BASE}/students/class/${classId}`, { headers }),
-        fetch(`${API_BASE}/teacher/marks/${classId}`, { headers }),
-        fetch(`${API_BASE}/classes/${classId}/subjects`, { headers })
+        apiFetch(`${API_BASE}/students/class/${classId}`, { headers }),
+        apiFetch(`${API_BASE}/teacher/marks/${classId}`, { headers }),
+        apiFetch(`${API_BASE}/classes/${classId}/subjects`, { headers })
       ]);
 
       const studentsResult = await studentsResponse.json();

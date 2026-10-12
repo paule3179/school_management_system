@@ -4,7 +4,7 @@ const { verifyToken, isAdmin } = require('../middleware/auth');
 const pool = require('../config/database');
 
 // Apply authentication to all routes
-router.use(verifyToken);
+router.use(verifyToken, isAdmin);
 
 // ============================================
 // GET FEE TYPES

@@ -1,7 +1,7 @@
 // backend/routes/classRoutes.js
 const express = require('express');
 const router = express.Router();
-const { verifyToken, isAdmin, optionalAuth } = require('../middleware/auth');
+const { verifyToken, isAdmin, isTeacher, optionalAuth } = require('../middleware/auth');
 const classController = require('../controllers/classController');
 const pool = require('../config/database');
 
@@ -26,7 +26,19 @@ router.get('/', async (req, res) => {
         console.log('📋 Columns in classes table:', columns);
 
         // Now fetch all rows
-        const result = await pool.query(`SELECT * FROM classes ORDER BY id`);
+        const result = await pool.query(`
+            SELECT c.* FROM classes c
+            WHERE (c.is_archived = false OR c.is_archived IS NULL)
+              AND (
+                $1::text <> 'teacher'
+                OR c.teacher_id = $2
+                OR EXISTS (
+                    SELECT 1 FROM teacher_classes tc
+                    WHERE tc.teacher_id = $2 AND tc.class_id = c.id
+                )
+              )
+            ORDER BY c.id
+        `, [req.user?.role || '', req.user?.teacher_id || null]);
         console.log(`✅ Found ${result.rows.length} classes`);
 
         // If no rows, return empty array
@@ -79,9 +91,12 @@ router.get('/with-teachers', optionalAuth, classController.getClassesWithTeacher
 router.get('/:classId/subjects', optionalAuth, classController.getClassSubjects);
 
 // Preview promotion data for a class
-router.get('/:classId/promotion-preview', verifyToken, async (req, res) => {
+router.get('/:classId/promotion-preview', verifyToken, isTeacher, async (req, res) => {
     try {
         const { classId } = req.params;
+        if (req.user.role === 'teacher' && !req.user.allowedClassIds?.includes(Number(classId))) {
+            return res.status(403).json({ success: false, error: 'Access denied to this class' });
+        }
         const classRes = await pool.query(
             'SELECT * FROM classes WHERE id = $1',
             [classId]
@@ -146,9 +161,13 @@ router.get('/:classId/promotion-preview', verifyToken, async (req, res) => {
 });
 
 // ✅ GET STUDENTS IN A CLASS - MOVED BEFORE /:id
-router.get('/:classId/students', verifyToken, async (req, res) => {
+router.get('/:classId/students', verifyToken, isTeacher, async (req, res) => {
     try {
         const { classId } = req.params;
+
+        if (req.user?.role === 'teacher' && !req.user.allowedClassIds?.includes(Number(classId))) {
+            return res.status(403).json({ success: false, error: 'Access denied to this class' });
+        }
         
         console.log(`📚 Fetching students for class ${classId}`);
         

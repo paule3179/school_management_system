@@ -1,3 +1,4 @@
+import { apiFetch } from '../services/api.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -15,7 +16,7 @@ const EXAM_TYPES = {
   EXAM: ['Exam'],
 };
 
-const GradesPage = ({ API_BASE = 'http://localhost:5000/api' }) => {
+const GradesPage = ({ API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
@@ -25,7 +26,6 @@ const GradesPage = ({ API_BASE = 'http://localhost:5000/api' }) => {
 
   // multi-subject grading data
   const [subjects, setSubjects] = useState([]); // subject meta
-  const [classPayload, setClassPayload] = useState(null);
 
 
   const [students, setStudents] = useState([]);
@@ -49,7 +49,7 @@ const GradesPage = ({ API_BASE = 'http://localhost:5000/api' }) => {
     const init = async () => {
       setLoading(true);
       try {
-        const classesRes = await fetch(`${API_BASE}/teacher/classes`, { headers });
+        const classesRes = await apiFetch(`${API_BASE}/teacher/classes`, { headers });
         const classesData = await classesRes.json();
         if (classesData?.success) setClasses(classesData.data || []);
         else setClasses([]);
@@ -69,14 +69,13 @@ const GradesPage = ({ API_BASE = 'http://localhost:5000/api' }) => {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `${API_BASE}/teacher/class/${selectedClass}/grading-subjects?term_id=${encodeURIComponent(selectedTerm)}&academic_year=${encodeURIComponent(academicYear)}`,
           { headers }
         );
         const data = await res.json();
         if (!data?.success) {
           showToast(data?.error || 'Failed to load grading page data', 'error');
-          setClassPayload(null);
           setSubjects([]);
           setStudents([]);
           setGradeDraft({});
@@ -84,7 +83,6 @@ const GradesPage = ({ API_BASE = 'http://localhost:5000/api' }) => {
         }
 
         const payload = data.data;
-        setClassPayload(payload);
         const subjMeta = (payload?.subjects || []).map((s) => ({
           id: s.id,
           name: s.name,
@@ -201,7 +199,7 @@ const GradesPage = ({ API_BASE = 'http://localhost:5000/api' }) => {
         }
       }
 
-      const res = await fetch(`${API_BASE}/teacher/grades/save`, {
+      const res = await apiFetch(`${API_BASE}/teacher/grades/save`, {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -234,7 +232,7 @@ const GradesPage = ({ API_BASE = 'http://localhost:5000/api' }) => {
 
   const viewReport = async (studentId) => {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_BASE}/grades/report-card/${studentId}?term=${selectedTerm}&academic_year=${academicYear}`,
         { headers: { ...headers } }
       );

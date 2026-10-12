@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/api.js';
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -7,10 +8,8 @@ import {
   faArrowRight, 
   faExclamationTriangle, 
   faUserGraduate,
-  faVenusMars,
   faSpinner,
   faTimes,
-  faCheck,
   faClock,
   faSave,
   faTimesCircle,
@@ -19,7 +18,7 @@ import {
 import ToastNotification from '../ToastNotification';
 import './PromotionModal.css';
 
-const PromotionModal = ({ isOpen, onClose, classData, onPromote, API_BASE = 'http://localhost:5000/api' }) => {
+const PromotionModal = ({ isOpen, onClose, classData, onPromote, API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) => {
     // State
     const [promotionData, setPromotionData] = useState({
         target_class_id: '',
@@ -49,7 +48,7 @@ const PromotionModal = ({ isOpen, onClose, classData, onPromote, API_BASE = 'htt
     const loadAvailableClasses = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_BASE}/classes`, {
+            const response = await apiFetch(`${API_BASE}/classes`, {
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             const result = await response.json();
@@ -67,7 +66,7 @@ const PromotionModal = ({ isOpen, onClose, classData, onPromote, API_BASE = 'htt
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(
+            const response = await apiFetch(
                 `${API_BASE}/classes/${classData.id}/promotion-preview`,
                 { headers: token ? { 'Authorization': `Bearer ${token}` } : {} }
             );
@@ -158,7 +157,7 @@ const PromotionModal = ({ isOpen, onClose, classData, onPromote, API_BASE = 'htt
                 }))
             };
 
-            const response = await fetch(
+            const response = await apiFetch(
                 `${API_BASE}/admin/promotion/save`,
                 {
                     method: 'POST',

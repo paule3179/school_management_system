@@ -5,8 +5,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const pool = require('../config/database');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_this';
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'your_refresh_token_secret_change_this';
+const { jwtSecret: JWT_SECRET } = require('../config/secrets');
 
 // Token expiration times
 const ACCESS_TOKEN_EXPIRY = '15m';
@@ -97,10 +96,13 @@ const logUserActivity = async (userId, action, req) => {
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
+        if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
+            return res.status(400).json({ success: false, error: 'Email and password are required' });
+        }
         const userAgent = req.headers['user-agent'];
         const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
         
-        console.log(`🔐 Login attempt: ${email}`);
+        console.log(`Login attempt: ${email}`);
         
         const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : email;
 
@@ -113,24 +115,10 @@ router.post('/login', async (req, res) => {
         `, [normalizedEmail]);
 
         if (userResult.rows.length === 0) {
-            // Extra diagnostics: see if the email exists but is inactive / different status
-            const userAnyStatus = await pool.query(`
-                SELECT id, email, role, status
-                FROM users
-                WHERE LOWER(email) = $1
-                LIMIT 1
-            `, [normalizedEmail]);
-
-            console.log(`❌ User not found (or not active): ${email}`, {
-                normalizedEmail,
-                foundRow: userAnyStatus.rows[0] || null
-            });
-
             await logUserActivity(null, 'failed_login', req);
             return res.status(401).json({ 
                 success: false, 
-                error: 'Invalid email or password',
-                debug: { normalizedEmail }
+                error: 'Invalid email or password'
             });
         }
 
@@ -139,15 +127,15 @@ router.post('/login', async (req, res) => {
         // Verify password
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
-            console.log(`❌ Invalid password for: ${email}`);
+            console.log(`Invalid password for: ${email}`);
             await logUserActivity(user.id, 'failed_login', req);
             return res.status(401).json({ 
                 success: false, 
-                error: 'Invalid email or password' 
+                error: 'Invalid email or password'
             });
         }
         
-        console.log(`✅ Login successful: ${email} as ${user.role}`);
+        console.log(`Login successful: ${email} as ${user.role}`);
         
         // Update last login
         await pool.query(
@@ -383,6 +371,10 @@ router.post('/change-password', async (req, res) => {
         
         const decoded = jwt.verify(token, JWT_SECRET);
         const { oldPassword, newPassword } = req.body;
+
+        if (typeof oldPassword !== 'string' || typeof newPassword !== 'string' || newPassword.length < 8) {
+            return res.status(400).json({ success: false, error: 'Current password and a new password of at least 8 characters are required' });
+        }
         
         const userResult = await pool.query(
             'SELECT id, password FROM users WHERE id = $1',

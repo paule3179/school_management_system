@@ -1,19 +1,19 @@
+import { apiFetch } from '../services/api.js';
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faCalendarAlt, faPlus, faEdit, faTrash, faDownload, 
   faSync, faMagic, faTimes, faSave, faClock, 
-  faDoorOpen, faUserTie, faSearch, 
+  faDoorOpen, faUserTie,
   faSpinner, faBookOpen
 } from '@fortawesome/free-solid-svg-icons';
 import './Timetable.css';
 
 const TimetablePage = ({ API_BASE: apiBase }) => {
-  const API_BASE = apiBase || 'http://localhost:5000/api';
+  const API_BASE = apiBase || (import.meta.env.VITE_API_BASE_URL || '/api');
 
   const [classes, setClasses] = useState([]);
   const [teachers, setTeachers] = useState([]);
-  const [subjects, setSubjects] = useState([]);
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedTerm, setSelectedTerm] = useState('1');
   const [academicYear, setAcademicYear] = useState('2024-2025');
@@ -52,7 +52,6 @@ const TimetablePage = ({ API_BASE: apiBase }) => {
   const loadAllData = async () => {
     await loadClasses();
     await loadTeachers();
-    await loadSubjects();
   };
 
   // ============================================
@@ -74,7 +73,7 @@ const TimetablePage = ({ API_BASE: apiBase }) => {
       console.log('📍 API Base:', API_BASE);
       
       // Try the main classes endpoint first
-      let response = await fetch(`${API_BASE}/classes`, {
+      let response = await apiFetch(`${API_BASE}/classes`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -86,7 +85,7 @@ const TimetablePage = ({ API_BASE: apiBase }) => {
       // If 404, try admin endpoint
       if (response.status === 404) {
         console.log('🔄 Main endpoint not found, trying admin endpoint...');
-        response = await fetch(`${API_BASE}/admin/classes`, {
+        response = await apiFetch(`${API_BASE}/admin/classes`, {
           headers: { 
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -164,28 +163,13 @@ const TimetablePage = ({ API_BASE: apiBase }) => {
   const loadTeachers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/teachers`, {
+      const response = await apiFetch(`${API_BASE}/teachers`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const result = await response.json();
       setTeachers(result.data || []);
     } catch (error) {
       console.error('Error loading teachers:', error);
-    }
-  };
-
-  const loadSubjects = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/subjects`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const result = await response.json();
-      if (result.success) {
-        setSubjects(result.data || []);
-      }
-    } catch (error) {
-      console.error('Error loading subjects:', error);
     }
   };
 
@@ -201,7 +185,7 @@ const TimetablePage = ({ API_BASE: apiBase }) => {
       const token = localStorage.getItem('token');
       console.log('📥 Loading timetable for class:', selectedClass);
       
-      const response = await fetch(`${API_BASE}/timetables/class/${selectedClass}`, {
+      const response = await apiFetch(`${API_BASE}/timetables/class/${selectedClass}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -234,7 +218,7 @@ const TimetablePage = ({ API_BASE: apiBase }) => {
       let response;
       
       if (editingEntry) {
-        response = await fetch(`${API_BASE}/timetables/entry/${editingEntry.id}`, {
+        response = await apiFetch(`${API_BASE}/timetables/entry/${editingEntry.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -250,7 +234,7 @@ const TimetablePage = ({ API_BASE: apiBase }) => {
           })
         });
       } else {
-        response = await fetch(`${API_BASE}/timetables`, {
+        response = await apiFetch(`${API_BASE}/timetables`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -293,7 +277,7 @@ const TimetablePage = ({ API_BASE: apiBase }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/timetables/entry/${id}`, {
+      const response = await apiFetch(`${API_BASE}/timetables/entry/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -345,7 +329,7 @@ const TimetablePage = ({ API_BASE: apiBase }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/timetables/class/${selectedClass}`, {
+      const response = await apiFetch(`${API_BASE}/timetables/class/${selectedClass}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -383,7 +367,7 @@ const TimetablePage = ({ API_BASE: apiBase }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/timetables/auto-generate`, {
+      const response = await apiFetch(`${API_BASE}/timetables/auto-generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

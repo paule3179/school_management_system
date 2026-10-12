@@ -1,6 +1,7 @@
 // backend/routes/settingsRoutes.js
 const express = require('express');
 const router = express.Router();
+const { isAdmin } = require('../middleware/auth');
 const pool = require('../config/database'); // ← ADD THIS LINE - import pool
 
 // Get term settings
@@ -33,7 +34,7 @@ router.get('/term', async (req, res) => {
 });
 
 // Save term settings
-router.post('/term', async (req, res) => {
+router.post('/term', isAdmin, async (req, res) => {
   try {
     const { term1_total_days, term2_total_days, term3_total_days, academic_year } = req.body;
     

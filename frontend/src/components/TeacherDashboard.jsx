@@ -1,3 +1,4 @@
+import { apiFetch } from '../services/api.js';
 // src/components/TeacherDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
@@ -21,7 +22,7 @@ import {
   faArrowUp,
 } from '@fortawesome/free-solid-svg-icons';
 
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import '../styles/TeacherDashboard.css';
 
 import TeacherClasses from '../pages/teacher/TeacherClasses';
@@ -33,7 +34,7 @@ import ExamEntryPage from '../pages/teacher/ExamEntryPage';
 import PromotionManagement from './PromotionManagement';
 import TeacherPromotion from '../pages/teacher/TeacherPromotion';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api');
 
 const TeacherDashboard = () => {
   const { user, logout } = useAuth();
@@ -79,7 +80,7 @@ useEffect(() => {
     const token = localStorage.getItem('token');
     return {
       'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : '',
+      'Authorization': `Bearer ${token}`,
     };
   };
 
@@ -103,10 +104,10 @@ useEffect(() => {
     console.log('🔄 Fetching teacher dashboard data...');
 
     const [statsRes, classesRes, scheduleRes, notificationsRes] = await Promise.all([
-      fetch(`${API_BASE}/teacher/stats`, { headers }),
-      fetch(`${API_BASE}/teacher/classes`, { headers }),
-      fetch(`${API_BASE}/teacher/schedule`, { headers }),
-      fetch(`${API_BASE}/teacher/notifications`, { headers }),
+      apiFetch(`${API_BASE}/teacher/stats`, { headers }),
+      apiFetch(`${API_BASE}/teacher/classes`, { headers }),
+      apiFetch(`${API_BASE}/teacher/schedule`, { headers }),
+      apiFetch(`${API_BASE}/teacher/notifications`, { headers }),
     ]);
 
     // Process classes first - we need the list to count
@@ -182,7 +183,7 @@ useEffect(() => {
 
     // Process activities (unchanged)
     try {
-      const actRes = await fetch(`${API_BASE}/teacher/activities`, { headers });
+      const actRes = await apiFetch(`${API_BASE}/teacher/activities`, { headers });
       if (actRes.ok) {
         const actJson = await actRes.json();
         if (actJson.success) {

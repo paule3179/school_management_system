@@ -1,13 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { apiFetch } from '../../services/api.js';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ExamEntry from './components/ExamEntry';
 
-const ExamEntryPage = ({ API_BASE = 'http://localhost:5000/api' }) => {
+const ExamEntryPage = ({ API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) => {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
-  const [teacherClasses, setTeacherClasses] = useState([]);
-  const [selectedClass, setSelectedClass] = useState(null);
+  const [, setTeacherClasses] = useState([]);
+  const [, setSelectedClass] = useState(null);
 
   const [students, setStudents] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -16,7 +17,7 @@ const ExamEntryPage = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const token = localStorage.getItem('token');
 
   const fetchJson = async (url, options = {}) => {
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -102,7 +103,6 @@ const ExamEntryPage = ({ API_BASE = 'http://localhost:5000/api' }) => {
     let examCount = 0;
 
     subjects.forEach((subject) => {
-      const g = gradeDraft[studentId]?.[subject.id] || gradeDraft[studentId]?.[subject.subject_id];
       // The draft uses subject.subject_id, but ExamEntry indexes by subject.id.
       // So prefer both keys.
       const subjKey = subject.id ?? subject.subject_id;

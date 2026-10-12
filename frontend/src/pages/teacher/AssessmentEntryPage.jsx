@@ -1,13 +1,14 @@
+import { apiFetch } from '../../services/api.js';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AssessmentEntry from './components/AssessmentEntry';
 
-const AssessmentEntryPage = ({ API_BASE = 'http://localhost:5000/api' }) => {
+const AssessmentEntryPage = ({ API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) => {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
-  const [teacherClasses, setTeacherClasses] = useState([]);
-  const [selectedClass, setSelectedClass] = useState(null);
+  const [, setTeacherClasses] = useState([]);
+  const [, setSelectedClass] = useState(null);
 
   const [students, setStudents] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -16,7 +17,7 @@ const AssessmentEntryPage = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const token = localStorage.getItem('token');
 
   const fetchJson = async (url, options = {}) => {
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',

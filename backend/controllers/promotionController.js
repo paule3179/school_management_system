@@ -176,7 +176,11 @@ promotionController.savePromotions = async (req, res) => {
               student_id, class_id, academic_year, term,
               is_active, enrolled_date
             ) VALUES ($1, $2, $3, $4, true, CURRENT_DATE)
+            ON CONFLICT (student_id, class_id, academic_year, term)
+            DO UPDATE SET is_active = true, left_date = NULL, updated_at = CURRENT_TIMESTAMP
           `, [student_id, to_class_id, to_academic_year, term]);
+
+          await client.query('UPDATE students SET class_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [to_class_id, student_id]);
 
           promotedCount++;
         } else if (status === 'Retained') {

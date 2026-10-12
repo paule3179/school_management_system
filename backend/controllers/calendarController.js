@@ -51,7 +51,14 @@ const calendarController = {
   // POST /api/calendar - Create event
   async createEvent(req, res) {
     try {
-      const newEvent = await calendarModel.createEvent(req.body);
+      const { title, event_type, start_date, end_date, target_audience } = req.body || {};
+      if (typeof title !== 'string' || !title.trim() || typeof event_type !== 'string' || !event_type.trim() ||
+          typeof start_date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(start_date) ||
+          (end_date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(end_date)) ||
+          (target_audience !== undefined && (!Array.isArray(target_audience) || target_audience.some(value => typeof value !== 'string')))) {
+        return res.status(400).json({ success: false, error: 'Title, event type, and a valid start date are required' });
+      }
+      const newEvent = await calendarModel.createEvent({ ...req.body, title: title.trim(), created_by: req.user.id });
       res.status(201).json({ success: true, data: newEvent });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });

@@ -7,7 +7,7 @@ import {
   faEnvelope, faCalendarAlt, faBars, faSchool, faCog,
   faCoins, faArrowUp
 } from '@fortawesome/free-solid-svg-icons';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import geebzLogo from '../assets/logo.png';
 
 // Import pages
@@ -23,7 +23,7 @@ import SettingsPage from './SettingsPage';
 import PromotionManagement from './PromotionManagement';
 import '../styles/AdminDashboard.css';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api');
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();

@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/api.js';
 // src/pages/parent/ParentMessages.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -14,7 +15,7 @@ const ParentMessages = ({ API_BASE }) => {
   const loadMessages = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/messages`, {
+      const response = await apiFetch(`${API_BASE}/messages`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
@@ -29,7 +30,7 @@ const ParentMessages = ({ API_BASE }) => {
   const loadTeachers = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/teachers`, {
+      const response = await apiFetch(`${API_BASE}/teachers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
@@ -59,7 +60,7 @@ const ParentMessages = ({ API_BASE }) => {
     setSending(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/messages`, {
+      const response = await apiFetch(`${API_BASE}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

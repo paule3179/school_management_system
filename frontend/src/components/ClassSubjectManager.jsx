@@ -1,3 +1,4 @@
+import { apiFetch } from '../services/api.js';
 // frontend/src/components/ClassSubjectManager.jsx
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -37,7 +38,7 @@ const ClassSubjectManager = ({ API_BASE, classId, onSave }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/class-subjects/class/${classId}`, {
+      const response = await apiFetch(`${API_BASE}/class-subjects/class/${classId}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const result = await response.json();
@@ -55,7 +56,7 @@ const ClassSubjectManager = ({ API_BASE, classId, onSave }) => {
   const loadAvailableSubjects = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/subjects`, {
+      const response = await apiFetch(`${API_BASE}/subjects`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const result = await response.json();
@@ -70,7 +71,7 @@ const ClassSubjectManager = ({ API_BASE, classId, onSave }) => {
   const loadTeachers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/teachers`, {
+      const response = await apiFetch(`${API_BASE}/teachers`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const result = await response.json();
@@ -95,7 +96,7 @@ const ClassSubjectManager = ({ API_BASE, classId, onSave }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/class-subjects`, {
+      const response = await apiFetch(`${API_BASE}/class-subjects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,7 +135,7 @@ const ClassSubjectManager = ({ API_BASE, classId, onSave }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/class-subjects/${classSubjectId}`, {
+      const response = await apiFetch(`${API_BASE}/class-subjects/${classSubjectId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -158,7 +159,7 @@ const ClassSubjectManager = ({ API_BASE, classId, onSave }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/class-subjects/${classSubjectId}`, {
+      const response = await apiFetch(`${API_BASE}/class-subjects/${classSubjectId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

@@ -1,44 +1,71 @@
-const bcrypt = require('bcryptjs');
+require('dotenv').config({ path: require('node:path').resolve(__dirname, '../.env') });
+
+const bcrypt = require('bcrypt');
 const pool = require('../config/database');
 
-async function setupLoginData() {
-  const teacherPassword = await bcrypt.hash('teacher123', 10);
-  const parentPassword = await bcrypt.hash('parent123', 10);
+async function linkProfilesToUsers(client, table, role, passwordHash) {
+  const profiles = await client.query(`
+    SELECT id, user_id, email, first_name, last_name, phone
+    FROM ${table}
+    WHERE email IS NOT NULL AND TRIM(email) <> ''
+  `);
+  let linked = 0;
 
-  // Update teachers: set teacher_id = teacher_code, and set password
-  const teachersResult = await pool.query(`
-    UPDATE teachers 
-    SET teacher_id = teacher_code, 
-        password = $1,
-        is_active = true
-    WHERE password IS NULL OR teacher_id IS NULL
-    RETURNING id, teacher_code, teacher_id, first_name
-  `, [teacherPassword]);
-  console.log('Updated teachers:', teachersResult.rows.length);
-  teachersResult.rows.forEach(t => console.log(`  ${t.teacher_code} -> teacher_id=${t.teacher_id}`));
+  for (const profile of profiles.rows) {
+    const email = profile.email.trim().toLowerCase();
+    let userId = profile.user_id;
+    if (userId) {
+      const update = await client.query(`
+        UPDATE users SET email = $1, password = $2, role = $3,
+          status = 'active', updated_at = CURRENT_TIMESTAMP
+        WHERE id = $4 RETURNING id
+      `, [email, passwordHash, role, userId]);
+      if (!update.rows[0]) userId = null;
+    }
 
-  // Update parents: set password
-  const parentsResult = await pool.query(`
-    UPDATE parents 
-    SET password = $1,
-        is_active = true
-    WHERE password IS NULL
-    RETURNING id, first_name, last_name
-  `, [parentPassword]);
-  console.log('Updated parents:', parentsResult.rows.length);
-  parentsResult.rows.forEach(p => console.log(`  ${p.first_name} ${p.last_name} (id=${p.id})`));
-
-  // Show demo credentials
-  console.log('\n=== DEMO CREDENTIALS ===');
-  console.log('Admin:    admin@school.edu / Admin123');
-  console.log('Teacher:  TCH001 / teacher123');
-  console.log('Parent:   1 / parent123  (use numeric ID)');
-
-  await pool.end();
+    if (!userId) {
+      const user = await client.query(`
+        INSERT INTO users (email, password, role, first_name, last_name, phone, status)
+        VALUES ($1,$2,$3,$4,$5,$6,'active')
+        ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password,
+          role = EXCLUDED.role, status = 'active', updated_at = CURRENT_TIMESTAMP
+        RETURNING id
+      `, [email, passwordHash, role, profile.first_name || '', profile.last_name || '', profile.phone || null]);
+      userId = user.rows[0].id;
+      await client.query(`UPDATE ${table} SET user_id = $1 WHERE id = $2`, [userId, profile.id]);
+    }
+    linked += 1;
+  }
+  return linked;
 }
 
-setupLoginData().catch(err => {
-  console.error('Error:', err);
-  process.exit(1);
-});
+async function setupLoginData() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('This development login setup must not run in production.');
+  }
+  const password = process.env.DEMO_PASSWORD;
+  if (!password || password.length < 8) {
+    throw new Error('Set DEMO_PASSWORD to a value of at least 8 characters in backend/.env.');
+  }
+  const passwordHash = await bcrypt.hash(password, 10);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const teachers = await linkProfilesToUsers(client, 'teachers', 'teacher', passwordHash);
+    const parents = await linkProfilesToUsers(client, 'parents', 'parent', passwordHash);
+    await client.query('COMMIT');
+    console.log(`Linked ${teachers} teacher profiles and ${parents} parent profiles to development login accounts.`);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+    await pool.end();
+  }
+}
 
+setupLoginData().catch(async (error) => {
+  console.error('Could not prepare development logins:', error.message);
+  await pool.end();
+  process.exitCode = 1;
+});

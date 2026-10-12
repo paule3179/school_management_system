@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/api.js';
  // src/pages/teacher/TeacherClasses.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -17,7 +18,6 @@ import {
   faCheckCircle,
   faExclamationTriangle,
   faChalkboardTeacher,
-  faFilter,
   faSearch,
   faSortAmountDown,
   faSortAmountUp,
@@ -25,7 +25,7 @@ import {
 import ToastNotification from '../../components/ToastNotification';
 import './TeacherClasses.css';
 
-const TeacherClasses = ({ API_BASE = 'http://localhost:5000/api' }) => {
+const TeacherClasses = ({ API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) => {
   const [classes, setClasses] = useState([]);
   const [filteredClasses, setFilteredClasses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,7 @@ const TeacherClasses = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return {
-      'Authorization': token ? `Bearer ${token}` : '',
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
   };
@@ -123,7 +123,7 @@ const TeacherClasses = ({ API_BASE = 'http://localhost:5000/api' }) => {
       setLoading(true);
       const headers = getAuthHeaders();
       
-      const response = await fetch(`${API_BASE}/teacher/classes`, {
+      const response = await apiFetch(`${API_BASE}/teacher/classes`, {
         headers: headers
       });
       
@@ -178,15 +178,6 @@ const TeacherClasses = ({ API_BASE = 'http://localhost:5000/api' }) => {
     navigate('/teacher/dashboard');
   };
 
-  const toggleSort = (field) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('asc');
-    }
-  };
-
   const getUniqueLevels = () => {
     const levels = new Set();
     classes.forEach(cls => {
@@ -196,7 +187,7 @@ const TeacherClasses = ({ API_BASE = 'http://localhost:5000/api' }) => {
   };
 
   // Get grade count for a class (placeholder - implement with actual API)
-  const getGradedCount = (classId) => {
+  const getGradedCount = () => {
     // This would come from your API
     return 0;
   };

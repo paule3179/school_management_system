@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/api.js';
 // src/pages/teacher/TeacherAnnouncements.jsx
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -19,7 +20,7 @@ import {
 import ToastNotification from '../../components/ToastNotification';
 import './TeacherAnnouncements.css';
 
-const TeacherAnnouncements = ({ API_BASE = 'http://localhost:5000/api' }) => {
+const TeacherAnnouncements = ({ API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) => {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -40,7 +41,7 @@ const TeacherAnnouncements = ({ API_BASE = 'http://localhost:5000/api' }) => {
     class_id: '',
   });
 
-  const [classes, setClasses] = useState([]);
+  const [, setClasses] = useState([]);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -50,7 +51,7 @@ const TeacherAnnouncements = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return {
-      'Authorization': token ? `Bearer ${token}` : '',
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
   };
@@ -64,7 +65,7 @@ const TeacherAnnouncements = ({ API_BASE = 'http://localhost:5000/api' }) => {
     setLoading(true);
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/teacher/announcements`, {
+      const response = await apiFetch(`${API_BASE}/teacher/announcements`, {
         headers: headers
       });
       const data = await response.json();
@@ -137,7 +138,7 @@ const TeacherAnnouncements = ({ API_BASE = 'http://localhost:5000/api' }) => {
   const loadClasses = async () => {
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/teacher/classes`, {
+      const response = await apiFetch(`${API_BASE}/teacher/classes`, {
         headers: headers
       });
       const data = await response.json();
@@ -159,7 +160,7 @@ const TeacherAnnouncements = ({ API_BASE = 'http://localhost:5000/api' }) => {
         : `${API_BASE}/teacher/announcements`;
       const method = editingAnnouncement ? 'PUT' : 'POST';
       
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: method,
         headers: headers,
         body: JSON.stringify(formData)
@@ -187,7 +188,7 @@ const TeacherAnnouncements = ({ API_BASE = 'http://localhost:5000/api' }) => {
     
     try {
       const headers = getAuthHeaders();
-      const response = await fetch(`${API_BASE}/teacher/announcements/${id}`, {
+      const response = await apiFetch(`${API_BASE}/teacher/announcements/${id}`, {
         method: 'DELETE',
         headers: headers
       });

@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const pool = require('../config/database');
+const { jwtSecret: JWT_SECRET } = require('../config/secrets');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_this';
 const ACCESS_TOKEN_EXPIRY = '15m'; // 15 minutes
 const REFRESH_TOKEN_EXPIRY = '7d'; // 7 days
 

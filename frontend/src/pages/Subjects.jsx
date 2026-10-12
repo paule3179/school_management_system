@@ -1,11 +1,12 @@
+import { apiFetch } from '../services/api.js';
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faBook, faPlus, faEdit, faTrash, faSave, faTimes, 
-  faSearch, faLayerGroup, faChalkboardTeacher, faClock,
-  faGraduationCap, faSchool, faFilter, faRefresh, faEye,
+  faBook, faPlus, faEdit, faTrash, faTimes,
+  faSearch, faLayerGroup, faChalkboardTeacher,
+  faGraduationCap, faFilter, faRefresh, faEye,
   faUniversity, faList, faFileExport,
-  faUndo, faChevronDown, faChevronUp
+  faChevronDown, faChevronUp
 } from '@fortawesome/free-solid-svg-icons';
 import ToastNotification from '../components/ToastNotification';
 import './Subjects.css';
@@ -16,7 +17,7 @@ const LEVEL_OPTIONS = [
   { value: 'JHS', label: 'Junior High School' } 
 ];
 
-const Subjects = ({ API_BASE = 'http://localhost:5000/api' }) => {
+const Subjects = ({ API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api') }) => {
   // NOTE: This page intentionally uses existing modal/button classes.
   // Unused imports/vars are left untouched by design to avoid functional regressions.
 
@@ -71,14 +72,6 @@ const Subjects = ({ API_BASE = 'http://localhost:5000/api' }) => {
     applyFiltersAndSort();
   }, [subjects, searchTerm, filters, sortField, sortDirection]);
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : ''
-    };
-  };
-
   const loadSubjects = async () => {
     setLoading(true);
     try {
@@ -91,7 +84,7 @@ const Subjects = ({ API_BASE = 'http://localhost:5000/api' }) => {
         return;
       }
       
-      const response = await fetch(`${API_BASE}/admin/subjects`, {
+      const response = await apiFetch(`${API_BASE}/admin/subjects`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +124,7 @@ const Subjects = ({ API_BASE = 'http://localhost:5000/api' }) => {
       const token = localStorage.getItem('token');
       if (!token) return;
       
-      const response = await fetch(`${API_BASE}/admin/classes`, {
+      const response = await apiFetch(`${API_BASE}/admin/classes`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -154,7 +147,7 @@ const Subjects = ({ API_BASE = 'http://localhost:5000/api' }) => {
       const token = localStorage.getItem('token');
       if (!token) return;
       
-      const response = await fetch(`${API_BASE}/admin/classes/${classId}/subjects`, {
+      const response = await apiFetch(`${API_BASE}/admin/classes/${classId}/subjects`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -238,7 +231,7 @@ const Subjects = ({ API_BASE = 'http://localhost:5000/api' }) => {
         : `${API_BASE}/admin/subjects`;
       const method = editingSubject ? 'PUT' : 'POST';
       
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -281,7 +274,7 @@ const Subjects = ({ API_BASE = 'http://localhost:5000/api' }) => {
         return;
       }
       
-      const response = await fetch(`${API_BASE}/admin/subjects/${id}`, {
+      const response = await apiFetch(`${API_BASE}/admin/subjects/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -320,7 +313,7 @@ const Subjects = ({ API_BASE = 'http://localhost:5000/api' }) => {
         return;
       }
       
-      const response = await fetch(`${API_BASE}/admin/classes/${selectedClass}/subjects`, {
+      const response = await apiFetch(`${API_BASE}/admin/classes/${selectedClass}/subjects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -363,7 +356,7 @@ const Subjects = ({ API_BASE = 'http://localhost:5000/api' }) => {
         return;
       }
       
-      const response = await fetch(`${API_BASE}/admin/class-subjects/${classSubjectId}`, {
+      const response = await apiFetch(`${API_BASE}/admin/class-subjects/${classSubjectId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

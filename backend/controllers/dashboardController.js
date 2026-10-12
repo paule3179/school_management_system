@@ -17,7 +17,9 @@ const getParentId = async (userId, userEmail) => {
         `SELECT p.id, u.email 
          FROM parents p 
          JOIN users u ON p.user_id = u.id 
-         WHERE p.id = $1 OR p.user_id = $1`,
+         WHERE p.id = $1 OR p.user_id = $1
+         ORDER BY CASE WHEN p.user_id = $1 THEN 0 ELSE 1 END
+         LIMIT 1`,
         [userId]
     );
     
@@ -58,8 +60,14 @@ const verifyChildOwnership = async (parentId, childId, userId) => {
             -- Method 1: Direct parent_id link
             s.parent_id = $2
             OR
-            -- Method 2: Through parent_email matching
-            (s.parent_email IS NOT NULL AND s.parent_email = $3)
+            -- Method 2: Explicit parent-student relationship
+            EXISTS (
+                SELECT 1 FROM parent_students ps
+                WHERE ps.student_id = s.id AND ps.parent_id = $2
+            )
+            OR
+            -- Method 3: Through normalized parent email matching
+            (s.parent_email IS NOT NULL AND LOWER(BTRIM(s.parent_email)) = LOWER(BTRIM($3)))
         )
         LIMIT 1
     `, [childId, parentId, parentEmail]);
@@ -145,7 +153,8 @@ const teacherId = teacherQuery.rows[0].id;
 
         // Determine the teacher's class IDs via either mapping (teacher_classes OR classes.teacher_id)
         const classIdsResult = await pool.query(`
-            SELECT class_id AS id FROM teacher_classes WHERE teacher_id = $1
+            SELECT class_id AS id FROM teacher_classes
+            WHERE teacher_id = $1 AND COALESCE(is_active, true) = true
             UNION
             SELECT id FROM classes WHERE teacher_id = $1
         `, [teacherId]);
@@ -196,22 +205,15 @@ const teacherId = teacherQuery.rows[0].id;
 
 dashboardController.getTeacherClasses = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const teacherId = req.user.teacher_id;
         const academicYear = req.query.academic_year || '2024-2025';
 
-        console.log('[getTeacherClasses] userId:', userId);
+        console.log('[getTeacherClasses] teacherId:', teacherId);
         console.log('[getTeacherClasses] academicYear:', academicYear);
 
-        const teacherQuery = await pool.query(
-            `SELECT id FROM teachers WHERE user_id = $1`,
-            [userId]
-        );
-
-        if (teacherQuery.rows.length === 0) {
+        if (!teacherId) {
             return res.json({ success: true, data: [], message: 'Teacher profile not found' });
         }
-
-        const teacherId = teacherQuery.rows[0].id;
 
         // Resolve class IDs via either mapping (teacher_classes) OR direct classes.teacher_id
         const classIdsResult = await pool.query(`
@@ -221,25 +223,7 @@ dashboardController.getTeacherClasses = async (req, res) => {
         `, [teacherId]);
         const classIds = classIdsResult.rows.map(r => r.id);
 
-// Determine whether to fall back to ALL classes. This happens when the
-        // teacher has no teacher_classes mapping rows AND no classes.teacher_id.
-        let effectiveClassIds = classIds;
-        let fallbackAllClasses = false;
-        if (classIds.length === 0) {
-            const checkMapping = await pool.query(
-                'SELECT 1 FROM teacher_classes WHERE teacher_id = $1 LIMIT 1',
-                [teacherId]
-            );
-            if (checkMapping.rows.length === 0) {
-                fallbackAllClasses = true;
-                const allClasses = await pool.query(
-                    `SELECT id FROM classes ORDER BY id`
-                );
-                effectiveClassIds = allClasses.rows.map(r => r.id);
-            }
-        }
-
-        if (fallbackAllClasses || effectiveClassIds.length > 0) {
+        if (classIds.length > 0) {
             const result = await pool.query(
                 `SELECT
                     c.id,
@@ -251,7 +235,7 @@ dashboardController.getTeacherClasses = async (req, res) => {
                 WHERE c.id = ANY($1::int[])
                 GROUP BY c.id, c.class_name, c.level
                 ORDER BY c.class_name`,
-                [effectiveClassIds]
+                [classIds]
             );
 
             const processedData = processClassData(
@@ -260,7 +244,7 @@ dashboardController.getTeacherClasses = async (req, res) => {
             return res.json({
                 success: true,
                 data: processedData,
-                message: fallbackAllClasses ? 'Showing all classes (no mapping found)' : 'Showing classes'
+                message: 'Showing assigned classes'
             });
         }
 
@@ -288,19 +272,17 @@ dashboardController.getClassStudents = async (req, res) => {
         
         const teacherId = teacherQuery.rows[0].id;
 
-        // Verify access via teacher_classes mapping OR direct classes.teacher_id.
-        // If neither grants access, fall back to loading students anyway so the
-        // attendance page reliably works even when the mapping tables aren't populated.
+        // A teacher can see students only in a class explicitly assigned to them.
         const verifyQuery = await pool.query(`
-            SELECT 1 FROM teacher_classes 
+            SELECT 1 FROM teacher_classes
             WHERE teacher_id = $1 AND class_id = $2
+              AND COALESCE(is_active, true) = true
             UNION
             SELECT 1 FROM classes WHERE teacher_id = $1 AND id = $2
         `, [teacherId, classId]);
         
         if (verifyQuery.rows.length === 0) {
-            // Fallback: allow access so attendance can still be recorded.
-            console.log(`[getClassStudents] No teacher_classes mapping for teacher ${teacherId} class ${classId}; allowing fallback`);
+            return res.status(403).json({ success: false, error: 'Access denied to this class' });
         }
         
         const studentsQuery = await pool.query(`
@@ -321,7 +303,7 @@ dashboardController.getClassStudents = async (req, res) => {
         `, [classId]);
         
         if (studentsQuery.rows.length === 0) {
-            // Fallback: try class_students mapping if it exists
+            // Fall back to the canonical enrollment mapping if class_id is unset.
             const fallbackStudents = await pool.query(`
                 SELECT 
                     s.id,
@@ -334,8 +316,8 @@ dashboardController.getClassStudents = async (req, res) => {
                     s.parent_name,
                     s.parent_phone
                 FROM students s
-                JOIN class_students cs ON s.id = cs.student_id
-                WHERE cs.class_id = $1 AND cs.academic_year = $2
+                JOIN student_classes cs ON s.id = cs.student_id
+                WHERE cs.class_id = $1 AND cs.academic_year = $2 AND cs.is_active = true
                 ORDER BY s.first_name, s.last_name
             `, [classId, academicYear]);
             return res.json({ success: true, data: fallbackStudents.rows });
@@ -558,6 +540,7 @@ dashboardController.getRecentActivities = async (req, res) => {
 };
 
 dashboardController.saveAttendance = async (req, res) => {
+    let client;
     try {
         const userId = req.user.id;
         // Accept both 'records' (used by TeacherAttendance.jsx) and 'attendance_records' for compatibility
@@ -567,48 +550,90 @@ dashboardController.saveAttendance = async (req, res) => {
         const term = req.body.term || 1;
         const academic_year = req.body.academic_year || '2024-2025';
         
-        if (!class_id || !date || !attendance_records || !Array.isArray(attendance_records)) {
+        if (!Number.isInteger(Number(class_id)) || Number(class_id) <= 0 ||
+            typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+            !Array.isArray(attendance_records) || attendance_records.length === 0) {
             return res.status(400).json({ success: false, error: 'Invalid request data' });
         }
-        
-const teacherQuery = await pool.query(`
+        const allowedStatuses = new Set(['present', 'absent', 'late', 'excused']);
+        if (attendance_records.some((record) => !record || typeof record !== 'object' ||
+            !allowedStatuses.has(record.status) ||
+            (record.remarks !== undefined && typeof record.remarks !== 'string'))) {
+            return res.status(400).json({ success: false, error: 'Invalid attendance record' });
+        }
+
+        const studentIds = attendance_records.map((record) => Number(record.student_id));
+        if (studentIds.some((id) => !Number.isInteger(id) || id <= 0) ||
+            new Set(studentIds).size !== studentIds.length) {
+            return res.status(400).json({ success: false, error: 'Attendance has invalid or duplicate student IDs' });
+        }
+
+        const teacherQuery = await pool.query(`
             SELECT id FROM teachers WHERE user_id = $1
         `, [userId]);
         
         if (teacherQuery.rows.length === 0) {
             return res.status(403).json({ success: false, error: 'Teacher not found' });
         }
-        
-        await pool.query('BEGIN');
+
+        const teacherId = teacherQuery.rows[0].id;
+        const assignment = await pool.query(`
+            SELECT 1 FROM teacher_classes WHERE teacher_id = $1 AND class_id = $2
+            UNION SELECT 1 FROM classes WHERE teacher_id = $1 AND id = $2
+            LIMIT 1
+        `, [teacherId, class_id]);
+        if (assignment.rows.length === 0) {
+            return res.status(403).json({ success: false, error: 'Access denied to this class' });
+        }
+
+        const studentsInClass = await pool.query(
+            'SELECT id FROM students WHERE class_id = $1 AND id = ANY($2::int[])',
+            [class_id, studentIds]
+        );
+        if (studentsInClass.rows.length !== studentIds.length) {
+            return res.status(400).json({ success: false, error: 'Attendance includes a student outside this class' });
+        }
+
+        client = await pool.connect();
+        await client.query('BEGIN');
         
         for (const record of attendance_records) {
             // Check if a record already exists for this student on this date
-            const existing = await pool.query(`
+            const existing = await client.query(`
                 SELECT id FROM attendance 
                 WHERE student_id = $1 AND date = $2
             `, [record.student_id, date]);
             
             if (existing.rows.length > 0) {
                 // Update existing record
-                await pool.query(`
+                await client.query(`
                     UPDATE attendance 
                     SET status = $1, remarks = $2, term = $3, term_name = $4, academic_year = $5
                     WHERE student_id = $6 AND date = $7
                 `, [record.status, record.remarks || null, term, `Term ${term}`, academic_year, record.student_id, date]);
             } else {
                 // Insert new record
-                await pool.query(`
+                await client.query(`
                     INSERT INTO attendance (student_id, date, status, remarks, term, term_name, academic_year)
                     VALUES ($1, $2, $3, $4, $5, $6, $7)
                 `, [record.student_id, date, record.status, record.remarks || null, term, `Term ${term}`, academic_year]);
             }
         }
         
-        await pool.query('COMMIT');
+        await client.query('COMMIT');
+        client.release();
+        client = null;
         
         res.json({ success: true, message: `Attendance saved for ${attendance_records.length} students` });
     } catch (error) {
-        await pool.query('ROLLBACK');
+        if (client) {
+            try {
+                await client.query('ROLLBACK');
+            } catch (rollbackError) {
+                console.error('Attendance transaction rollback failed:', rollbackError);
+            }
+            client.release();
+        }
         console.error('Error in saveAttendance:', error);
         res.status(500).json({ success: false, error: error.message });
     }
@@ -618,6 +643,10 @@ dashboardController.getAttendanceByClass = async (req, res) => {
     try {
         const { classId, date } = req.params;
         const userId = req.user.id;
+
+        if (req.user.role === 'teacher' && !req.user.allowedClassIds?.includes(Number(classId))) {
+            return res.status(403).json({ success: false, error: 'Access denied to this class' });
+        }
         
 const teacherQuery = await pool.query(`
             SELECT id FROM teachers WHERE user_id = $1
@@ -683,6 +712,24 @@ dashboardController.saveMarks = async (req, res) => {
         }
         
         const teacherId = teacherResult.rows[0].id;
+        const allowedClasses = new Set((req.user.allowedClassIds || []).map(Number));
+        if (marks.some((mark) => !mark || !allowedClasses.has(Number(mark.class_id)))) {
+            return res.status(403).json({ success: false, error: 'Grades include a class you are not assigned to' });
+        }
+
+        const studentIds = [...new Set(marks.map((mark) => Number(mark?.student_id)))];
+        if (studentIds.some((id) => !Number.isInteger(id) || id <= 0)) {
+            return res.status(400).json({ success: false, error: 'Grades contain an invalid student ID' });
+        }
+        const students = await pool.query(
+            'SELECT id, class_id FROM students WHERE id = ANY($1::int[])',
+            [studentIds]
+        );
+        const classByStudent = new Map(students.rows.map((student) => [Number(student.id), Number(student.class_id)]));
+        if (marks.some((mark) => classByStudent.get(Number(mark.student_id)) !== Number(mark.class_id))) {
+            return res.status(400).json({ success: false, error: 'Grades include a student outside the submitted class' });
+        }
+
         const client = await pool.connect();
         let savedCount = 0;
         let updatedCount = 0;
@@ -706,11 +753,13 @@ dashboardController.saveMarks = async (req, res) => {
                     grade, 
                     remarks, 
                     academic_year, 
+                    term,
                     mark_id 
                 } = mark;
                 
                 // Validate required fields
-                if (!student_id || !subject_id || !class_id) {
+                if (!student_id || !subject_id || !class_id || !['CA', 'EXAM'].includes(exam_type) ||
+                    !Number.isFinite(Number(markValue)) || Number(markValue) < 0 || Number(markValue) > 100) {
                     console.warn('⚠️ Skipping mark with missing required fields:', mark);
                     continue;
                 }
@@ -719,9 +768,9 @@ dashboardController.saveMarks = async (req, res) => {
                     const updateResult = await client.query(`
                         UPDATE marks 
                         SET marks = $1, grade = $2, remarks = $3, updated_at = NOW()
-                        WHERE id = $4 AND teacher_id = $5
+                        WHERE id = $4 AND teacher_id = $5 AND class_id = $6
                         RETURNING id
-                    `, [markValue, grade, remarks, mark_id, teacherId]);
+                    `, [markValue, grade, remarks, mark_id, teacherId, class_id]);
                     
                     if (updateResult.rows.length > 0) {
                         updatedCount++;
@@ -730,12 +779,12 @@ dashboardController.saveMarks = async (req, res) => {
                     const insertResult = await client.query(`
                         INSERT INTO marks (
                             student_id, class_id, subject_id, teacher_id, 
-                            exam_type, marks, grade, remarks, academic_year
-                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                            exam_type, marks, grade, remarks, academic_year, term
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                         RETURNING id
                     `, [
                         student_id, class_id, subject_id, teacherId,
-                        exam_type, markValue, grade, remarks, academic_year
+                        exam_type, markValue, grade, remarks, academic_year || '2024-2025', Number(term || 1)
                     ]);
                     
                     if (insertResult.rows.length > 0) {
@@ -779,6 +828,10 @@ dashboardController.getMarksByClass = async (req, res) => {
         const userId = req.user?.id;
         const isAdminRequest = req.user?.role === 'admin';
 
+        if (!isAdminRequest && !(req.user.allowedClassIds || []).some((id) => Number(id) === Number(classId))) {
+            return res.status(403).json({ success: false, error: 'Access denied to this class' });
+        }
+
         console.log(`📊 Getting marks for class: ${classId} by role: ${req.user?.role || 'unknown'}`);
 
         let teacherId = null;
@@ -812,7 +865,7 @@ dashboardController.getMarksByClass = async (req, res) => {
                 m.grade,
                 m.remarks,
                 m.academic_year,
-                m.term_id,
+                m.term AS term_id,
                 m.created_at,
                 m.updated_at
             FROM marks m
@@ -830,7 +883,7 @@ dashboardController.getMarksByClass = async (req, res) => {
         }
 
         if (term) {
-            query += ` AND m.term_id = $${paramIndex}`;
+            query += ` AND m.term = $${paramIndex}`;
             params.push(term);
             paramIndex++;
         }
@@ -992,7 +1045,7 @@ dashboardController.getClassSubjectsForGrading = async (req, res) => {
                 s.gender,
                 s.status
             FROM students s
-            JOIN class_students cs ON s.id = cs.student_id
+            JOIN student_classes cs ON s.id = cs.student_id AND cs.is_active = true
             WHERE cs.class_id = $1 
             AND cs.academic_year = $2
             AND s.status = 'active'
@@ -1014,11 +1067,11 @@ dashboardController.getClassSubjectsForGrading = async (req, res) => {
                     m.marks,
                     m.grade,
                     m.remarks,
-                    m.term_id,
+                    m.term AS term_id,
                     m.class_id
                 FROM marks m
                 WHERE m.class_id = $1
-                AND m.term_id = $2
+                AND m.term = $2
                 AND m.student_id = ANY($3::int[])
                 AND m.subject_id = ANY($4::int[])
                 ORDER BY m.student_id, m.subject_id, m.exam_type
@@ -1178,6 +1231,7 @@ dashboardController.getClassSubjectsForGrading = async (req, res) => {
 // ============================================
 
 dashboardController.saveSubjectGrades = async (req, res) => {
+    let client;
     try {
         const userId = req.user.id;
         const { class_id, term_id, academic_year, grades } = req.body;
@@ -1217,8 +1271,21 @@ dashboardController.saveSubjectGrades = async (req, res) => {
                 error: 'You do not have access to this class' 
             });
         }
+        if (grades.some((grade) => !grade || typeof grade !== 'object')) {
+            return res.status(400).json({ success: false, error: 'Invalid grade record' });
+        }
 
-        await pool.query('BEGIN');
+        const studentIds = [...new Set(grades.map(({ student_id }) => Number(student_id)).filter(Number.isInteger))];
+        const studentsInClass = await pool.query(
+            'SELECT id FROM students WHERE class_id = $1 AND id = ANY($2::int[])',
+            [class_id, studentIds]
+        );
+        if (studentsInClass.rows.length !== studentIds.length || studentIds.length === 0) {
+            return res.status(400).json({ success: false, error: 'Grades include a student outside this class' });
+        }
+
+        client = await pool.connect();
+        await client.query('BEGIN');
 
         let savedCount = 0;
         let errors = [];
@@ -1237,8 +1304,7 @@ dashboardController.saveSubjectGrades = async (req, res) => {
                 continue;
             }
 
-            try {
-                const result = await pool.query(`
+            const result = await client.query(`
                     INSERT INTO marks (
                         student_id, 
                         class_id, 
@@ -1248,12 +1314,12 @@ dashboardController.saveSubjectGrades = async (req, res) => {
                         marks, 
                         grade, 
                         remarks,
-                        term_id,
+                        term,
                         created_at,
                         updated_at
                     )
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-                    ON CONFLICT (student_id, class_id, subject_id, exam_type) 
+                    ON CONFLICT (student_id, class_id, subject_id, exam_type, term, academic_year)
                     DO UPDATE SET 
                         marks = EXCLUDED.marks,
                         grade = EXCLUDED.grade,
@@ -1273,22 +1339,14 @@ dashboardController.saveSubjectGrades = async (req, res) => {
                     currentTerm
                 ]);
 
-                if (result.rows.length > 0) {
-                    savedCount++;
-                }
-
-            } catch (err) {
-                console.error('[saveSubjectGrades] Error:', err);
-                errors.push({ 
-                    student_id, 
-                    subject_id, 
-                    exam_type, 
-                    error: err.message 
-                });
+            if (result.rows.length > 0) {
+                savedCount++;
             }
         }
 
-        await pool.query('COMMIT');
+        await client.query('COMMIT');
+        client.release();
+        client = null;
 
         await pool.query(`
             INSERT INTO teacher_activities (teacher_id, activity_type, description, created_at)
@@ -1306,7 +1364,14 @@ dashboardController.saveSubjectGrades = async (req, res) => {
         });
 
     } catch (error) {
-        await pool.query('ROLLBACK');
+        if (client) {
+            try {
+                await client.query('ROLLBACK');
+            } catch (rollbackError) {
+                console.error('Grade transaction rollback failed:', rollbackError);
+            }
+            client.release();
+        }
         console.error('Error in saveSubjectGrades:', error);
         res.status(500).json({ 
             success: false, 
@@ -1347,7 +1412,7 @@ dashboardController.getTeacherClassSubjects = async (req, res) => {
             JOIN classes c ON tc.class_id = c.id
             LEFT JOIN class_subjects cs ON c.id = cs.class_id AND cs.academic_year = $1
             LEFT JOIN subjects s ON cs.subject_id = s.id
-            LEFT JOIN class_students cs2 ON c.id = cs2.class_id AND cs2.academic_year = $1
+            LEFT JOIN student_classes cs2 ON c.id = cs2.class_id AND cs2.academic_year = $1 AND cs2.is_active = true
             WHERE tc.teacher_id = $2 
             AND tc.academic_year = $3
             GROUP BY c.id, c.class_name, c.level, c.academic_year
@@ -1383,8 +1448,7 @@ dashboardController.getStudentProfile = async (req, res) => {
                 c.class_name as class_name,
                 c.level
             FROM students s
-            LEFT JOIN class_students cs ON s.id = cs.student_id
-            LEFT JOIN classes c ON cs.class_id = c.id
+            LEFT JOIN classes c ON s.class_id = c.id
             WHERE s.id = $1
         `, [studentId]);
         
@@ -1461,11 +1525,13 @@ dashboardController.getParentChildren = async (req, res) => {
                 c.class_name,
                 c.level
             FROM students s
+            LEFT JOIN parent_students ps ON ps.student_id = s.id AND ps.parent_id = $1
             LEFT JOIN classes c ON s.class_id = c.id
-            WHERE 
-                s.parent_id = $1
-                OR
-                (s.parent_email IS NOT NULL AND s.parent_email = $2)
+            WHERE (
+                s.parent_id = $1 OR ps.parent_id = $1
+                OR (s.parent_email IS NOT NULL AND LOWER(BTRIM(s.parent_email)) = LOWER(BTRIM($2)))
+            )
+              AND LOWER(COALESCE(s.status, 'active')) = 'active'
             ORDER BY s.first_name, s.last_name
         `, [parentId, parentEmail]);
 
@@ -1566,7 +1632,7 @@ dashboardController.getChildTimetable = async (req, res) => {
             FROM timetable tt
             JOIN subjects s ON tt.subject_id = s.id
             JOIN teachers t ON tt.teacher_id = t.id
-            JOIN class_students cs ON tt.class_id = cs.class_id
+            JOIN student_classes cs ON tt.class_id = cs.class_id AND cs.is_active = true
             WHERE cs.student_id = $1
             ORDER BY tt.day_of_week, tt.start_time
         `, [childId]);
@@ -1923,7 +1989,7 @@ dashboardController.getMarksByClassAndSubject = async (req, res) => {
                 m.marks,
                 m.grade,
                 m.remarks,
-                m.term_id,
+                m.term AS term_id,
                 m.class_id
             FROM marks m
             WHERE m.class_id = $1
@@ -2279,12 +2345,17 @@ dashboardController.getChildPerformance = async (req, res) => {
         console.log('[getChildPerformance] gradesResult:', gradesResult.rows);
 
         const attendanceResult = await pool.query(`
+            WITH recent_attendance AS (
+                SELECT status
+                FROM attendance
+                WHERE student_id = $1
+                ORDER BY date DESC
+                LIMIT 30
+            )
             SELECT
-                (SUM(CASE WHEN LOWER(a.status) = 'present' THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0)) * 100 as attendance_rate
-            FROM attendance a
-            WHERE a.student_id = $1
-            ORDER BY a.date DESC
-            LIMIT 30
+                (COUNT(*) FILTER (WHERE LOWER(status) = 'present')::float
+                    / NULLIF(COUNT(*), 0)) * 100 AS attendance_rate
+            FROM recent_attendance
         `, [childId]);
 
         console.log('[getChildPerformance] attendanceResult:', attendanceResult.rows);
@@ -2376,36 +2447,86 @@ dashboardController.getChildPerformance = async (req, res) => {
 };
 
 // ============================================================
-// REPORT CARDS (Teacher) - minimal route to avoid 'Route not found'
-// ============================================================
-// Frontend calls: POST /api/teacher/marks/report-cards
-// Currently this endpoint may not have full PDF generation implemented in this controller.
-// It returns a 200 with a consistent payload so UI can proceed.
-//
-// If you later add real PDF generation, replace the body below.
+// Prepare teacher report-card data for a class and term.
 dashboardController.generateTeacherReportCards = async (req, res) => {
     try {
-        const { class_id, teacher_id, term, academic_year } = req.body || {};
+        const { class_id, term, academic_year } = req.body || {};
+        const classId = Number(class_id);
+        const termNumber = Number(term || 1);
+        const year = typeof academic_year === 'string' && academic_year.trim()
+            ? academic_year.trim()
+            : '2024-2025';
+        const teacherId = req.user.teacher_id;
 
-        // Basic validation for debugging
-        if (!class_id || !teacher_id) {
+        if (!Number.isInteger(classId) || classId <= 0 || !Number.isInteger(termNumber) || termNumber < 1 || termNumber > 3) {
             return res.status(400).json({
                 success: false,
-                error: 'class_id and teacher_id are required'
+                error: 'A valid class_id and term from 1 to 3 are required'
             });
         }
 
-        // Placeholder response: frontend expects data.data?.students?.length and optional pdf_url
+        if (req.user.role !== 'admin' && !(req.user.allowedClassIds || []).some((id) => Number(id) === classId)) {
+            return res.status(403).json({ success: false, error: 'Access denied to this class' });
+        }
+
+        const [classResult, studentsResult, marksResult] = await Promise.all([
+            pool.query('SELECT id, class_name, level FROM classes WHERE id = $1', [classId]),
+            pool.query(`
+                SELECT id, admission_number, first_name, last_name, gender
+                FROM students
+                WHERE class_id = $1 AND LOWER(COALESCE(status, 'active')) = 'active'
+                ORDER BY last_name, first_name
+            `, [classId]),
+            pool.query(`
+                SELECT m.student_id, m.subject_id, s.name AS subject_name, m.exam_type,
+                       m.marks, m.grade, m.remarks
+                FROM marks m
+                LEFT JOIN subjects s ON s.id = m.subject_id
+                WHERE m.class_id = $1 AND m.term = $2 AND m.academic_year = $3
+                ORDER BY m.student_id, s.name, m.exam_type
+            `, [classId, termNumber, year])
+        ]);
+
+        if (!classResult.rows[0]) {
+            return res.status(404).json({ success: false, error: 'Class not found' });
+        }
+
+        const marksByStudent = new Map();
+        for (const mark of marksResult.rows) {
+            if (!marksByStudent.has(Number(mark.student_id))) marksByStudent.set(Number(mark.student_id), new Map());
+            const subjectKey = Number(mark.subject_id);
+            const subjects = marksByStudent.get(Number(mark.student_id));
+            if (!subjects.has(subjectKey)) {
+                subjects.set(subjectKey, {
+                    subject_id: subjectKey,
+                    subject: mark.subject_name || 'Unknown subject',
+                    assessments: []
+                });
+            }
+            subjects.get(subjectKey).assessments.push({
+                exam_type: mark.exam_type,
+                marks: mark.marks,
+                grade: mark.grade,
+                remarks: mark.remarks
+            });
+        }
+
+        const students = studentsResult.rows.map((student) => {
+            const subjects = [...(marksByStudent.get(Number(student.id))?.values() || [])];
+            const scores = subjects.flatMap((subject) => subject.assessments
+                .map((assessment) => Number(assessment.marks))
+                .filter(Number.isFinite));
+            return {
+                ...student,
+                subjects,
+                average_score: scores.length ? Number((scores.reduce((sum, score) => sum + score, 0) / scores.length).toFixed(2)) : null
+            };
+        });
+
         return res.json({
             success: true,
-            data: {
-                students: [],
-                class_id,
-                teacher_id,
-                term: term ?? 1,
-                academic_year: academic_year ?? '2024-2025'
-            },
-            message: 'Report cards generation endpoint reached (PDF generation not implemented here yet).'
+            data: { class: classResult.rows[0], class_id: classId, teacher_id: teacherId || null, term: termNumber, academic_year: year, students },
+            message: 'Report-card data generated successfully'
         });
     } catch (error) {
         console.error('Error in generateTeacherReportCards:', error);

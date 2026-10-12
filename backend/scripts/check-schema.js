@@ -1,7 +1,11 @@
 const pool = require('../config/database');
 
 async function checkTables() {
-  const tables = ['users', 'teachers', 'parents', 'students', 'classes'];
+  const tables = [
+    'users', 'teachers', 'parents', 'students', 'classes', 'subjects',
+    'class_subjects', 'teacher_classes', 'teacher_subjects', 'parent_students', 'fees', 'fee_settings',
+    'attendance', 'notifications', 'app_migrations'
+  ];
   for (const table of tables) {
     console.log(`\n=== ${table} ===`);
     try {

@@ -1,81 +1,100 @@
-const mockData = require('../data/mockData');
+const pool = require('../config/database');
+
+const editableFields = [
+  'title', 'description', 'event_type', 'start_date', 'end_date',
+  'start_time', 'end_time', 'venue', 'target_audience', 'status'
+];
 
 class CalendarModel {
-  // Get all events
   async getAllEvents(filters = {}) {
-    let events = [...mockData.calendar_events];
-    
-    if (filters.event_type) {
-      events = events.filter(e => e.event_type === filters.event_type);
-    }
-    if (filters.status) {
-      events = events.filter(e => e.status === filters.status);
+    const conditions = [];
+    const values = [];
+
+    for (const field of ['event_type', 'status']) {
+      if (filters[field]) {
+        values.push(filters[field]);
+        conditions.push(`${field} = $${values.length}`);
+      }
     }
     if (filters.start_date) {
-      events = events.filter(e => e.start_date >= filters.start_date);
+      values.push(filters.start_date);
+      conditions.push(`end_date >= $${values.length}`);
     }
     if (filters.end_date) {
-      events = events.filter(e => e.end_date <= filters.end_date);
+      values.push(filters.end_date);
+      conditions.push(`start_date <= $${values.length}`);
     }
-    
-    return events.sort((a, b) => a.start_date.localeCompare(b.start_date));
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const result = await pool.query(
+      `SELECT * FROM calendar_events ${where} ORDER BY start_date, start_time, id`,
+      values
+    );
+    return result.rows;
   }
-  
-  // Get event by ID
+
   async getEventById(id) {
-    const event = mockData.calendar_events.find(e => e.id === parseInt(id));
-    if (!event) return null;
-    return event;
+    const result = await pool.query('SELECT * FROM calendar_events WHERE id = $1', [id]);
+    return result.rows[0] || null;
   }
-  
-  // Create new event
-  async createEvent(eventData) {
-    const newEvent = {
-      id: mockData.getNextId('calendar_events'),
-      ...eventData,
-      created_at: new Date().toISOString().split('T')[0]
-    };
-    mockData.calendar_events.push(newEvent);
-    return newEvent;
+
+  async createEvent(data) {
+    const result = await pool.query(`
+      INSERT INTO calendar_events (
+        title, description, event_type, start_date, end_date,
+        start_time, end_time, venue, target_audience, status, created_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      RETURNING *
+    `, [
+      data.title, data.description || null, data.event_type,
+      data.start_date, data.end_date || data.start_date,
+      data.start_time || null, data.end_time || null, data.venue || null,
+      Array.isArray(data.target_audience) ? data.target_audience : ['all'],
+      data.status || 'upcoming', data.created_by || null
+    ]);
+    return result.rows[0];
   }
-  
-  // Update event
-  async updateEvent(id, updateData) {
-    const index = mockData.calendar_events.findIndex(e => e.id === parseInt(id));
-    if (index === -1) return null;
-    
-    mockData.calendar_events[index] = {
-      ...mockData.calendar_events[index],
-      ...updateData,
-      updated_at: new Date().toISOString().split('T')[0]
-    };
-    return mockData.calendar_events[index];
+
+  async updateEvent(id, data) {
+    const fields = editableFields.filter(field => data[field] !== undefined);
+    if (fields.length === 0) return this.getEventById(id);
+
+    const assignments = fields.map((field, index) => `${field} = $${index + 1}`);
+    const values = fields.map(field => data[field]);
+    values.push(id);
+    const result = await pool.query(`
+      UPDATE calendar_events
+      SET ${assignments.join(', ')}, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $${values.length}
+      RETURNING *
+    `, values);
+    return result.rows[0] || null;
   }
-  
-  // Delete event
+
   async deleteEvent(id) {
-    const index = mockData.calendar_events.findIndex(e => e.id === parseInt(id));
-    if (index === -1) return false;
-    
-    mockData.calendar_events.splice(index, 1);
-    return true;
+    const result = await pool.query('DELETE FROM calendar_events WHERE id = $1 RETURNING id', [id]);
+    return result.rowCount > 0;
   }
-  
-  // Get upcoming events
+
   async getUpcomingEvents(days = 30) {
-    const today = new Date().toISOString().split('T')[0];
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + days);
-    const futureDateStr = futureDate.toISOString().split('T')[0];
-    
-    return mockData.calendar_events.filter(e => 
-      e.start_date >= today && e.start_date <= futureDateStr && e.status !== 'completed'
-    ).sort((a, b) => a.start_date.localeCompare(b.start_date));
+    const result = await pool.query(`
+      SELECT * FROM calendar_events
+      WHERE start_date >= CURRENT_DATE
+        AND start_date <= CURRENT_DATE + ($1::int * INTERVAL '1 day')
+        AND status <> 'completed'
+      ORDER BY start_date, start_time, id
+    `, [days]);
+    return result.rows;
   }
-  
-  // Get event types
+
   async getEventTypes() {
-    return mockData.event_types;
+    const result = await pool.query(`
+      SELECT DISTINCT event_type
+      FROM calendar_events
+      WHERE event_type IS NOT NULL AND event_type <> ''
+      ORDER BY event_type
+    `);
+    return result.rows.map(row => row.event_type);
   }
 }
 

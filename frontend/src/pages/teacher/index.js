@@ -1,27 +1,9 @@
-// src/pages/teacher/index.js
-
-// Export all components from the teacher folder
-export { default as TeacherClasses } from './TeacherClasses';
-export { default as TeacherGrades } from './TeacherGrades';
-export { default as TeacherDashboard } from './TeacherDashboard';
-export { default as AssessmentEntry } from './components/AssessmentEntry';
-export { default as ExamEntry } from './components/ExamEntry';
-export { default as ReportCard } from './components/ReportCard';
-export { default as PerformanceSummary } from './components/PerformanceSummary';  
-export { default as GradeSettings } from './components/GradeSettings';             
-export { default as ExportOptions } from './components/ExportOptions';             
-
-// Also export the utils
-export * from './utils/gradeCalculations';   
-
-export default {
-  TeacherClasses,
-  TeacherGrades,
-  TeacherDashboard,
-  AssessmentEntry,
-  ExamEntry,
-  ReportCard,
-  PerformanceSummary,  
-  GradeSettings,       
-  ExportOptions,        
-};
+export { default as TeacherClasses } from './TeacherClasses.jsx';
+export { default as TeacherGrades } from './TeacherGrades.jsx';
+export { default as TeacherDashboard } from './TeacherDashboard.jsx';
+export { default as AssessmentEntry } from './components/AssessmentEntry.jsx';
+export { default as ExamEntry } from './components/ExamEntry.jsx';
+export { default as ReportCard } from './components/ReportCard.jsx';
+export { default as PerformanceSummary } from './components/PerformanceSummary.jsx';
+export { default as GradeSettings } from './components/GradeSettings.jsx';
+export { default as ExportOptions } from './components/ExportOptions.jsx';

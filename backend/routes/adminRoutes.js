@@ -4,8 +4,8 @@ const { verifyToken, isAdmin } = require('../middleware/auth');
 const pool = require('../config/database');
 const bcrypt = require('bcrypt');
 
-// Apply verifyToken to all routes
-router.use(verifyToken);
+// Every endpoint in this router exposes or changes administrator data.
+router.use(verifyToken, isAdmin);
  
 // ============================================
 // HELPER FUNCTION TO GENERATE TEACHER CODE (TCH00001 format)
@@ -189,15 +189,16 @@ router.get('/stats', async (req, res) => {
                 const classesResult = await pool.query(`
                     SELECT COUNT(DISTINCT tc.class_id) as count
                     FROM teacher_classes tc
-                    WHERE tc.teacher_id = $1
+                    WHERE tc.teacher_id = $1 AND COALESCE(tc.is_active, true) = true
                 `, [teacherId]);
                 
                 const studentsResult = await pool.query(`
                     SELECT COUNT(DISTINCT s.id) as count
                     FROM teacher_classes tc
-                    JOIN student_classes sc ON tc.class_id = sc.class_id
+                    JOIN student_classes sc ON tc.class_id = sc.class_id AND sc.is_active = true
                     JOIN students s ON sc.student_id = s.id
-                    WHERE tc.teacher_id = $1 AND s.status = 'Active'
+                    WHERE tc.teacher_id = $1 AND COALESCE(tc.is_active, true) = true
+                      AND LOWER(COALESCE(s.status, 'active')) = 'active'
                 `, [teacherId]);
                 
                 stats = {
@@ -287,9 +288,9 @@ router.get('/classes', async (req, res) => {
                     c.room_number,
                     c.academic_year
                 FROM classes c
-                JOIN student_classes sc ON c.id = sc.class_id
+                JOIN student_classes sc ON c.id = sc.class_id AND sc.is_active = true
                 JOIN students s ON sc.student_id = s.id
-                WHERE s.parent_email = $1 AND s.status = 'Active'
+                WHERE s.parent_email = $1 AND LOWER(COALESCE(s.status, 'active')) = 'active'
                 ORDER BY c.class_name
             `;
             params = [userEmail];
@@ -312,7 +313,7 @@ router.get('/classes', async (req, res) => {
 // ============================================
 // GET SINGLE CLASS
 // ============================================
-router.get('/classes/:id', async (req, res) => {
+router.get('/classes/:id', isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const result = await pool.query(`
@@ -435,7 +436,7 @@ router.delete('/classes/:id', isAdmin, async (req, res) => {
 // ============================================
 // GET STUDENTS - WITH ALL FIELDS
 // ============================================
-router.get('/students', async (req, res) => {
+router.get('/students', isAdmin, async (req, res) => {
     try {
         const userRole = req.user.role;
         const userEmail = req.user.email;
@@ -490,6 +491,7 @@ router.get('/students', async (req, res) => {
 // CREATE STUDENT  
 // ============================================
 router.post('/students', isAdmin, async (req, res) => {
+    let client;
     try {
         const {
             admission_number,
@@ -548,7 +550,8 @@ router.post('/students', isAdmin, async (req, res) => {
         }
 
         // Start transaction
-        await pool.query('BEGIN');
+        client = await pool.connect();
+        await client.query('BEGIN');
 
         // Generate temporary password
         const tempPassword = generateTempPassword();
@@ -556,7 +559,7 @@ router.post('/students', isAdmin, async (req, res) => {
 
         // Check if user already exists with this parent email
         let userId = null;
-        const existingUser = await pool.query(
+        const existingUser = await client.query(
             'SELECT id, first_name, last_name FROM users WHERE LOWER(email) = LOWER($1)',
             [normalizedParentEmail]
         );
@@ -570,7 +573,7 @@ router.post('/students', isAdmin, async (req, res) => {
             const userFirstName = nameParts[0] || 'Parent';
             const userLastName = nameParts.slice(1).join(' ') || 'User';
             
-            const newUser = await pool.query(`
+            const newUser = await client.query(`
                 INSERT INTO users (
                     email, 
                     password, 
@@ -594,13 +597,15 @@ router.post('/students', isAdmin, async (req, res) => {
         }
 
         // Check if student already exists
-        const existingStudent = await pool.query(
+        const existingStudent = await client.query(
             `SELECT id FROM students WHERE parent_email = $1 OR admission_number = $2`,
             [normalizedParentEmail, admission_number]
         );
 
         if (existingStudent.rows.length > 0) {
-            await pool.query('ROLLBACK');
+            await client.query('ROLLBACK');
+            client.release();
+            client = null;
             return res.status(409).json({
                 success: false,
                 error: 'Student with this parent email or admission number already exists',
@@ -612,7 +617,7 @@ router.post('/students', isAdmin, async (req, res) => {
         const finalAdmissionNumber = admission_number || await generateStudentCode();
 
         // Insert student
-        const result = await pool.query(`
+        const result = await client.query(`
             INSERT INTO students (
                 user_id,
                 admission_number,
@@ -659,7 +664,9 @@ router.post('/students', isAdmin, async (req, res) => {
             medical_conditions || null
         ]);
 
-        await pool.query('COMMIT');
+        await client.query('COMMIT');
+        client.release();
+        client = null;
 
         const newStudent = result.rows[0];
         console.log(`✅ Student created: ${normalizedFirstName} ${normalizedLastName} (ID: ${newStudent.id})`);
@@ -685,7 +692,14 @@ router.post('/students', isAdmin, async (req, res) => {
         });
 
     } catch (error) {
-        await pool.query('ROLLBACK');
+        if (client) {
+            try {
+                await client.query('ROLLBACK');
+            } catch (rollbackError) {
+                console.error('Student transaction rollback failed:', rollbackError);
+            }
+            client.release();
+        }
         console.error(' Error creating student:', error);
         
         if (error.code === '23505') {
@@ -797,7 +811,7 @@ router.delete('/students/:id', isAdmin, async (req, res) => {
 // ============================================
 // GET ALL TEACHERS
 // ============================================
-router.get('/teachers', async (req, res) => {
+router.get('/teachers', isAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT 
@@ -883,6 +897,7 @@ router.get('/teachers/:id', isAdmin, async (req, res) => {
 // CREATE TEACHER - WITH AUTO-GENERATED EMAIL, PASSWORD, AND TEACHER CODE
 // ============================================
 router.post('/teachers', isAdmin, async (req, res) => {
+    let client;
     try {
         const {
             first_name, 
@@ -971,12 +986,13 @@ router.post('/teachers', isAdmin, async (req, res) => {
         }
 
         // Start transaction
-        await pool.query('BEGIN');
+        client = await pool.connect();
+        await client.query('BEGIN');
 
         // ============================================
         // CREATE USER IN USERS TABLE
         // ============================================
-        const userResult = await pool.query(`
+        const userResult = await client.query(`
             INSERT INTO users (
                 email, 
                 password, 
@@ -1009,7 +1025,7 @@ router.post('/teachers', isAdmin, async (req, res) => {
         // ============================================
         // CREATE TEACHER RECORD
         // ============================================
-        const result = await pool.query(`
+        const result = await client.query(`
             INSERT INTO teachers (
                 user_id, 
                 teacher_code,
@@ -1058,7 +1074,9 @@ router.post('/teachers', isAdmin, async (req, res) => {
             address || null
         ]);
 
-        await pool.query('COMMIT');
+        await client.query('COMMIT');
+        client.release();
+        client = null;
 
         const newTeacher = result.rows[0];
         console.log(`✅ Teacher created: ${first_name} ${last_name}`);
@@ -1107,7 +1125,14 @@ router.post('/teachers', isAdmin, async (req, res) => {
         });
 
     } catch (error) {
-        await pool.query('ROLLBACK');
+        if (client) {
+            try {
+                await client.query('ROLLBACK');
+            } catch (rollbackError) {
+                console.error('Teacher transaction rollback failed:', rollbackError);
+            }
+            client.release();
+        }
         console.error('❌ Create teacher error:', error);
         
         // Handle PostgreSQL unique violation
@@ -1298,7 +1323,7 @@ router.get('/user-activity', isAdmin, async (req, res) => {
 // ============================================
 
 // Get all subjects
-router.get('/subjects', async (req, res) => {
+router.get('/subjects', isAdmin, async (req, res) => {
     try {
         console.log('📋 Fetching all subjects...');
         
@@ -1330,7 +1355,7 @@ router.get('/subjects', async (req, res) => {
 });
 
 // Get single subject
-router.get('/subjects/:id', async (req, res) => {
+router.get('/subjects/:id', isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const result = await pool.query(`
@@ -1429,7 +1454,7 @@ router.delete('/subjects/:id', isAdmin, async (req, res) => {
 });
 
 // Get subjects for a class
-router.get('/classes/:classId/subjects', async (req, res) => {
+router.get('/classes/:classId/subjects', isAdmin, async (req, res) => {
     try {
         const { classId } = req.params;
         
@@ -1503,7 +1528,7 @@ router.delete('/class-subjects/:id', isAdmin, async (req, res) => {
 // ============================================
 // DEBUG ENDPOINT
 // ============================================
-router.get('/debug', async (req, res) => {
+router.get('/debug', isAdmin, async (req, res) => {
     try {
         const teachers = await pool.query("SELECT COUNT(*) as count FROM teachers WHERE status = 'Active'");
         const students = await pool.query("SELECT COUNT(*) as count FROM students WHERE status = 'Active'");

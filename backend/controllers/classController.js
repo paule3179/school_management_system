@@ -155,6 +155,7 @@ classController.getClassById = async (req, res) => {
 // CREATE CLASS
 // ============================================
 classController.createClass = async (req, res) => {
+  let client;
   try {
     const {
       class_name,
@@ -179,22 +180,25 @@ classController.createClass = async (req, res) => {
       });
     }
     
-    await pool.query('BEGIN');
+    client = await pool.connect();
+    await client.query('BEGIN');
     
-    const existing = await pool.query(
+    const existing = await client.query(
       'SELECT id FROM classes WHERE class_name = $1 AND level = $2',
       [class_name, level]
     );
     
     if (existing.rows.length > 0) {
-      await pool.query('ROLLBACK');
+      await client.query('ROLLBACK');
+      client.release();
+      client = null;
       return res.status(409).json({
         success: false,
         error: 'A class with this name and level already exists'
       });
     }
     
-    const result = await pool.query(`
+    const result = await client.query(`
       INSERT INTO classes (
         class_name,
         level,
@@ -232,9 +236,9 @@ classController.createClass = async (req, res) => {
     
     if (subject_ids && subject_ids.length > 0) {
       for (const subjectId of subject_ids) {
-        const subjectCheck = await pool.query('SELECT id FROM subjects WHERE id = $1', [subjectId]);
+        const subjectCheck = await client.query('SELECT id FROM subjects WHERE id = $1', [subjectId]);
         if (subjectCheck.rows.length > 0) {
-          await pool.query(`
+          await client.query(`
             INSERT INTO class_subjects (class_id, subject_id, hours_per_week, periods_per_week)
             VALUES ($1, $2, 4, 3)
             ON CONFLICT (class_id, subject_id) DO NOTHING
@@ -244,7 +248,9 @@ classController.createClass = async (req, res) => {
       console.log(`📚 Assigned subjects to class ${newClass.class_name}`);
     }
     
-    await pool.query('COMMIT');
+    await client.query('COMMIT');
+    client.release();
+    client = null;
     
     console.log(`✅ Class created: ${newClass.class_name} (ID: ${newClass.id})`);
     
@@ -255,7 +261,14 @@ classController.createClass = async (req, res) => {
     });
     
   } catch (error) {
-    await pool.query('ROLLBACK');
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Class create rollback failed:', rollbackError);
+      }
+      client.release();
+    }
     console.error('Error in createClass:', error);
     res.status(500).json({
       success: false,
@@ -268,6 +281,7 @@ classController.createClass = async (req, res) => {
 // UPDATE CLASS
 // ============================================
 classController.updateClass = async (req, res) => {
+  let client;
   try {
     const { id } = req.params;
     const {
@@ -294,9 +308,10 @@ classController.updateClass = async (req, res) => {
       });
     }
     
-    await pool.query('BEGIN');
+    client = await pool.connect();
+    await client.query('BEGIN');
     
-    const result = await pool.query(`
+    const result = await client.query(`
       UPDATE classes SET
         class_name = COALESCE($1, class_name),
         level = COALESCE($2, level),
@@ -333,12 +348,12 @@ classController.updateClass = async (req, res) => {
     updatedClass.name = updatedClass.class_name;
     
     if (subject_ids !== undefined) {
-      await pool.query('DELETE FROM class_subjects WHERE class_id = $1', [id]);
+      await client.query('DELETE FROM class_subjects WHERE class_id = $1', [id]);
       
       for (const subjectId of subject_ids) {
-        const subjectCheck = await pool.query('SELECT id FROM subjects WHERE id = $1', [subjectId]);
+        const subjectCheck = await client.query('SELECT id FROM subjects WHERE id = $1', [subjectId]);
         if (subjectCheck.rows.length > 0) {
-          await pool.query(`
+          await client.query(`
             INSERT INTO class_subjects (class_id, subject_id, hours_per_week, periods_per_week)
             VALUES ($1, $2, 4, 3)
             ON CONFLICT (class_id, subject_id) DO NOTHING
@@ -348,7 +363,9 @@ classController.updateClass = async (req, res) => {
       console.log(`📚 Updated subjects for class ${updatedClass.class_name}`);
     }
     
-    await pool.query('COMMIT');
+    await client.query('COMMIT');
+    client.release();
+    client = null;
     
     res.json({
       success: true,
@@ -357,7 +374,14 @@ classController.updateClass = async (req, res) => {
     });
     
   } catch (error) {
-    await pool.query('ROLLBACK');
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Class update rollback failed:', rollbackError);
+      }
+      client.release();
+    }
     console.error('Error in updateClass:', error);
     res.status(500).json({
       success: false,

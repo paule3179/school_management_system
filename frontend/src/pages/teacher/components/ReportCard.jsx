@@ -6,18 +6,12 @@ import {
   faPrint,
   faFileDownload,
   faUserGraduate,
-  faSchool,
-  faCalendarAlt,
-  faTrophy,
-  faBook,
-  faStar,
 } from '@fortawesome/free-solid-svg-icons';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 const ReportCard = ({
   studentId,
-  reportData,
   students,
   subjects,
   gradeDraft,

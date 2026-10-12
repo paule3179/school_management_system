@@ -4,8 +4,7 @@ const crypto = require('crypto');
 const pool = require('../config/database');
 const { sendEmail, getStudentCreatedTemplate, getParentWelcomeTemplate, getTeacherWelcomeTemplate } = require('../config/email');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_this';
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'your_refresh_token_secret_change_this';
+const { jwtSecret: JWT_SECRET } = require('../config/secrets');
 
 // Token expiration times
 const ACCESS_TOKEN_EXPIRY = '15m';

@@ -20,6 +20,10 @@ const connectionConfig = process.env.DATABASE_URL
 
 const pool = new Pool(connectionConfig);
 
+pool.on('error', (error) => {
+  console.error('Unexpected PostgreSQL pool error:', error.message);
+});
+
 // Test connection on startup
 pool.connect((err, client, release) => {
   if (err) {

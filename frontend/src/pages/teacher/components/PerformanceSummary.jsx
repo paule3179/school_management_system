@@ -1,7 +1,7 @@
 // src/pages/teacher/components/PerformanceSummary.jsx
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChartBar, faTrophy, faExclamationTriangle, faCheckCircle, faTimesCircle, faUsers, faPercent, faStar } from '@fortawesome/free-solid-svg-icons';
+import { faChartBar, faTrophy, faExclamationTriangle, faCheckCircle, faTimesCircle, faUsers } from '@fortawesome/free-solid-svg-icons';
 
 const PerformanceSummary = ({ students, gradingSystem }) => {
   const scores = students.map(s => s.total).filter(s => s !== null && s !== undefined && !isNaN(s));
